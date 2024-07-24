@@ -434,7 +434,7 @@ module parcel_container
 #ifndef ENABLE_DRY_MODE
             parcels%humidity(n)     = buffer(IDX_HUM)
 #endif
-#ifndef ENABLE_DRY_MODE
+#ifdef ENABLE_LABELS
             parcels%label(n)        = nint(buffer(IDX_LABEL))
             parcels%dilution(n)     = buffer(IDX_DILUTION)
 #endif
