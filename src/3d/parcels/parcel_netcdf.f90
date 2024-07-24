@@ -552,7 +552,7 @@ module parcel_netcdf
             integer, intent(in) :: first, last, pfirst
             logical             :: l_valid = .false.
             integer             :: cnt(2), start(2)
-            integer             :: num, plast
+            integer             :: num, plast, n
 
             num = last - first + 1
             plast = pfirst + num - 1
@@ -666,14 +666,16 @@ module parcel_netcdf
 #ifdef ENABLE_LABELS
             if (has_dataset(ncid, 'label')) then
                 l_valid = .true.
-                call read_netcdf_dataset(ncid, 'label', &
-                                         parcels%label(pfirst:plast), start, cnt)
             endif
             if (has_dataset(ncid, 'dilution')) then
                 l_valid = .true.
-                call read_netcdf_dataset(ncid, 'dilution', &
-                                         parcels%dilution(pfirst:plast), start, cnt)
             endif
+            ! reset the labels to Fortran index which corresponds to current label
+            ! reset the dilution to get this from time step to time step
+            do n = pfirst, plast
+               parcels%label(n) = first + n - pfirst 
+               parcels%dilution(n) = 0
+            end do
 #endif
 
 
