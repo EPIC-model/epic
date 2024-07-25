@@ -642,6 +642,7 @@ module parcel_netcdf
             endif
 
             if (has_dataset(ncid, 'y_vorticity')) then
+                l_valid = .true.
                 call read_netcdf_dataset(ncid, 'y_vorticity', &
                                          parcels%vorticity(2, pfirst:plast), start, cnt)
             endif
@@ -666,15 +667,6 @@ module parcel_netcdf
             endif
 #endif
 #ifdef ENABLE_LABELS
-            ! Existing labels needed to help tracking.
-            ! Not sure about use cases with only label and/or dilution variable 
-            ! But wanted to leave this as an option
-            if (has_dataset(ncid, 'label')) then
-                l_valid = .true.
-            endif
-            if (has_dataset(ncid, 'dilution')) then
-                l_valid = .true.
-            endif
             ! reset the labels to Fortran index which corresponds to current label
             ! reset the dilution to get this from time step to time step
             do n = pfirst, plast
