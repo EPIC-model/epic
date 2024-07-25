@@ -3,6 +3,7 @@
 ! =============================================================================
 module parcel_split_mod
     use options, only : parcel
+    use datatypes, only : int64
 #if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
     use options, only : verbose
 #endif
@@ -28,7 +29,7 @@ module parcel_split_mod
     integer :: split_timer
 
     ! number of parcel splits (is reset in every write step)
-    integer :: n_parcel_splits = 0
+    integer(kind=int64) :: n_parcel_splits = 0
 
 
     contains
@@ -47,7 +48,7 @@ module parcel_split_mod
             integer              :: pid(2 * n_parcels)
             integer, allocatable :: invalid(:), indices(:)
 #if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
-            integer              :: orig_num
+            integer(kind=int64)  :: orig_num
 
             orig_num = n_total_parcels
 #endif
@@ -147,6 +148,10 @@ module parcel_split_mod
                 parcels%buoyancy(n_thread_loc) = parcels%buoyancy(n)
 #ifndef ENABLE_DRY_MODE
                 parcels%humidity(n_thread_loc) = parcels%humidity(n)
+#endif
+#ifdef ENABLE_LABELS
+                parcels%label(n_thread_loc) = parcels%label(n)
+                parcels%dilution(n_thread_loc) = parcels%dilution(n)
 #endif
                 V(:, 1) = V(:, 1) * dh * dsqrt(D(1))
                 parcels%position(:, n_thread_loc) = parcels%position(:, n) - V(:, 1)

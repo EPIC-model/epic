@@ -199,7 +199,7 @@ program test_mpi_parcel_read_rejection
             ! define dimensions
             call define_netcdf_dimension(ncid=ncid,                         &
                                          name='n_parcels',                  &
-                                         dimsize=n_total_parcels,           &
+                                         dimsize=int(n_total_parcels),      &
                                          dimid=npar_dim_id)
 
             call define_netcdf_dimension(ncid=ncid,                 &

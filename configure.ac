@@ -1,4 +1,4 @@
-AC_INIT([epic], [0.14.0], [mf248@st-andrews.ac.uk], [], [https://github.com/matt-frey/epic])
+AC_INIT([epic], [0.14.1], [mf248@st-andrews.ac.uk], [], [https://github.com/matt-frey/epic])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AC_PROG_FC([gfortran])
 AC_LANG(Fortran)
@@ -417,6 +417,21 @@ AC_MSG_CHECKING([whether we are compiling in dry mode])
 if test "x$ENABLE_DRY_MODE" = "xyes"; then
     AC_MSG_RESULT([yes])
     FCFLAGS="$FCFLAGS -DENABLE_DRY_MODE"
+else
+    AC_MSG_RESULT([no])
+fi
+
+ENABLE_LABELS='no'
+AC_ARG_ENABLE([labels],
+              [AS_HELP_STRING([--enable-labels], [enable labels (default=no)])],
+              [ENABLE_LABELS=$enableval])
+
+AM_CONDITIONAL([ENABLE_LABELS], [test "$ENABLE_LABELS" = "yes"])
+
+AC_MSG_CHECKING([whether we are compiling with labels])
+if test "x$ENABLE_LABELS" = "xyes"; then
+    AC_MSG_RESULT([yes])
+    FCFLAGS="$FCFLAGS -DENABLE_LABELS"
 else
     AC_MSG_RESULT([no])
 fi

@@ -14,8 +14,7 @@ program test_parcel_moving_random
     implicit none
 
     integer, parameter   :: nt = 100
-    integer              :: i, n, sk
-    integer, allocatable :: seed(:)
+    integer              :: i, n
     double precision     :: rn(2)
 
     !--------------------------------------------------------------------------
@@ -27,11 +26,7 @@ program test_parcel_moving_random
         print '(a35, i6, a11)', "Running 'test_parcel_moving_random' with ", world%size, " MPI ranks."
     endif
 
-    call random_seed(size=sk)
-    allocate(seed(1:sk))
-    seed(:) = world%rank
-    call random_seed(put=seed)
-
+    call init_rng
 
     call register_all_timers
 
