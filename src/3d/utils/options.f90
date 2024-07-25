@@ -98,11 +98,13 @@ module options
 
     ! time limit
     type time_info_type
-        double precision :: initial     = zero       ! initial time
-        double precision :: limit       = zero       ! time limit
-        double precision :: alpha       = 0.2d0      ! factor for adaptive time stepping with strain and buoyancy
+        double precision :: initial        = zero    ! initial time
+        double precision :: limit          = zero    ! time limit
+        double precision :: alpha          = 0.2d0   ! factor for adaptive time stepping with strain and buoyancy
                                                      ! gradient
-        logical          :: precise_stop = .false.   ! stop at the exact limit
+        logical          :: precise_stop   = .false. ! stop at the exact limit
+        logical          :: l_use_fixed_dt = .false. ! use a fixed time step
+        double precision :: fixed_dt       = one     ! length of fixed time step
     end type time_info_type
 
     type(time_info_type) :: time
@@ -201,6 +203,8 @@ module options
             call write_netcdf_attribute(ncid, "limit", time%limit)
             call write_netcdf_attribute(ncid, "initial", time%initial)
             call write_netcdf_attribute(ncid, "precise_stop", time%precise_stop)
+            call write_netcdf_attribute(ncid, "fixed_dt", time%fixed_dt)
+            call write_netcdf_attribute(ncid, "l_use_fixed_dt", time%l_use_fixed_dt)
             call write_netcdf_attribute(ncid, "alpha", time%alpha)
             
             call write_netcdf_attribute(ncid, "damping_vorticity_prefactor", damping%vorticity_prefactor)
