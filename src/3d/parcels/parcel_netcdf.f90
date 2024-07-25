@@ -666,6 +666,9 @@ module parcel_netcdf
             endif
 #endif
 #ifdef ENABLE_LABELS
+            ! Existing labels needed to help tracking.
+            ! Not sure about use cases with only label and/or dilution variable 
+            ! But wanted to leave this as an option
             if (has_dataset(ncid, 'label')) then
                 l_valid = .true.
             endif
