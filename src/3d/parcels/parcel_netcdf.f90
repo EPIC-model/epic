@@ -458,12 +458,12 @@ module parcel_netcdf
                 end_index = min(max_num_parcels, n_total)
                 pfirst = 1
                 n_remaining = n_total
+                n_parcels = 0
 
                 do while (start_index <= end_index)
 
                     n_read = end_index - start_index + 1
                     n_remaining = n_remaining - n_read
-                    n_parcels = pfirst + n_read - 1
 
                     call rejection_method(start_index, end_index, pfirst)
 
