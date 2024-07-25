@@ -1,7 +1,7 @@
 program verify_parcel_merging
     use constants, only : pi, zero, one, f12, f23, twopi
     use parcel_container
-    use options, only : parcel
+    use options, only : parcel, output
     use parameters, only : update_parameters, lower, extent, nx, ny, nz, max_num_parcels
     use parcel_init, only : parcel_default
     use parcel_mpi, only : parcel_communicate
@@ -64,6 +64,19 @@ program verify_parcel_merging
                            world%err)
         call stop_timer(allreduce_timer)
 
+        output%parcel_list(1)  = 'volume'
+        output%parcel_list(2)  = 'x_position'
+        output%parcel_list(3)  = 'y_position'
+        output%parcel_list(4)  = 'z_position'
+        output%parcel_list(5)  = 'buoyancy'
+        output%parcel_list(6)  = 'x_vorticity'
+        output%parcel_list(7)  = 'y_vorticity'
+        output%parcel_list(8)  = 'z_vorticity'
+        output%parcel_list(9)  = 'B11'
+        output%parcel_list(10) = 'B12'
+        output%parcel_list(11) = 'B13'
+        output%parcel_list(12) = 'B22'
+        output%parcel_list(13) = 'B23'
         call create_netcdf_parcel_file('initial', .true., .false.)
         call write_netcdf_parcels(t = 0.0d0)
     else
@@ -166,7 +179,7 @@ program verify_parcel_merging
                 else if (arg == '--size_factor') then
                     i = i + 1
                     call get_command_argument(i, arg)
-                    read(arg,'(i6)') parcel%size_factor
+                    read(arg,'(f16.0)') parcel%size_factor
                 else if (arg == '--lx') then
                     i = i + 1
                     call get_command_argument(i, arg)
