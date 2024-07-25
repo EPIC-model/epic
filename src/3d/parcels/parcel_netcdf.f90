@@ -62,11 +62,11 @@ module parcel_netcdf
 
 #ifndef ENABLE_DRY_MODE
     integer, parameter :: NC_HUM   = 19
-    
+
 #ifdef ENABLE_LABELS
-    integer, parameter :: NC_LABEL    = 20 & 
+    integer, parameter :: NC_LABEL    = 20 &
                        ,  NC_DILUTION = 21
-    
+
     type(netcdf_info) :: nc_dset(NC_DILUTION)
 #else
     type(netcdf_info) :: nc_dset(NC_HUM)
@@ -75,9 +75,9 @@ module parcel_netcdf
 #else
 
 #ifdef ENABLE_LABELS
-    integer, parameter :: NC_LABEL    = 19 & 
+    integer, parameter :: NC_LABEL    = 19 &
                        ,  NC_DILUTION = 20
-                       
+
     type(netcdf_info) :: nc_dset(NC_DILUTION)
 #else
     type(netcdf_info) :: nc_dset(NC_B23)
@@ -340,6 +340,7 @@ module parcel_netcdf
             endif
         end subroutine write_parcel_attribute
 
+#ifdef ENABLE_LABELS
         subroutine write_parcel_attribute_int(id, pdata, start, cnt)
             integer,          intent(in) :: id
             integer(kind=8),  intent(in) :: pdata(:)
@@ -351,6 +352,7 @@ module parcel_netcdf
                                           start, cnt)
             endif
         end subroutine write_parcel_attribute_int
+#endif
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
