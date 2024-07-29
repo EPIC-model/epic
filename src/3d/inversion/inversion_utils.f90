@@ -13,6 +13,7 @@ module inversion_utils
                        , fftsine        &
                        , fftcosine, zfactors, ztrig
     use stafft, only : dst
+    use physics, only : v_stretch
     implicit none
 
     private
@@ -94,13 +95,17 @@ module inversion_utils
 
             call initialise_fft(extent)
 
-            dz = dx(3)
-            dzi = dxi(3)
-            dz6  = f16 * dx(3)
-            dz2  = f12 * dx(3)
-            dz24 = f124 * dx(3)
-            dzisq = dxi(3) ** 2
-            hdzi = f12 * dxi(3)
+            dz = dx(3) / v_stretch
+            dzi = dxi(3) * v_stretch
+            dz6  = f16 * dx(3) / v_stretch
+            dz2  = f12 * dx(3) / v_stretch
+            dz24 = f124 * dx(3) / v_stretch
+            dzisq = (dxi(3) * v_stretch) ** 2
+            hdzi = f12 * dxi(3) * v_stretch
+
+            ! apply stretch factor to vertical wave number
+            rkz = v_stretch * rkz
+            rkzi = rkzi / v_stretch
 
             allocate(k2l2i(box%lo(2):box%hi(2), box%lo(1):box%hi(1)))
             allocate(k2l2(box%lo(2):box%hi(2), box%lo(1):box%hi(1)))
@@ -309,7 +314,7 @@ module inversion_utils
             double precision             :: ef, em(0:nz), ep(0:nz), Lm(0:nz), Lp(0:nz)
             double precision             :: fac, div, kl
 
-            kl = dsqrt(k2l2(ky, kx))
+            kl = dsqrt(k2l2(ky, kx)) / v_stretch
             fac = kl * extent(3)
             ef = dexp(- fac)
 #ifndef NDEBUG
@@ -512,51 +517,6 @@ module inversion_utils
             !$omp end parallel workshare
 
         end subroutine central_diffz
-
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        !Calculates df/dz for a field f in mixed-spectral space
-        !Here fs = f, ds = df/dz. Both fields are in mixed-spectral space.
-        ! fs - mixed-spectral space
-        ! ds - derivative linear part
-        ! as - derivative sine part
-        subroutine diffz(fs, ds)
-            double precision, intent(in)  :: fs(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))
-            double precision, intent(out) :: ds(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))
-            double precision              :: as(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))
-            integer                       :: kz, iz
-
-            !Calculate the derivative of the linear part (ds) in semi-spectral space:
-            !$omp parallel do private(iz)  default(shared)
-            do iz = 0, nz
-                ds(iz, :, :) = fs(0, :, :) * dphim(iz, :, :) + fs(nz, :, :) * dphip(iz, :, :)
-            enddo
-            !$omp end parallel do
-
-            ! Calculate d/dz of this sine series:
-            !$omp parallel workshare
-            as(0, :, :) = zero
-            !$omp end parallel workshare
-            !$omp parallel do private(kz)  default(shared)
-            do kz = 1, nz-1
-                as(kz, :, :) = rkz(kz) * fs(kz, :, :)
-            enddo
-            !$omp end parallel do
-            !$omp parallel workshare
-            as(nz, :, :) = zero
-            !$omp end parallel workshare
-
-            !FFT these quantities back to semi-spectral space:
-            call fftcosine(as)
-
-            ! Combine vertical derivative given the sine (as) and linear (ds) parts:
-            !omp parallel workshare
-            ds = ds + as
-            !omp end parallel workshare
-
-            call field_decompose_semi_spectral(ds)
-
-        end subroutine diffz
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 

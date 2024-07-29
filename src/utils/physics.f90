@@ -97,6 +97,9 @@ module physics
     ! 'none', 'sorting' or 'ape density'
     character(len=11) :: ape_calculation = "sorting"
 
+    ! vertical stretch factor N / f (if 1 --> no stretch)
+    double precision, protected :: v_stretch = 1.0d0
+
 #ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
     ! squared buoyancy frequency, N^2
     double precision, protected :: bfsq = zero
@@ -201,6 +204,7 @@ module physics
                 call read_netcdf_attribute_default(grp_ncid, 'latitude_degrees', lat_degrees)
                 call read_netcdf_attribute_default(grp_ncid, 'scale_height', height_c)
                 call read_netcdf_attribute_default(grp_ncid, 'ape_calculation', ape_calculation)
+                call read_netcdf_attribute_default(grp_ncid, 'vertical_stretch', v_stretch)
 
 #ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
                 l_bfsq = has_attribute(grp_ncid, 'squared_buoyancy_frequency')
@@ -267,6 +271,7 @@ module physics
                 call write_netcdf_attribute(grp_ncid, 'reference_potential_energy', peref)
             endif
             call write_netcdf_attribute(grp_ncid, 'ape_calculation', ape_calculation)
+            call write_netcdf_attribute(grp_ncid, 'vertical_stretch', v_stretch)
 
 #ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
             if (l_bfsq) then
@@ -298,6 +303,7 @@ module physics
                 call print_physical_quantity('reference potential energy', peref, 'm^2/s^2')
             endif
             call print_physical_quantity('APE calculation', ape_calculation)
+            call print_physical_quantity('vertical stretch', v_stretch)
 
 #ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
             if (l_bfsq) then
