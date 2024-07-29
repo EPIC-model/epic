@@ -1,3 +1,19 @@
+## EPIC version 0.14.2
+* [Optimise nearest algorithm tree resolve step](https://github.com/EPIC-model/epic/pull/561)
+* [Implement generalised damping, including surface damping](https://github.com/EPIC-model/epic/pull/562)
+* [Add optimised rejection method](https://github.com/EPIC-model/epic/pull/563)
+* [Update webpage](https://github.com/EPIC-model/epic/pull/564)
+* [Add labels to code](https://github.com/EPIC-model/epic/pull/565)
+* [Reset labels and dilution when writing to netCDF](https://github.com/EPIC-model/epic/pull/566)
+* [Support for 64-bit integers](https://github.com/EPIC-model/epic/pull/560)
+* [Set total number of parcels before parcel_communicate](https://github.com/EPIC-model/epic/pull/567)
+* [Fix input to acos](https://github.com/EPIC-model/epic/pull/568)
+* [Fix rejection method](https://github.com/EPIC-model/epic/pull/570)
+* [Explicitly set the attributes to write](https://github.com/EPIC-model/epic/pull/571)
+* [Bugfixes to labelling](https://github.com/EPIC-model/epic/pull/569)
+* [Move GitHub page to organisation](https://github.com/EPIC-model/epic/pull/573)
+* [Add index.html which is a symbolic link to html/intro.html](https://github.com/EPIC-model/epic/pull/574)
+
 ## EPIC version 0.14.1
 * [Added/changed ifort style flags](https://github.com/EPIC-model/epic/pull/494)
 * [Fix .zenodo.json](https://github.com/EPIC-model/epic/pull/542)
