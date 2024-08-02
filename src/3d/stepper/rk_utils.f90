@@ -122,6 +122,13 @@ module rk_utils
             character(512)               :: fname
 #endif
 
+            if (time%l_use_fixed_dt) then
+                dt = time%fixed_dt
+#ifndef ENABLE_VERBOSE
+                return
+#endif
+            endif
+    
             !
             ! velocity strain
             !
@@ -186,9 +193,7 @@ module rk_utils
             gmax = local_max(1)
             bmax = local_max(2)
             
-            if (time%l_use_fixed_dt) then
-                dt = time%fixed_dt
-            else
+            if (.not. time%l_use_fixed_dt) then
                 dt = min(time%alpha / gmax, time%alpha / bmax)
             endif
 #ifdef ENABLE_VERBOSE
