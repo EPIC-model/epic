@@ -3,7 +3,7 @@ module rk_utils
     use parcel_ellipsoid, only : get_B33, I_B11, I_B12, I_B13, I_B22, I_B23, I_B33
     use fields, only : velgradg, tbuoyg, vortg, I_DUDX, I_DUDY, I_DUDZ, I_DVDX, I_DVDY, I_DVDZ, I_DWDX, I_DWDY, strain_mag
     use field_mpi, only : field_halo_fill_scalar
-    use constants, only : zero, one, two, f12, f23, xx1, xx2, xx4, xx5, xx6, xx7, yy2
+    use constants, only : zero, one, two, f12, f14, f23, xx1, xx2, xx4, xx5, xx6, xx7, yy2
     use parameters, only : nx, ny, nz, dxi, vcell
     use scherzinger, only : scherzinger_eigenvalues
     use mpi_layout, only : box
@@ -36,11 +36,11 @@ module rk_utils
             Bmat(1, 1) = B(I_B11) ! B11
             Bmat(1, 2) = B(I_B12) ! B12
             Bmat(1, 3) = B(I_B13) ! B13
-            Bmat(2, 1) = B(I_B12) ! B21
+            Bmat(2, 1) = Bmat(1, 2) ! B21
             Bmat(2, 2) = B(I_B22) ! B22
             Bmat(2, 3) = B(I_B23) ! B23
-            Bmat(3, 1) = B(I_B13) ! B31
-            Bmat(3, 2) = B(I_B23) ! B32
+            Bmat(3, 1) = Bmat(1, 3) ! B31
+            Bmat(3, 2) = Bmat(2, 3) ! B32
             Bmat(3, 3) = B(I_B33) ! B33
 
             Smat(1, 1) = S(I_DUDX) ! S11
@@ -51,7 +51,7 @@ module rk_utils
             Smat(2, 3) = S(I_DVDZ) ! S23
             Smat(3, 1) = S(I_DWDX) ! S31
             Smat(3, 2) = S(I_DWDY) ! S32
-            Smat(3, 3) = -(S(I_DUDX) + S(I_DVDY)) ! S33
+            Smat(3, 3) = -(Smat(1, 1) + Smat(2, 2)) ! S33
 
             ! Bader, P., Blanes, S., & Casas, F. (2019). 
             ! Computing the matrix exponential with an optimized Taylor polynomial approximation. 
@@ -60,7 +60,7 @@ module rk_utils
             ! Possibly this is overkill and ward steps can be removed
             ! This does not save much computation though
 
-            Rmat = 0.25 * dt_sub * Smat
+            Rmat = f14 * dt_sub * Smat
             Rmat2 = matmul(Rmat, Rmat)
             Rmat4 = matmul(Rmat2, xx1 * Rmat + xx2 * Rmat2)
             Rmat8 = matmul(f23 * Rmat2 + Rmat4, xx4 * Imat + xx5 * Rmat + xx6 * Rmat2 + xx7 * Rmat4)
