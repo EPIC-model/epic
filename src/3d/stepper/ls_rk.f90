@@ -26,7 +26,6 @@ module ls_rk
     private
 
     integer, parameter :: dp=kind(zero)           ! double precision
-
     integer :: rk_timer
 
     ! fourth order RK coefficients:
@@ -131,9 +130,9 @@ module ls_rk
 
             call parcel_damp(dt)
 
-            ! we need to subtract 14 calls since we start and stop
-            ! the timer multiple times which increments n_calls
-            timings(rk_timer)%n_calls =  timings(rk_timer)%n_calls - (3 * n_stages - 1)
+            ! we need to subtract 1 call since we start and stop
+            ! the timer again when we apply the reflective bc
+            timings(rk_timer)%n_calls =  timings(rk_timer)%n_calls - 1
 
             t = t + dt
         end subroutine ls_rk_step
@@ -152,20 +151,12 @@ module ls_rk
             ca = captr(step)
             cb = cbptr(step)
 
-            if (step == 1) then
-                call start_timer(rk_timer)
-
-                call stop_timer(rk_timer)
-            else
+            if (step > 1) then
                 call vor2vel
 
                 call vorticity_tendency
 
                 call grid2par(add=.true.)
-
-                call start_timer(rk_timer)
-
-                call stop_timer(rk_timer)
             endif
 
             call start_timer(rk_timer)
@@ -177,14 +168,14 @@ module ls_rk
 
                 parcels%vorticity(:, n) = parcels%vorticity(:, n) &
                                         + cb * dt * parcels%delta_vor(:, n)
-
+            
                 call evolve_ellipsoid(parcels%B(:, n), parcels%int_strain(:, n), cb * dt)
-
+                
             enddo
             !$omp end parallel do
 
             if (step == n_stages) then
-                !$omp parallel do default(shared) private(n,detB,factor)
+                !$omp parallel do default(shared) private(n, detB, factor)
                 do n = 1, n_parcels
                     ! normalize B matrix in final substep
                     detB = parcels%B(1, n) * (parcels%B(4, n) * parcels%B(6, n) - parcels%B(5, n) ** 2) &
