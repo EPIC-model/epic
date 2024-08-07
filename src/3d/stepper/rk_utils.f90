@@ -3,7 +3,8 @@ module rk_utils
     use parcel_ellipsoid, only : get_B33, I_B11, I_B12, I_B13, I_B22, I_B23, I_B33
     use fields, only : velgradg, tbuoyg, vortg, I_DUDX, I_DUDY, I_DUDZ, I_DVDX, I_DVDY, I_DVDZ, I_DWDX, I_DWDY, strain_mag
     use field_mpi, only : field_halo_fill_scalar
-    use constants, only : zero, one, two, f12, f14, f23, xx1, xx2, xx4, xx5, xx6, xx7, yy2
+    use constants, only : zero, one, two, f12, f14, f23, c_matexp_x1, c_matexp_x2, c_matexp_x4, &
+                          c_matexp_x5, c_matexp_x6, c_matexp_x7, c_matexp_y2
     use parameters, only : nx, ny, nz, dxi, vcell
     use scherzinger, only : scherzinger_eigenvalues
     use mpi_layout, only : box
@@ -62,9 +63,9 @@ module rk_utils
 
             Rmat = f14 * dt_sub * Smat
             Rmat2 = matmul(Rmat, Rmat)
-            Rmat4 = matmul(Rmat2, xx1 * Rmat + xx2 * Rmat2)
-            Rmat8 = matmul(f23 * Rmat2 + Rmat4, xx4 * Imat + xx5 * Rmat + xx6 * Rmat2 + xx7 * Rmat4)
-            Qmat = Imat + Rmat + yy2 * Rmat2 + Rmat8
+            Rmat4 = matmul(Rmat2, c_matexp_x1 * Rmat + c_matexp_x2 * Rmat2)
+            Rmat8 = matmul(f23 * Rmat2 + Rmat4, c_matexp_x4 * Imat + c_matexp_x5 * Rmat + c_matexp_x6 * Rmat2 + c_matexp_x7 * Rmat4)
+            Qmat = Imat + Rmat + c_matexp_y2 * Rmat2 + Rmat8
             Qmat = matmul(Qmat, Qmat)
             Qmat = matmul(Qmat, Qmat)
             Bmat = matmul(Qmat, matmul(Bmat, transpose(Qmat)))

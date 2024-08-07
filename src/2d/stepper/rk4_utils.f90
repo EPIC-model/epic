@@ -1,7 +1,8 @@
 module rk4_utils
     use parcel_ellipse, only : get_B22
     use fields, only : velgradg, tbuoyg, vtend
-    use constants, only : zero, one, two, f12, f23, xx1, xx2, xx4, xx5, xx6, xx7, yy2
+    use constants, only : zero, one, two, f12, f14, f23, c_matexp_x1, c_matexp_x2, c_matexp_x4, &
+                          c_matexp_x5, c_matexp_x6, c_matexp_x7, c_matexp_y2
     use parameters, only : nx, nz, dxi
 #ifdef ENABLE_VERBOSE
     use options, only : output
@@ -42,11 +43,18 @@ module rk4_utils
             ! Possibly this is overkill and ward steps can be removed
             ! This does not save much computation though
 
-            Rmat = 0.25 * dt_sub * Smat
+            ! Bader, P., Blanes, S., & Casas, F. (2019). 
+            ! Computing the matrix exponential with an optimized Taylor polynomial approximation. 
+            ! Mathematics, 7(12), 1174.
+            ! Using 8th order Taylor with 2 ward steps
+            ! Possibly this is overkill and ward steps can be removed
+            ! This does not save much computation though
+
+            Rmat = f14 * dt_sub * Smat
             Rmat2 = matmul(Rmat, Rmat)
-            Rmat4 = matmul(Rmat2, xx1 * Rmat + xx2 * Rmat2)
-            Rmat8 = matmul(f23 * Rmat2 + Rmat4, xx4 * Imat + xx5 * Rmat + xx6 * Rmat2 + xx7 * Rmat4)
-            Qmat = Imat + Rmat + yy2 * Rmat2 + Rmat8
+            Rmat4 = matmul(Rmat2, c_matexp_x1 * Rmat + c_matexp_x2 * Rmat2)
+            Rmat8 = matmul(f23 * Rmat2 + Rmat4, c_matexp_x4 * Imat + c_matexp_x5 * Rmat + c_matexp_x6 * Rmat2 + c_matexp_x7 * Rmat4)
+            Qmat = Imat + Rmat + c_matexp_y2 * Rmat2 + Rmat8
             Qmat = matmul(Qmat, Qmat)
             Qmat = matmul(Qmat, Qmat)
             Bmat = matmul(Qmat, matmul(Bmat, transpose(Qmat)))
