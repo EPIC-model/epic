@@ -6,7 +6,7 @@ module ls_rk4
     use options, only : parcel
     use parcel_container
     use parcel_bc
-    use rk4_utils, only: get_B, get_time_step
+    use rk4_utils, only: evolve_ellipsoid, get_time_step
     use utils, only : write_step
     use parcel_interpl, only : par2grid, grid2par, grid2par_add
     use fields, only : velgradg, velog, vortg, vtend, tbuoyg
@@ -23,7 +23,7 @@ module ls_rk4
 
     double precision, allocatable, dimension(:, :) :: &
         delta_pos, &
-        strain,    &   ! strain at parcel location
+        int_strain,    &   ! strain at parcel location
         delta_b        ! B matrix integration
 
     double precision, allocatable, dimension(:) :: &
@@ -53,7 +53,7 @@ module ls_rk4
 
             allocate(delta_pos(2, num))
             allocate(delta_vor(num))
-            allocate(strain(4, num))
+            allocate(int_strain(4, num))
             allocate(delta_b(2, num))
 
         end subroutine ls_rk4_alloc
@@ -63,7 +63,7 @@ module ls_rk4
 
             deallocate(delta_pos)
             deallocate(delta_vor)
-            deallocate(strain)
+            deallocate(int_strain)
             deallocate(delta_b)
 
         end subroutine ls_rk4_dealloc
@@ -90,7 +90,7 @@ module ls_rk4
             ! update the time step
             dt = get_time_step(t)
 
-            call grid2par(delta_pos, delta_vor, strain)
+            call grid2par(delta_pos, delta_vor, int_strain)
 
             call calculate_parcel_diagnostics(delta_pos)
 
@@ -131,28 +131,15 @@ module ls_rk4
             if (step == 1) then
                 call start_timer(rk4_timer)
 
-                !$omp parallel do default(shared) private(n)
-                do n = 1, n_parcels
-                    delta_b(:, n) = get_B(parcels%B(:, n), strain(:, n), parcels%volume(n))
-                enddo
-                !$omp end parallel do
-
                 call stop_timer(rk4_timer)
             else
                 call vor2vel(vortg, velog, velgradg)
 
                 call vorticity_tendency(tbuoyg, vtend)
 
-                call grid2par_add(delta_pos, delta_vor, strain)
+                call grid2par_add(delta_pos, delta_vor, int_strain)
 
                 call start_timer(rk4_timer)
-
-                !$omp parallel do default(shared) private(n)
-                do n = 1, n_parcels
-                    delta_b(:, n) = delta_b(:, n) &
-                                 + get_B(parcels%B(:, n), strain(:, n), parcels%volume(n))
-                enddo
-                !$omp end parallel do
 
                 call stop_timer(rk4_timer)
             endif
@@ -165,7 +152,7 @@ module ls_rk4
                                       + cb * dt * delta_pos(:, n)
 
                 parcels%vorticity(n) = parcels%vorticity(n) + cb * dt * delta_vor(n)
-                parcels%B(:, n) = parcels%B(:, n) + cb * dt * delta_b(:, n)
+                call evolve_ellipsoid(parcels%B(:, n), int_strain(:, n), parcels%volume(n), cb * dt)
             enddo
             !$omp end parallel do
 
@@ -181,7 +168,7 @@ module ls_rk4
             do n = 1, n_parcels
                 delta_pos(:, n) = ca * delta_pos(:, n)
                 delta_vor(n) = ca * delta_vor(n)
-                delta_b(:, n) = ca * delta_b(:, n)
+                int_strain(:, n) = ca * int_strain(:, n)
             enddo
             !$omp end parallel do
 
