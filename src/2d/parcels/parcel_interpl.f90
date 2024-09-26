@@ -50,7 +50,7 @@ module parcel_interpl
                 pvol = parcels%volume(n)
 
                 points = get_ellipse_points(parcels%position(:, n), &
-                                            pvol, parcels%B(:, n))
+                                            parcels%B(:, n))
 
 
                 ! we have 2 points per ellipse
@@ -85,7 +85,7 @@ module parcel_interpl
 #ifndef NDEBUG
         ! Interpolate the parcel volume to the grid to check symmetry
         subroutine vol2grid_symmetry_error
-            double precision :: points(2, 2), V, B(2), pos(2)
+            double precision :: points(2, 2), V, B(3), pos(2)
             integer          :: n, p, l, m
             double precision :: pvol
 
@@ -107,7 +107,7 @@ module parcel_interpl
 
                     B(2) = dble(m) * B(2)
 
-                    points = get_ellipse_points(pos, V, B)
+                    points = get_ellipse_points(pos, B)
 
                     ! we have 2 points per ellipse
                     do p = 1, 2
@@ -180,7 +180,7 @@ module parcel_interpl
                 btot = parcels%buoyancy(n)
 #endif
                 points = get_ellipse_points(parcels%position(:, n), &
-                                            pvol, parcels%B(:, n))
+                                            parcels%B(:, n))
 
                 call get_index(parcels%position(:, n), i, j)
                 i = mod(i + nx, nx)
@@ -334,7 +334,6 @@ module parcel_interpl
             do n = 1, n_parcels
 
                 points = get_ellipse_points(parcels%position(:, n), &
-                                            parcels%volume(n),      &
                                             parcels%B(:, n))
 
                 ! we have 2 points per ellipse

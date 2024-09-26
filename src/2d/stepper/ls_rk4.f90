@@ -8,6 +8,7 @@ module ls_rk4
     use parcel_bc
     use rk4_utils, only: evolve_ellipsoid, get_time_step
     use utils, only : write_step
+    use parcel_ellipse, only : get_ab
     use parcel_interpl, only : par2grid, grid2par, grid2par_add
     use fields, only : velgradg, velog, vortg, vtend, tbuoyg
     use tri_inversion, only : vor2vel, vorticity_tendency
@@ -122,7 +123,7 @@ module ls_rk4
         subroutine ls_rk4_substep(dt, step)
             double precision, intent(in) :: dt
             integer,          intent(in) :: step
-            double precision             :: ca, cb
+            double precision             :: ca, cb, factor
             integer                      :: n
 
             ca = cas(step)
@@ -152,14 +153,23 @@ module ls_rk4
                                       + cb * dt * delta_pos(:, n)
 
                 parcels%vorticity(n) = parcels%vorticity(n) + cb * dt * delta_vor(n)
-                call evolve_ellipsoid(parcels%B(:, n), int_strain(:, n), parcels%volume(n), cb * dt)
+                call evolve_ellipsoid(parcels%B(:, n), int_strain(:, n), cb * dt)
             enddo
             !$omp end parallel do
 
             call stop_timer(rk4_timer)
 
             if (step == 5) then
-               return
+                ! Correct parcel volume
+                !$omp parallel do default(shared) private(n, factor)
+                do n = 1, n_parcels
+                    factor = get_ab(parcels%volume(n)) / dsqrt(parcels%B(1, n) * parcels%B(3, n) - parcels%B(2, n) ** 2)
+                    parcels%B(1, n) = parcels%B(1, n) * factor
+                    parcels%B(2, n) = parcels%B(2, n) * factor
+                    parcels%B(3, n) = parcels%B(3, n) * factor
+                end do
+                !$omp end parallel do
+                return
             endif
 
             call start_timer(rk4_timer)

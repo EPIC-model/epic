@@ -1,5 +1,4 @@
 module rk4_utils
-    use parcel_ellipse, only : get_B22
     use fields, only : velgradg, tbuoyg, vtend
     use constants, only : zero, one, two, f12, f14, f23, c_matexp_x1, c_matexp_x2, c_matexp_x4, &
                           c_matexp_x5, c_matexp_x6, c_matexp_x7, c_matexp_y2
@@ -13,10 +12,9 @@ module rk4_utils
 
     contains
 
-        subroutine evolve_ellipsoid(B, S, volume, dt_sub)
-            double precision, intent(inout) :: B(2)
+        subroutine evolve_ellipsoid(B, S, dt_sub)
+            double precision, intent(inout) :: B(3)
             double precision, intent(in) :: S(4)
-            double precision, intent(in) :: volume
             double precision, intent(in) :: dt_sub
             double precision :: Bmat(2,2)
             double precision :: Smat(2,2)
@@ -28,8 +26,8 @@ module rk4_utils
 
             Bmat(1, 1) = B(1) ! B11
             Bmat(1, 2) = B(2) ! B12
-            Bmat(2, 1) = B(1) ! B21
-            Bmat(2, 2) = get_B22(B(1), B(2), volume)
+            Bmat(2, 1) = B(2) ! B21
+            Bmat(2, 2) = B(3) ! B22 
 
             Smat(1, 1) = S(1) ! S11
             Smat(1, 2) = S(2) ! S12
@@ -61,6 +59,7 @@ module rk4_utils
 
             B(1) = Bmat(1, 1)
             B(2) = Bmat(1, 2)
+            B(3) = Bmat(2, 2)
 
         end subroutine evolve_ellipsoid
 

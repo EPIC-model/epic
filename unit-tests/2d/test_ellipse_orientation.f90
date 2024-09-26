@@ -15,7 +15,7 @@ program test_ellipse_orientation
     double precision :: extent(2) =  (/0.2d0, 0.2d0/)
     integer :: iter
     integer :: grid(2) = (/2, 2/)
-    double precision :: angle, B11, B12, V, a2, b2
+    double precision :: angle, B11, B12, B22, V, a2, b2
     double precision, parameter :: lam = three
     logical :: passed = .true.
 
@@ -41,6 +41,9 @@ program test_ellipse_orientation
         parcels%B(1, 1) = B11
 
         parcels%B(2, 1) = B12
+        
+        B22 = get_B22(B11, B12, V)
+        parcels%B(3, 1) = B22
 
         ! get_angle computes the angle in the first and fourth quadrant, i.e.,
         ! -pi/2 <= get_angle <= pi/2
@@ -50,7 +53,7 @@ program test_ellipse_orientation
             angle = angle - two * pi
         endif
 
-        passed = (passed .and. abs(angle - get_angle(B11, B12, V)) < dble(1.0e-13))
+        passed = (passed .and. abs(angle - get_angle(B11, B12, B22)) < dble(1.0e-13))
 
     enddo
 
