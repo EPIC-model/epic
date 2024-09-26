@@ -554,7 +554,10 @@ module parcel_netcdf
             integer, intent(in) :: first, last, pfirst
             logical             :: l_valid = .false.
             integer             :: cnt(2), start(2)
-            integer             :: num, plast, n
+            integer             :: num, plast
+#ifdef ENABLE_LABELS
+            integer             :: n
+#endif
 
             num = last - first + 1
             plast = pfirst + num - 1
