@@ -77,8 +77,8 @@ module parcel_container
             position,   &
             vorticity,  &
             B               ! B matrix entries; ordering:
-                            ! B(:, 1) = B11, B(:, 2) = B12, B(:, 3) = B13
-                            ! B(:, 4) = B22, B(:, 5) = B23, B(:, 6) = B33
+                            ! B(1, :) = B11, B(2, :) = B12, B(3, :) = B13
+                            ! B(4, :) = B22, B(5, :) = B23, B(6, :) = B33
 
         double precision, allocatable, dimension(:) :: &
             volume,     &
