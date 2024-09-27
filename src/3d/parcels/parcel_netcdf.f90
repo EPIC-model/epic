@@ -561,7 +561,6 @@ module parcel_netcdf
             integer             :: n
 #endif
 
-
             num = last - first + 1
             plast = pfirst + num - 1
 
