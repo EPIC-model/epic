@@ -16,8 +16,19 @@ module parcel_bc
         ! @param[inout] position vector of parcel
         pure subroutine apply_periodic_bc(position)
             double precision, intent(inout) :: position(3)
-            position(1) = position(1) - extent(1) * dble(int((position(1) - center(1)) * hli(1)))
-            position(2) = position(2) - extent(2) * dble(int((position(2) - center(2)) * hli(2)))
+
+            if(position(1) >= upper(1)) then
+                position(1) = position(1) - extent(1)
+            else if (position(1) < lower(1)) then
+                position(1) = position(1) + extent(1) 
+            endif
+            
+            if(position(2) >= upper(2)) then
+                position(2) = position(2) - extent(2) 
+            else if (position(2) < lower(2)) then
+                position(2) = position(2) + extent(2) 
+            endif
+
         end subroutine apply_periodic_bc
 
         ! Apply mirroring bc on n-th parcel (vertically)
