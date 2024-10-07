@@ -798,6 +798,16 @@ recommended values are given in <a href="#tab_configure_file">Table 3</a>.</p>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Tolerance for parcel generation from field file</p></td>
 </tr>
 <tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">flux_file</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">n/a</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Buoyancy flux file for convective boundary layer</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">rk_order</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Low-storage Runge-Kutta order (3 and 4 supported)</p></td>
+</tr>
+<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">output%field_freq</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Write after these many seconds to the field NetCDF file</p></td>
@@ -823,9 +833,24 @@ recommended values are given in <a href="#tab_configure_file">Table 3</a>.</p>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Enable / disable field dump</p></td>
 </tr>
 <tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">output%field_list</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">n/a</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Comma-separated list of gridded data to write (3D only)<br>
+                                                     (e.g. 'x_vorticity', 'buoyancy').<br>
+                                                     Default:  vorticity components, velocity components, buoyancy,
+                                                     humidity, gridded volume</p></td>
+</tr>
+<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">output%write_parcels</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">.true.</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Enable / disable parcel dump</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">output%parcel_list</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">n/a</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Comma-separated list of parcel attributes to write (3D only).<br>
+                                                     Default:  vorticity components, position, buoyancy, shape
+                                                     matrix components, volume, humidity</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">output%write_parcel_stats</p></td>
@@ -853,8 +878,19 @@ recommended values are given in <a href="#tab_configure_file">Table 3</a>.</p>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Factor to increase max. number of parcels</p></td>
 </tr>
 <tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">parcel%grow_factor</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1.2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Factor to increase the parcel container
+                                                     size in the parcel splitting routine</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">parcel%shrink_factor</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0.8</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Factor to reduce the parcel container size</p></td>
+</tr>
+<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">parcel%n_per_cell</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">9</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">9 (2D) or 8 (3D)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Initial number of parcels per cell</p></td>
 </tr>
 <tr>
@@ -864,13 +900,13 @@ recommended values are given in <a href="#tab_configure_file">Table 3</a>.</p>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">parcel%min_vratio</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">40 (2D) or 68 (3D)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">40 (2D) or 20 (3D)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Minimum ratio of grid cell volume / parcel volume</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">parcel%max_vratio</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">2.89 (2D) or 4.913 (3D)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Maximum ratio of grid cell volume / parcel volume</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2.89</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Maximum ratio of grid cell area / parcel area (2D only)</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">parcel%correction_iters</p></td>
@@ -1229,7 +1265,7 @@ in the configuration file.</p>
 <div id="footer">
 <div id="footer-text">
 Version 0.14.2<br>
-Last updated 2024-10-07 11:29:33 +0100
+Last updated 2024-10-07 14:38:57 +0100
 </div>
 </div>
 <script type="text/x-mathjax-config">
