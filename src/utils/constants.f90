@@ -45,4 +45,19 @@ module constants
     double precision, parameter :: rad2deg = 180.0d0 * fpi
     double precision, parameter :: deg2rad = one / rad2deg
 
+    ! Bader, P., Blanes, S., & Casas, F. (2019). 
+    ! Computing the matrix exponential with an optimized Taylor polynomial approximation. 
+    ! Mathematics, 7(12), 1174.
+    ! Coefficients needed for 8th order Taylor series
+    ! Naming of coefficients follows this article, with prefix 'c_matexp'
+
+    double precision, parameter :: sq177 = sqrt(177.d0)
+    double precision, parameter :: c_matexp_x1 = (one / 88.d0) * (one + sq177) * f23
+    double precision, parameter :: c_matexp_x2 = (one / 352.d0) * (one + sq177) * f23
+    double precision, parameter :: c_matexp_x4 = (-271.d0 + 29.d0 * sq177) / (315.d0 * f23)
+    double precision, parameter :: c_matexp_x5 = (11.d0 * (-1.d0 + sq177)) / (1260.d0 * f23)
+    double precision, parameter :: c_matexp_x6 = (11.d0 * (-9.d0 + sq177)) / (5040.d0 * f23)
+    double precision, parameter :: c_matexp_x7 = (89.d0 - sq177) / (5040.d0 * f23 * f23)
+    double precision, parameter :: c_matexp_y2 = (one / 630.d0) * (857.d0 - 58.d0 * sq177)
+
 end module

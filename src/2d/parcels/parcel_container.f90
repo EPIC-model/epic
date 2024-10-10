@@ -12,7 +12,7 @@ module parcel_container
     type parcel_container_type
         double precision, allocatable, dimension(:, :) :: &
             position,   &
-            B               ! B matrix entries; ordering B(:, 1) = B11, B(:, 2) = B12
+            B               ! B matrix entries; ordering B(1, :) = B11, B(2, :) = B12, B(3, :) = B33
 
         double precision, allocatable, dimension(:) :: &
             volume,     &
@@ -88,7 +88,7 @@ module parcel_container
 
             allocate(parcels%position(2, num))
             allocate(parcels%vorticity(num))
-            allocate(parcels%B(2, num))
+            allocate(parcels%B(3, num))
             allocate(parcels%volume(num))
             allocate(parcels%buoyancy(num))
 #ifndef ENABLE_DRY_MODE

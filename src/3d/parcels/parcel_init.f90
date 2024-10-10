@@ -88,6 +88,9 @@ module parcel_init
 
                 ! B22
                 parcels%B(4, n) = l23
+
+                ! B33
+                parcels%B(6, n) = l23
             enddo
             !$omp end do
             !$omp end parallel
@@ -168,7 +171,7 @@ module parcel_init
             ! do refining by splitting
             do while (lam >= parcel%lambda_max)
                 call parcel_split
-                evals = get_eigenvalues(parcels%B(1, :), parcels%volume(1))
+                evals = get_eigenvalues(parcels%B(1, :))
                 lam = dsqrt(evals(1) / evals(3))
             end do
         end subroutine init_refine

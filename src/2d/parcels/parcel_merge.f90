@@ -9,7 +9,7 @@ module parcel_merge
                                , n_parcels              &
                                , parcel_replace         &
                                , get_delx
-    use parcel_ellipse, only : get_B22, get_ab
+    use parcel_ellipse, only : get_ab
     use options, only : parcel, verbose
     use parcel_bc
     use timer, only : start_timer, stop_timer
@@ -80,7 +80,7 @@ module parcel_merge
             integer                                    :: m, ic, is, l, n
             integer                                    :: loca(n_parcels)
             double precision                           :: x0(n_merge)
-            double precision                           :: posm(2, n_merge), delx, vmerge, dely, B22, mu
+            double precision                           :: posm(2, n_merge), delx, vmerge, dely, mu
             double precision                           :: buoym(n_merge), vortm(n_merge)
 #ifndef ENABLE_DRY_MODE
             double precision                           :: hum(n_merge)
@@ -186,15 +186,13 @@ module parcel_merge
 
                     vmerge = one / vm(l)
 
-                    B22 = get_B22(parcels%B(1, ic), parcels%B(2, ic), parcels%volume(ic))
-
                     delx = get_delx(parcels%position(1, ic), posm(1, l))
                     dely = parcels%position(2, ic) - posm(2, l)
 
                     mu = parcels%volume(ic) * vmerge
                     B11m(l) = mu * (four * delx ** 2 + parcels%B(1, ic))
                     B12m(l) = mu * (four * delx * dely + parcels%B(2, ic))
-                    B22m(l) = mu * (four * dely ** 2 + B22)
+                    B22m(l) = mu * (four * dely ** 2 + parcels%B(3, ic))
 
                     parcels%volume(ic)  = vm(l)
                     parcels%position(1, ic) = posm(1, l)
@@ -216,14 +214,12 @@ module parcel_merge
                 delx = get_delx(parcels%position(1, is), posm(1, n))
                 dely = parcels%position(2, is) - posm(2, n)
 
-                B22 = get_B22(parcels%B(1, is), parcels%B(2, is), parcels%volume(is))
-
                 ! volume fraction A_{is} / A
                 mu = vmerge * parcels%volume(is)
 
                 B11m(n) = B11m(n) + mu * (four * delx ** 2   + parcels%B(1, is))
                 B12m(n) = B12m(n) + mu * (four * delx * dely + parcels%B(2, is))
-                B22m(n) = B22m(n) + mu * (four * dely ** 2   + B22)
+                B22m(n) = B22m(n) + mu * (four * dely ** 2   + parcels%B(3, is))
             enddo
 
         end subroutine do_group_merge
@@ -266,6 +262,7 @@ module parcel_merge
 
                     parcels%B(1, ic) = B11(l) * factor
                     parcels%B(2, ic) = B12(l) * factor
+                    parcels%B(3, ic) = B22(l) * factor
 
                     call apply_periodic_bc(parcels%position(:, ic))
                 endif

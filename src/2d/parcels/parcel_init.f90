@@ -5,7 +5,7 @@ module parcel_init
     use options, only : parcel, output, verbose, field_tol
     use constants, only : zero, two, one, f12
     use parcel_container, only : parcels, n_parcels
-    use parcel_ellipse, only : get_ab, get_B22, get_eigenvalue
+    use parcel_ellipse, only : get_ab, get_eigenvalue, get_B22
     use parcel_split, only : split_ellipses
     use parcel_interpl, only : bilinear, ngp
     use parameters, only : dx, vcell, ncell,        &
@@ -83,6 +83,9 @@ module parcel_init
 
                 ! B12
                 parcels%B(2, n) = zero
+
+                ! B22
+                parcels%B(3, n) = get_B22(parcels%B(1, n), zero, parcels%volume(1))
             enddo
             !$omp end do
             !$omp end parallel
@@ -145,13 +148,12 @@ module parcel_init
 
         subroutine init_refine(lam)
             double precision, intent(inout) :: lam
-            double precision                :: B22, a2
+            double precision                :: a2
 
             ! do refining by splitting
             do while (lam >= parcel%lambda_max)
                 call split_ellipses(parcels, parcel%lambda_max)
-                B22 = get_B22(parcels%B(1, 1), zero, parcels%volume(1))
-                a2 = get_eigenvalue(parcels%B(1, 1), zero, B22)
+                a2 = get_eigenvalue(parcels%B(1, 1), parcels%B(2, 1), parcels%B(3, 1))
                 lam = a2 / get_ab(parcels%volume(1))
             end do
         end subroutine init_refine
