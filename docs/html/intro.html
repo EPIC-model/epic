@@ -459,11 +459,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </ul>
 </li>
 <li><a href="#_conventions_and_units">2. Conventions and Units</a></li>
-<li><a href="#_model">3. Model</a>
-<ul class="sectlevel2">
-<li><a href="#_vorticity_inversion">3.1. Vorticity inversion</a></li>
-</ul>
-</li>
+<li><a href="#_model">3. Model</a></li>
 <li><a href="#_input">4. Input</a>
 <ul class="sectlevel2">
 <li><a href="#_configuration_file">4.1. Configuration File</a></li>
@@ -652,12 +648,78 @@ export PYTHONPATH=$PREFIX/bin:$PYTHONPATH</code></pre>
 <div class="sect1">
 <h2 id="_conventions_and_units">2. Conventions and Units</h2>
 <div class="sectionbody">
-
+<div class="paragraph">
+<p>All computations in EPIC are performed in SI units. The position is defined in Cartesian coordinates
+\(\boldsymbol{x}=(x, y, z)\), where \(x\) is the zonal, \(y\) the meridional and \(z\) the vertical direction.
+A list of the units of the prognostic variables is provided
+in <a href="#tab_units">Table 2</a>.</p>
+</div>
+<table id="tab_units" class="tableblock frame-all grid-all fit-content center">
+<caption class="title">Table 2. List of units of prognostic variables.</caption>
+<colgroup>
+<col>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Prognostic variable</th>
+<th class="tableblock halign-left valign-top">Symbol</th>
+<th class="tableblock halign-left valign-top">Unit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Zonal vorticity</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">\(\xi\)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">\(s^{-1}\)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Meridional vorticity</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">\(\eta\)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">\(s^{-1}\)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Vertical vorticity</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">\(\zeta\)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">\(s^{-1}\)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Zonal velocity</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">\(u\)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">\(ms^{-1}\)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Meridional velocity</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">\(v\)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">\(ms^{-1}\)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Vertical velocity</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">\(w\)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">\(ms^{-1}\)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Buoyancy</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">\(b\)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">\(m s^{-2}\)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Humidity</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">\(q\)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">\(-\)</p></td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_model">3. Model</h2>
 <div class="sectionbody">
+<div class="paragraph">
+<p>EPIC simulates buoyancy-driven flows using the Boussinesq approximation and
+assuming an inviscid and incompressible fluid. The basic equations are given by</p>
+</div>
 <div class="stemblock">
 <div class="content">
 \[\begin{align}
@@ -667,13 +729,23 @@ export PYTHONPATH=$PREFIX/bin:$PYTHONPATH</code></pre>
     \label{eq:progb}
     &amp; \frac{\mathrm{D} b_l}{\mathrm{D} t} = 0 \,, \\
     \label{eq:progq}
-    &amp; \frac{\mathrm{D} q}{\mathrm{D} t} = 0 \,,
+    &amp; \frac{\mathrm{D} q}{\mathrm{D} t} = 0 \,.
 \end{align}\]
 </div>
 </div>
-<div class="sect2">
-<h3 id="_vorticity_inversion">3.1. Vorticity inversion</h3>
-
+<div class="paragraph">
+<p>By evolving the vorticity \(\boldsymbol{\omega} = \boldsymbol{\nabla}\times\boldsymbol{u}\), the pressure term
+in the momentum equation vanishes</p>
+</div>
+<div class="stemblock">
+<div class="content">
+\[\begin{equation}
+    \label{eq:progo}
+    \frac{\mathrm{D}\boldsymbol{\omega}}{\mathrm{D} t}
+        = (2\Omega+ \boldsymbol{\omega})\boldsymbol{\cdot}\boldsymbol{\nabla}\boldsymbol{u}
+        + \boldsymbol{\nabla}b\times\hat{\boldsymbol{e}}_z\,.
+\end{equation}\]
+</div>
 </div>
 </div>
 </div>
@@ -698,10 +770,10 @@ $ epic3d --config input.config</pre>
 <div id="sec_config_file" class="paragraph">
 <p>A configuration file contains user-defined rutime options. Almost all parameters
 have default values that may be adapted to the number of spatial dimensions. The list of options and their
-recommended values are given in <a href="#tab_configure_file">Table 2</a>.</p>
+recommended values are given in <a href="#tab_configure_file">Table 3</a>.</p>
 </div>
 <table id="tab_configure_file" class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 2. EPIC input options and their default values.</caption>
+<caption class="title">Table 3. EPIC input options and their default values.</caption>
 <colgroup>
 <col style="width: 11.1111%;">
 <col style="width: 22.2222%;">
@@ -724,6 +796,16 @@ recommended values are given in <a href="#tab_configure_file">Table 2</a>.</p>
 <td class="tableblock halign-left valign-top"><p class="tableblock">field_tol</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">1.0d-10</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Tolerance for parcel generation from field file</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">flux_file</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">n/a</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Buoyancy flux file for convective boundary layer</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">rk_order</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Low-storage Runge-Kutta order (3 and 4 supported)</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">output%field_freq</p></td>
@@ -751,9 +833,24 @@ recommended values are given in <a href="#tab_configure_file">Table 2</a>.</p>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Enable / disable field dump</p></td>
 </tr>
 <tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">output%field_list</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">n/a</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Comma-separated list of gridded data to write (3D only)<br>
+                                                     (e.g. 'x_vorticity', 'buoyancy').<br>
+                                                     Default:  vorticity components, velocity components, buoyancy,
+                                                     humidity, gridded volume</p></td>
+</tr>
+<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">output%write_parcels</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">.true.</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Enable / disable parcel dump</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">output%parcel_list</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">n/a</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Comma-separated list of parcel attributes to write (3D only).<br>
+                                                     Default:  vorticity components, position, buoyancy, shape
+                                                     matrix components, volume, humidity</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">output%write_parcel_stats</p></td>
@@ -781,8 +878,19 @@ recommended values are given in <a href="#tab_configure_file">Table 2</a>.</p>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Factor to increase max. number of parcels</p></td>
 </tr>
 <tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">parcel%grow_factor</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1.2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Factor to increase the parcel container
+                                                     size in the parcel splitting routine</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">parcel%shrink_factor</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0.8</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Factor to reduce the parcel container size</p></td>
+</tr>
+<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">parcel%n_per_cell</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">9</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">9 (2D) or 8 (3D)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Initial number of parcels per cell</p></td>
 </tr>
 <tr>
@@ -792,13 +900,13 @@ recommended values are given in <a href="#tab_configure_file">Table 2</a>.</p>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">parcel%min_vratio</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">40 (2D) or 68 (3D)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">40 (2D) or 20 (3D)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Minimum ratio of grid cell volume / parcel volume</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">parcel%max_vratio</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">2.89 (2D) or 4.913 (3D)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Maximum ratio of grid cell volume / parcel volume</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2.89</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Maximum ratio of grid cell area / parcel area (2D only)</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">parcel%correction_iters</p></td>
@@ -837,12 +945,12 @@ recommended values are given in <a href="#tab_configure_file">Table 2</a>.</p>
 <h3 id="_netcdf_field_file">4.2. NetCDF Field File</h3>
 <div class="paragraph">
 <p>The field file contains initial scalar fields and vector field components of a simulation. A list of supported
-fields in 2D and 3D is found in <a href="#tab_supported_input_fields">Table 3</a>. You can either write
+fields in 2D and 3D is found in <a href="#tab_supported_input_fields">Table 4</a>. You can either write
 your own tool to generate such files or use our provided Python scripts. Below you can find an example where the
 vorticity field of a Taylor-Green flow in 2D is initialised and written to a file.</p>
 </div>
 <table id="tab_supported_input_fields" class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 3. Supported input fields.</caption>
+<caption class="title">Table 4. Supported input fields.</caption>
 <colgroup>
 <col style="width: 20%;">
 <col style="width: 10%;">
@@ -1030,7 +1138,86 @@ step is taken.</p>
 <div class="sect1">
 <h2 id="_output">5. Output</h2>
 <div class="sectionbody">
-
+<div class="paragraph">
+<p>EPIC writes the following files, where <code>&lt;basename&gt;</code> is to be replaced by the character
+string that is passed to EPIC via the argument <code>output%basename</code> in the configuration file:</p>
+</div>
+<table id="tab_output_files" class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 5. List of EPIC output files.</caption>
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 66.6667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Output file</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>&lt;basename&gt;_xxxxxxxxxx_parcels.nc</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NetCDF containing parcel output where <code>xxxxxxxxxx</code> is replaced with the file number, e.g. <code>moist_0000000002_parcels.nc</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>&lt;basename&gt;_fields.nc</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NetCDF file containing gridded field output.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>&lt;basename&gt;_field_stats.nc</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NetCDF file containing diagnostics evaluated on the Eulerian grid.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>&lt;basename&gt;_parcel_stats.nc</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NetCDF file containing diagnostics evaluated using the Lagrangian parcels.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>&lt;basename&gt;_alpha_time_step.asc</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ASCII file containing time step estimates for the maximum strain and maximum buoyancy gradient.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>&lt;basename&gt;.csv</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ASCII file containing timings of the individual components of the code.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The frequency of writing to the respective netCDF files is controlled via the construct <code>output</code>
+in the configuration file.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Tip</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The command <code>ncdump</code> is useful to inspect a netCDF file, i.e.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>ncdump filename.nc | less</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>where <code>filename.nc</code> is a netCDF file.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -1042,7 +1229,7 @@ step is taken.</p>
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code>@article{Frey2022,
-    title = {EPIC: The Elliptical Parcel-In-Cell method},
+    title = {{EPIC}: The {E}lliptical {P}arcel-{I}n-{C}ell method},
     journal = {Journal of Computational Physics: X},
     volume = {14},
     pages = {100109},
@@ -1054,13 +1241,31 @@ step is taken.</p>
 }</code></pre>
 </div>
 </div>
+<div class="paragraph">
+<p>The reference for the three-dimensional EPIC model is</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>@article{FREY2023100136,
+    title = {The {3D} {E}lliptical {P}arcel-{I}n-{C}ell ({EPIC}) method},
+    journal = {Journal of Computational Physics: X},
+    volume = {17},
+    pages = {100136},
+    year = {2023},
+    issn = {2590-0552},
+    doi = {https://doi.org/10.1016/j.jcpx.2023.100136},
+    url = {https://www.sciencedirect.com/science/article/pii/S2590055223000148},
+    author = {Matthias Frey and David Dritschel and Steven B\"oing}
+}</code></pre>
+</div>
+</div>
 </div>
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
 Version 0.14.2<br>
-Last updated 2024-08-29 11:46:52 +0100
+Last updated 2024-10-07 14:38:57 +0100
 </div>
 </div>
 <script type="text/x-mathjax-config">
