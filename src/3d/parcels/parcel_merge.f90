@@ -233,7 +233,6 @@ module parcel_merging
                 ! temporary scalar containing 1 / vm(m)
                 vmerge = one / vm(m)
 
-                ! need to sanitise input and output, but first to determine input
                 posm(1, m) = vmerge * posm(1, m)
                 posm(2, m) = vmerge * posm(2, m)
 
