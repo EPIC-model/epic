@@ -10,12 +10,12 @@ program test_ellipse_reflection
     use constants, only : pi, zero, one, two, three, four, f12, f14
     use parcel_container
     use parcel_bc, only : apply_reflective_bc
-    use parcel_ellipse, only : get_ab, get_angle
+    use parcel_ellipse, only : get_ab, get_angle, get_B22
     use parameters, only : update_parameters, lower, dx, vcell, extent, nx, nz
     implicit none
 
     integer :: iter
-    double precision :: angle, ab, B11, B12, error, a2, b2
+    double precision :: angle, ab, B11, B12, B22, error, a2, b2
 
     nx = 10
     nz = 10
@@ -47,6 +47,9 @@ program test_ellipse_reflection
         B12 = f12 * (a2 - b2) * dsin(two * angle)
         parcels%B(1, 1) = B11
         parcels%B(2, 1) = B12
+
+        B22 = get_B22(B11, B12, V)
+        parcels%B(3, 1) = B22
 
         call apply_reflective_bc(parcels%position(:, 1), parcels%B(:, 1))
 

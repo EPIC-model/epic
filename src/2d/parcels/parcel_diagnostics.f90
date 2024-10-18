@@ -88,7 +88,7 @@ module parcel_diagnostics
             double precision :: velocity(:, :)
             integer          :: n
             double precision :: b, z, vel(2), vol, zmin
-            double precision :: eval, lam, B22, lsum, l2sum, vsum, v2sum
+            double precision :: eval, lam, lsum, l2sum, vsum, v2sum
 
             call start_timer(parcel_stats_timer)
 
@@ -121,7 +121,7 @@ module parcel_diagnostics
             std_vol = zero
 
             !$omp parallel default(shared)
-            !$omp do private(n, vel, vol, b, z, eval, lam, B22) &
+            !$omp do private(n, vel, vol, b, z, eval, lam) &
             !$omp& reduction(+: ke, ape, lsum, l2sum, vsum, v2sum, n_small, rms_zeta) &
             !$omp& reduction(-: pe)
             do n = 1, n_parcels
@@ -141,8 +141,7 @@ module parcel_diagnostics
                     ape = ape + ape_den(b, z) * vol
                 endif
 
-                B22 = get_B22(parcels%B(1, n), parcels%B(2, n), vol)
-                eval = get_eigenvalue(parcels%B(1, n), parcels%B(2, n), B22)
+                eval = get_eigenvalue(parcels%B(1, n), parcels%B(2, n), parcels%B(3, n))
                 lam = get_aspect_ratio(eval, vol)
 
                 lsum = lsum + lam

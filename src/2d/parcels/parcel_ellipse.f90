@@ -55,16 +55,13 @@ module parcel_ellipse
         end function get_eigenvector
 
         ! used in unit tests only
-        function get_angle(B11, B12, volume) result(angle)
+        function get_angle(B11, B12, B22) result(angle)
             double precision, intent(in) :: B11
             double precision, intent(in) :: B12
-            double precision, intent(in) :: volume
-            double precision             :: B22
+            double precision, intent(in) :: B22
             double precision             :: a2
             double precision             :: evec(2)
             double precision             :: angle
-
-            B22 = get_B22(B11, B12, volume)
 
             a2 = get_eigenvalue(B11, B12, B22)
 
@@ -119,24 +116,20 @@ module parcel_ellipse
         ! @param[in] volume of the parcel
         ! @param[in] B matrix elements of the parcel
         ! @returns the parcel support points
-        function get_ellipse_points(position, volume, B) result(points)
+        function get_ellipse_points(position, B) result(points)
             double precision, intent(in) :: position(2)
-            double precision, intent(in) :: volume
-            double precision, intent(in) :: B(2)        ! B11, B12
-            double precision             :: B22
+            double precision, intent(in) :: B(3)        ! B11, B12, B22
             double precision             :: c
             double precision             :: a2
             double precision             :: evec(2)
             double precision             :: h(2)
             double precision             :: points(2, 2)
 
-            B22 = get_B22(B(1), B(2), volume)
+            a2 = get_eigenvalue(B(1), B(2), B(3))
 
-            a2 = get_eigenvalue(B(1), B(2), B22)
+            c = dsqrt(dabs(two * a2 - B(1) - B(3)))
 
-            c = dsqrt(dabs(two * a2 - B(1) - B22))
-
-            evec = get_eigenvector(a2, B(1), B(2), B22)
+            evec = get_eigenvector(a2, B(1), B(2), B(3))
 
             h = f12 * c * evec
 

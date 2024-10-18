@@ -8,13 +8,14 @@ program test_mpi_parcel_diagnostics
     use mpi_layout
     use parcel_container
     use parcel_diagnostics
+    use parcel_ellipsoid, only: get_b33
     use parameters, only : lower, update_parameters, extent, nx, ny, nz, vcell, dx, set_vmin
     use mpi_timer
     implicit none
 
     logical                       :: passed = .true.
     integer, parameter            :: n_per_dim = 2
-    integer                       :: ix, iy, iz, i, j, k, l, n_total
+    integer                       :: ix, iy, iz, i, j, k, l, n_total, n
     double precision              :: im, corner(3), total_vol
 
     call mpi_env_initialise
@@ -66,6 +67,10 @@ program test_mpi_parcel_diagnostics
     parcels%B(:, 1:n_parcels) = zero
     parcels%B(1, 1:n_parcels) = get_abc(parcels%volume(1:n_parcels)) ** f23
     parcels%B(4, 1:n_parcels) = parcels%B(1, 1:n_parcels)
+    ! b33
+    do n = 1, n_parcels
+      parcels%B(6, n) = get_b33(parcels%B(1:5, n), parcels%volume(n))
+    enddo
     parcels%vorticity(:, 1:n_parcels) = f12
     parcels%delta_pos(:, 1:n_parcels)  = f12
 
