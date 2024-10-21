@@ -5,7 +5,11 @@ module test_utils
     use parcel_container, only : resize_timer, n_parcels, parcels
     use parcel_split_mod, only : split_timer
     use parcel_merging, only : merge_timer
-    use parcel_nearest, only : merge_nearest_timer, merge_tree_resolve_timer
+    use parcel_nearest, only : merge_nearest_timer          &
+                             , merge_tree_resolve_timer     &
+                             , nearest_allreduce_timer      &
+                             , nearest_barrier_timer        &
+                             , nearest_rma_timer
     use parcel_correction, only : lapl_corr_timer,        &
                                   grad_corr_timer,        &
                                   vort_corr_timer
@@ -16,13 +20,15 @@ module test_utils
     use field_diagnostics, only : field_stats_timer
     use field_diagnostics_netcdf, only : field_stats_io_timer
     use inversion_mod, only : vor2vel_timer, vtend_timer
-    use parcel_interpl, only : grid2par_timer, par2grid_timer
+    use parcel_interpl, only : grid2par_timer, par2grid_timer, halo_swap_timer
     use parcel_init, only : init_timer
     use ls_rk, only : rk_timer
     use mpi_environment
     use mpi_layout
     use options, only : parcel
     use mpi_utils, only : mpi_exit_on_error
+    use bndry_fluxes, only : bndry_flux_timer
+    use parcel_damping, only : damping_timer
     implicit none
 
     integer :: epic_timer
@@ -53,6 +59,12 @@ module test_utils
             call register_timer('parcel push', rk_timer)
             call register_timer('merge nearest', merge_nearest_timer)
             call register_timer('merge tree resolve', merge_tree_resolve_timer)
+            call register_timer('MPI allreduce timer (in tree resolve)', nearest_allreduce_timer)
+            call register_timer('MPI barrier timer (in tree resolve)', nearest_barrier_timer)
+            call register_timer('MPI RMA timer (in tree resolve)', nearest_rma_timer)
+            call register_timer('p2g/v2g halo (non-excl.)', halo_swap_timer)
+            call register_timer('boundary fluxes', bndry_flux_timer)
+            call register_timer('damping', damping_timer)
         end subroutine register_all_timers
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
