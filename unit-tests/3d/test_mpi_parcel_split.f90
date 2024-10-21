@@ -7,7 +7,7 @@
 !   domain of *this* process.
 ! =============================================================================
 program test_mpi_parcel_split
-    use constants, only : zero, one, f18, f14, f12, f34, fpi, pi, four
+    use constants, only : zero, one, four, f14, f12, f23, f34, fpi, pi
     use unit_test
     use mpi_environment
     use mpi_layout
@@ -57,12 +57,13 @@ program test_mpi_parcel_split
     ! volume per parcel is f12 * vcell
     ! f12 * vcell = four / three * abc * pi --> abc = f34 * f12 * vcell * fpi
     abc = f34 * f12 * vcell * fpi
-    a2 = f34 * abc
-    b2 = f18 * abc
+    a2 = 16.0d0 * abc**f23
+    b2 = f14 * abc**f23
     c2 = b2
 
-    abc = dsqrt(a2)
-    call set_amax(abc)
+    ! Set amax larger than a2
+    ! Force split by aspect ratio set above, rather than amax
+    call set_amax(1.1d0*sqrt(a2))
 
     ! place parcels in the last interior cells in the west
     i = box%lo(1)
@@ -141,7 +142,7 @@ program test_mpi_parcel_split
         subroutine fill_shape(m, angle)
             integer,          intent(in) :: m
             double precision, intent(in) :: angle
-            double precision             :: B11, B12, B13, B22, B23, st, ct, sp, cp
+            double precision             :: B11, B12, B13, B22, B23, B33, st, ct, sp, cp
 
             st = dsin(angle)
             ct = dcos(angle)
@@ -153,12 +154,14 @@ program test_mpi_parcel_split
             B13 = (a2 - c2) * ct * sp * cp
             B22 = a2 * st ** 2 * sp ** 2 + b2 * ct ** 2 + c2 * st ** 2 * cp ** 2
             B23 = (a2 - c2) * st * sp * cp
+            B33 = a2 * cp ** 2 + c2 * sp ** 2
 
             parcels%B(1, m) = B11
             parcels%B(2, m) = B12
             parcels%B(3, m) = B13
             parcels%B(4, m) = B22
             parcels%B(5, m) = B23
+            parcels%B(6, m) = B33
         end subroutine fill_shape
 
 end program test_mpi_parcel_split

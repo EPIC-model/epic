@@ -45,7 +45,7 @@ module parcel_split
                 B11 = parcels%B(1, n)
                 B12 = parcels%B(2, n)
                 V = parcels%volume(n)
-                B22 = get_B22(B11, B12, V)
+                B22 = parcels%B(3, n)
 
                 a2 = get_eigenvalue(B11, B12, B22)
 
@@ -64,6 +64,7 @@ module parcel_split
 
                 parcels%B(1, n) = B11 - f34 * a2 * evec(1) ** 2
                 parcels%B(2, n) = B12 - f34 * a2 * (evec(1) * evec(2))
+                parcels%B(3, n) = B22 - f34 * a2 * evec(2) ** 2
 
                 h = f14 * dsqrt(three * a2)
                 parcels%volume(n) = f12 * V

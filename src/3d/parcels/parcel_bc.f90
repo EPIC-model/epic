@@ -24,7 +24,7 @@ module parcel_bc
         ! @param[inout] position vector of parcel
         ! @param[inout] B matrix of parcel
         pure subroutine apply_reflective_bc(position, B)
-            double precision, intent(inout) :: position(3), B(5)
+            double precision, intent(inout) :: position(3), B(6)
 
             if (position(3) > upper(3)) then
                 position(3) = two * upper(3) - position(3)

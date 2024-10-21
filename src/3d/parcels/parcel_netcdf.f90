@@ -55,17 +55,18 @@ module parcel_netcdf
                         , NC_B12   = 15 &
                         , NC_B13   = 16 &
                         , NC_B22   = 17 &
-                        , NC_B23   = 18
+                        , NC_B23   = 18 &
+                        , NC_B33   = 19
 
     logical :: l_first_write = .true.
     logical :: l_unable = .false.
 
 #ifndef ENABLE_DRY_MODE
-    integer, parameter :: NC_HUM   = 19
+    integer, parameter :: NC_HUM   = 20
 
 #ifdef ENABLE_LABELS
-    integer, parameter :: NC_LABEL    = 20 &
-                       ,  NC_DILUTION = 21
+    integer, parameter :: NC_LABEL    = 21 &
+                       ,  NC_DILUTION = 22
 
     type(netcdf_info) :: nc_dset(NC_DILUTION)
 #else
@@ -75,12 +76,12 @@ module parcel_netcdf
 #else
 
 #ifdef ENABLE_LABELS
-    integer, parameter :: NC_LABEL    = 19 &
-                       ,  NC_DILUTION = 20
+    integer, parameter :: NC_LABEL    = 20 &
+                       ,  NC_DILUTION = 21
 
     type(netcdf_info) :: nc_dset(NC_DILUTION)
 #else
-    type(netcdf_info) :: nc_dset(NC_B23)
+    type(netcdf_info) :: nc_dset(NC_B33)
 #endif
 #endif
 
@@ -295,6 +296,7 @@ module parcel_netcdf
             call write_parcel_attribute(NC_B13, parcels%B(3, :), start, cnt)
             call write_parcel_attribute(NC_B22, parcels%B(4, :), start, cnt)
             call write_parcel_attribute(NC_B23, parcels%B(5, :), start, cnt)
+            call write_parcel_attribute(NC_B33, parcels%B(6, :), start, cnt)
 
             call write_parcel_attribute(NC_VOL, parcels%volume, start, cnt)
 
@@ -606,6 +608,13 @@ module parcel_netcdf
                     "The parcel shape component B23 must be present! Exiting.")
             endif
 
+            if (has_dataset(ncid, 'B33')) then
+                call read_netcdf_dataset(ncid, 'B33', parcels%B(6, pfirst:plast), start, cnt)
+            else
+                call mpi_exit_on_error(&
+                    "The parcel shape component B33 must be present! Exiting.")
+            endif
+
             if (has_dataset(ncid, 'x_position')) then
                 call read_netcdf_dataset(ncid, 'x_position', &
                                          parcels%position(1, pfirst:plast), start, cnt)
@@ -722,6 +731,7 @@ module parcel_netcdf
                 nc_dset(NC_B13)%l_enabled   = .true.
                 nc_dset(NC_B22)%l_enabled   = .true.
                 nc_dset(NC_B23)%l_enabled   = .true.
+                nc_dset(NC_B33)%l_enabled   = .true.
             else
                 ! check individual fields
                 do n = 1, size(nc_dset)
@@ -768,6 +778,7 @@ module parcel_netcdf
                 nc_dset(NC_B13)%l_enabled   = .true.
                 nc_dset(NC_B22)%l_enabled   = .true.
                 nc_dset(NC_B23)%l_enabled   = .true.
+                nc_dset(NC_B33)%l_enabled   = .true.
             endif
 
 #ifdef ENABLE_VERBOSE
@@ -790,7 +801,7 @@ module parcel_netcdf
                     l_enabled_restart = (l_enabled_restart .and. nc_dset(n)%l_enabled)
                 enddo
 
-                do n = NC_B11, NC_B23
+                do n = NC_B11, NC_B33
                     l_enabled_restart = (l_enabled_restart .and. nc_dset(n)%l_enabled)
                 enddo
                 l_enabled_restart = (l_enabled_restart .and. nc_dset(NC_VOL)%l_enabled)
@@ -892,6 +903,12 @@ module parcel_netcdf
 
             nc_dset(NC_B23) = netcdf_info(name='B23',                              &
                                           long_name='B23 element of shape matrix', &
+                                          std_name='',                             &
+                                          unit='m^2',                              &
+                                          dtype=NF90_DOUBLE)
+
+            nc_dset(NC_B33) = netcdf_info(name='B33',                              &
+                                          long_name='B33 element of shape matrix', &
                                           std_name='',                             &
                                           unit='m^2',                              &
                                           dtype=NF90_DOUBLE)

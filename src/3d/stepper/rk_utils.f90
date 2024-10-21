@@ -1,9 +1,10 @@
 module rk_utils
     use dimensions, only : n_dim, I_X, I_Y, I_Z
-    use parcel_ellipsoid, only : get_B33, I_B11, I_B12, I_B13, I_B22, I_B23
+    use parcel_ellipsoid, only : get_B33, I_B11, I_B12, I_B13, I_B22, I_B23, I_B33
     use fields, only : velgradg, tbuoyg, vortg, I_DUDX, I_DUDY, I_DUDZ, I_DVDX, I_DVDY, I_DVDZ, I_DWDX, I_DWDY, strain_mag
     use field_mpi, only : field_halo_fill_scalar
-    use constants, only : zero, one, two, f12
+    use constants, only : zero, one, two, f12, f14, f23, c_matexp_x1, c_matexp_x2, c_matexp_x4, &
+                          c_matexp_x5, c_matexp_x6, c_matexp_x7, c_matexp_y2
     use parameters, only : nx, ny, nz, dxi, vcell
     use scherzinger, only : scherzinger_eigenvalues
     use mpi_layout, only : box
@@ -17,54 +18,67 @@ module rk_utils
 #endif
 
     implicit none
+    double precision, parameter :: Imat(3,3) = reshape((/one,zero,zero,zero,one,zero,zero,zero,one/), (/3,3/))
 
     contains
 
-        ! Advance the B matrix.
-        ! @param[in] Bin are the B matrix components of the parcel
-        ! @param[in] S is the local velocity strain
-        ! @param[in] vorticity of parcel
-        ! @param[in] volume is the parcel volume
-        ! @returns dB/dt in Bout
-        function get_dBdt(Bin, S, volume) result(Bout)
-            double precision, intent(in) :: Bin(I_B23)
+        subroutine evolve_ellipsoid(B, S, dt_sub)
+            double precision, intent(inout) :: B(I_B33)
             double precision, intent(in) :: S(8)
-            double precision, intent(in) :: volume
-            double precision             :: Bout(5), B33
-            double precision             :: dwdz
+            double precision, intent(in) :: dt_sub
+            double precision :: Bmat(3,3)
+            double precision :: Smat(3,3)
+            double precision :: Rmat(3,3)
+            double precision :: Rmat2(3,3)
+            double precision :: Rmat4(3,3)
+            double precision :: Rmat8(3,3)
+            double precision :: Qmat(3,3)
 
-            ! dw/dz = - (du/dx + dv/dy)
-            dwdz = - (S(I_DUDX) + S(I_DVDY))
+            Bmat(1, 1) = B(I_B11) ! B11
+            Bmat(1, 2) = B(I_B12) ! B12
+            Bmat(1, 3) = B(I_B13) ! B13
+            Bmat(2, 1) = Bmat(1, 2) ! B21
+            Bmat(2, 2) = B(I_B22) ! B22
+            Bmat(2, 3) = B(I_B23) ! B23
+            Bmat(3, 1) = Bmat(1, 3) ! B31
+            Bmat(3, 2) = Bmat(2, 3) ! B32
+            Bmat(3, 3) = B(I_B33) ! B33
 
-            B33 = get_B33(Bin, volume)
+            Smat(1, 1) = S(I_DUDX) ! S11
+            Smat(1, 2) = S(I_DUDY) ! S12
+            Smat(1, 3) = S(I_DUDZ) ! S13
+            Smat(2, 1) = S(I_DVDX) ! S21
+            Smat(2, 2) = S(I_DVDY) ! S22
+            Smat(2, 3) = S(I_DVDZ) ! S23
+            Smat(3, 1) = S(I_DWDX) ! S31
+            Smat(3, 2) = S(I_DWDY) ! S32
+            Smat(3, 3) = -(Smat(1, 1) + Smat(2, 2)) ! S33
 
-            ! dB11/dt = 2 * (du/dx * B11 + du/dy * B12 + du/dz * B13)
-            Bout(I_B11) = two * (S(I_DUDX) * Bin(I_B11) + S(I_DUDY) * Bin(I_B12) + S(I_DUDZ) * Bin(I_B13))
+            ! Bader, P., Blanes, S., & Casas, F. (2019). 
+            ! Computing the matrix exponential with an optimized Taylor polynomial approximation. 
+            ! Mathematics, 7(12), 1174.
+            ! Using 8th order Taylor with 2 ward steps
+            ! Possibly this is overkill and ward steps can be removed
+            ! This does not save much computation though
 
-            ! dB12/dt =
-            Bout(I_B12) = S(I_DVDX) * Bin(I_B11) & !   dv/dx * B11
-                        - dwdz      * Bin(I_B12) & ! - dw/dz * B12
-                        + S(I_DVDZ) * Bin(I_B13) & ! + dv/dz * B13
-                        + S(I_DUDY) * Bin(I_B22) & ! + du/dy * B22
-                        + S(I_DUDZ) * Bin(I_B23)   ! + du/dz * B23
+            Rmat = f14 * dt_sub * Smat
+            Rmat2 = matmul(Rmat, Rmat)
+            Rmat4 = matmul(Rmat2, c_matexp_x1 * Rmat + c_matexp_x2 * Rmat2)
+            Rmat8 = matmul(f23 * Rmat2 + Rmat4, c_matexp_x4 * Imat + c_matexp_x5 * Rmat + c_matexp_x6 * Rmat2 + c_matexp_x7 * Rmat4)
+            Qmat = Imat + Rmat + c_matexp_y2 * Rmat2 + Rmat8
+            Qmat = matmul(Qmat, Qmat)
+            Qmat = matmul(Qmat, Qmat)
+            Bmat = matmul(Qmat, matmul(Bmat, transpose(Qmat)))
 
-            ! dB13/dt =
-            Bout(I_B13) = S(I_DWDX) * Bin(I_B11) & !   dw/dx * B11
-                        + S(I_DWDY) * Bin(I_B12) & ! + dw/dy * B12
-                        - S(I_DVDY) * Bin(I_B13) & ! - dv/dy * B13
-                        + S(I_DUDY) * Bin(I_B23) & ! + du/dy * B23
-                        + S(I_DUDZ) * B33          ! + du/dz * B33
+            B(I_B11) = Bmat(1, 1)
+            B(I_B12) = Bmat(1, 2)
+            B(I_B13) = Bmat(1, 3)
+            B(I_B22) = Bmat(2, 2)
+            B(I_B23) = Bmat(2, 3)
+            B(I_B33) = Bmat(3, 3)
 
-            ! dB22/dt = 2 * (dv/dx * B12 + dv/dy * B22 + dv/dz * B23)
-            Bout(I_B22) = two * (S(I_DVDX) * Bin(I_B12) + S(I_DVDY) * Bin(I_B22) + S(I_DVDZ) * Bin(I_B23))
+        end subroutine
 
-            ! dB23/dt =
-            Bout(I_B23) = S(I_DWDX) * Bin(I_B12) & !   dw/dx * B12
-                        + S(I_DVDX) * Bin(I_B13) & ! + dv/dx * B13
-                        + S(I_DWDY) * Bin(I_B22) & ! + dw/dy * B22
-                        - S(I_DUDX) * Bin(I_B23) & ! - du/dx * B23
-                        + S(I_DVDZ) * B33          ! + dv/dz * B33
-        end function get_dBdt
 
         ! Calculate velocity strain
         ! @param[in] velocity gradient tensor at grid point

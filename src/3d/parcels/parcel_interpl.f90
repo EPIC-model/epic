@@ -107,7 +107,7 @@ module parcel_interpl
                 pvol = parcels%volume(n)
 
                 points = get_ellipsoid_points(parcels%position(:, n), &
-                                              pvol, parcels%B(:, n),  &
+                                              parcels%B(:, n),  &
                                               n, l_reuse)
 
                 ! we have 4 points per ellipsoid
@@ -148,6 +148,7 @@ module parcel_interpl
         !   - nparg, that is the number of parcels per grid cell
         !   - nsparg, that is the number of small parcels per grid cell
         ! @pre The parcel must be assigned to the correct MPI process.
+
         subroutine par2grid(l_reuse)
             logical, optional :: l_reuse
             double precision  :: points(3, n_points_p2g)
@@ -159,6 +160,14 @@ module parcel_interpl
 
             call start_timer(par2grid_timer)
 
+            ! This is only here to allow debug compilation
+            ! with a warning for unused variables
+#if defined (ENABLE_P2G_1POINT) && !defined (NDEBUG)
+            if(present(l_reuse)) then
+                l_reuse=.false.
+            endif
+#endif
+ 
             vortg = zero
             volg = zero
             nparg = zero
@@ -200,7 +209,7 @@ module parcel_interpl
 
 #ifndef ENABLE_P2G_1POINT
                 points = get_ellipsoid_points(parcels%position(:, n), &
-                                              pvol, parcels%B(:, n), n, l_reuse)
+                                              parcels%B(:, n), n, l_reuse)
 #else
                 points(:, 1) = parcels%position(:, n)
 #endif
@@ -423,6 +432,7 @@ module parcel_interpl
                     do n = 1, n_parcels
                         parcels%delta_pos(:, n) = zero
                         parcels%delta_vor(:, n) = zero
+                        parcels%int_strain(:, n) = zero
                     enddo
                     !$omp end do
                     !$omp end parallel
@@ -433,6 +443,7 @@ module parcel_interpl
                 do n = 1, n_parcels
                     parcels%delta_pos(:, n) = zero
                     parcels%delta_vor(:, n) = zero
+                    parcels%int_strain(:, n) = zero
                 enddo
                 !$omp end do
                 !$omp end parallel
@@ -442,11 +453,9 @@ module parcel_interpl
             !$omp do private(n, l, p, points, is, js, ks, weights)
             do n = 1, n_parcels
 
-                parcels%strain(:, n) = zero
-
 #ifndef ENABLE_G2P_1POINT
                 points = get_ellipsoid_points(parcels%position(:, n), &
-                                              parcels%volume(n), parcels%B(:, n), n)
+                                              parcels%B(:, n), n)
 #else
                 points(:, 1) = parcels%position(:, n)
 #endif
@@ -460,8 +469,8 @@ module parcel_interpl
                                                 + point_weight_g2p * sum(weights * velog(ks:ks+1, js:js+1, is:is+1, l))
                     enddo
                     do l = 1,8
-                        parcels%strain(l, n) = parcels%strain(l, n) &
-                                             + point_weight_g2p * sum(weights * velgradg(ks:ks+1, js:js+1, is:is+1, l))
+                        parcels%int_strain(l, n) = parcels%int_strain(l, n) &
+                                                 + point_weight_g2p * sum(weights * velgradg(ks:ks+1, js:js+1, is:is+1, l))
                     enddo
                     do l = 1,3
                         parcels%delta_vor(l, n) = parcels%delta_vor(l, n) &

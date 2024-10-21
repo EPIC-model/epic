@@ -21,7 +21,7 @@ module parcel_netcdf
     integer            :: ncid
     integer            :: npar_dim_id, vol_id, buo_id,  &
                           x_pos_id, z_pos_id, vor_id,   &
-                          b11_id, b12_id,               &
+                          b11_id, b12_id, b22_id,       &
                           t_axis_id, t_dim_id
     double precision   :: restart_time
 
@@ -134,6 +134,15 @@ module parcel_netcdf
                                        varid=b12_id)
 
             call define_netcdf_dataset(ncid=ncid,                               &
+                                       name='B22',                              &
+                                       long_name='B22 element of shape matrix', &
+                                       std_name='',                             &
+                                       unit='m^2',                              &
+                                       dtype=NF90_DOUBLE,                       &
+                                       dimids=dimids,                           &
+                                       varid=b22_id)
+
+            call define_netcdf_dataset(ncid=ncid,                               &
                                        name='volume',                           &
                                        long_name='parcel volume',               &
                                        std_name='',                             &
@@ -205,6 +214,7 @@ module parcel_netcdf
 
             call write_netcdf_dataset(ncid, b11_id, parcels%B(1, 1:n_parcels), start, cnt)
             call write_netcdf_dataset(ncid, b12_id, parcels%B(2, 1:n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, b22_id, parcels%B(3, 1:n_parcels), start, cnt)
 
             call write_netcdf_dataset(ncid, vol_id, parcels%volume(1:n_parcels), start, cnt)
 
@@ -260,6 +270,13 @@ module parcel_netcdf
                 call read_netcdf_dataset(ncid, 'B12', parcels%B(2, 1:n_parcels), start, cnt)
             else
                 print *, "The parcel shape component B12 must be present! Exiting."
+                stop
+            endif
+
+            if (has_dataset(ncid, 'B22')) then
+                call read_netcdf_dataset(ncid, 'B22', parcels%B(3, 1:n_parcels), start, cnt)
+            else
+                print *, "The parcel shape component B22 must be present! Exiting."
                 stop
             endif
 
