@@ -76,9 +76,10 @@ program test_ellipsoid_split
 
             parcels%position(:, 1) = zero
             parcels%volume(1) = four / three * abc * pi
-            parcels%buoyancy(1) = one
+            parcels%theta(1) = one
 #ifndef ENABLE_DRY_MODE
-            parcels%humidity(1) = one
+            parcels%qv(1) = one
+            parcels%ql(1) = one
 #endif
             ! 7 Nov 2021
             ! https://mathworld.wolfram.com/SphericalCoordinates.html
@@ -133,9 +134,10 @@ program test_ellipsoid_split
             error = max(error, abs(get_B33(parcels%B(:, 1), parcels%volume(1)) - B33))
             error = max(error, sum(abs(pos(:, 1) - parcels%position(:, 1))))
             error = max(error, abs(f12 * four / three * abc * pi - parcels%volume(1)))
-            error = max(error, abs(parcels%buoyancy(1) - one))
+            error = max(error, abs(parcels%theta(1) - one))
 #ifndef ENABLE_DRY_MODE
-            error = max(error, abs(parcels%humidity(1) - one))
+            error = max(error, abs(parcels%qv(1) - one))
+            error = max(error, abs(parcels%ql(1) - one))
 #endif
 
             ! second parcel
@@ -148,9 +150,10 @@ program test_ellipsoid_split
             error = max(error, sum(abs(pos(:, 2) - parcels%position(:, 2))))
             error = max(error, abs(f12 * four / three * abc * pi - parcels%volume(2)))
             error = max(error, dble(abs(n_parcels - 2)))
-            error = max(error, abs(parcels%buoyancy(2) - one))
+            error = max(error, abs(parcels%theta(2) - one))
 #ifndef ENABLE_DRY_MODE
-            error = max(error, abs(parcels%humidity(2) - one))
+            error = max(error, abs(parcels%qv(2) - one))
+            error = max(error, abs(parcels%ql(2) - one))
 #endif
         end subroutine check_result
 

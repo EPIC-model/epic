@@ -128,9 +128,10 @@ module parcel_merging
             double precision                :: x0(n_merge), y0(n_merge)
             double precision                :: posm(3, n_merge)
             double precision                :: delx, vmerge, dely, delz, B33, mu
-            double precision                :: buoym(n_merge), vortm(3, n_merge)
+            double precision                :: thetam(n_merge), vortm(3, n_merge)
 #ifndef ENABLE_DRY_MODE
-            double precision                :: hum(n_merge)
+            double precision                :: qvm(n_merge)
+            double precision                :: qlm(n_merge)
 #endif
 #ifdef ENABLE_LABELS
             double precision                :: labelm(n_merge)
@@ -175,9 +176,10 @@ module parcel_merging
                     posm(3, l) = parcels%volume(ic) * parcels%position(3, ic)
 
                     ! buoyancy and humidity
-                    buoym(l) = parcels%volume(ic) * parcels%buoyancy(ic)
+                    thetam(l) = parcels%volume(ic) * parcels%theta(ic)
 #ifndef ENABLE_DRY_MODE
-                    hum(l) = parcels%volume(ic) * parcels%humidity(ic)
+                    qvm(l) = parcels%volume(ic) * parcels%qv(ic)
+                    qlm(l) = parcels%volume(ic) * parcels%ql(ic)
 #endif
                     vortm(:, l) = parcels%volume(ic) * parcels%vorticity(:, ic)
 
@@ -220,9 +222,10 @@ module parcel_merging
                 posm(3, n) = posm(3, n) + parcels%volume(is) * parcels%position(3, is)
 
                 ! Accumulate buoyancy and humidity
-                buoym(n) = buoym(n) + parcels%volume(is) * parcels%buoyancy(is)
+                thetam(n) = thetam(n) + parcels%volume(is) * parcels%theta(is)
 #ifndef ENABLE_DRY_MODE
-                hum(n) = hum(n) + parcels%volume(is) * parcels%humidity(is)
+                qvm(n) = qvm(n) + parcels%volume(is) * parcels%qv(is)
+                qlm(n) = qlm(n) + parcels%volume(is) * parcels%ql(is)
 #endif
                 vortm(:, n) = vortm(:, n) + parcels%volume(is) * parcels%vorticity(:, is)
             enddo
@@ -246,9 +249,10 @@ module parcel_merging
                 call apply_periodic_bc(posm(:, m))
 
                 ! buoyancy and humidity
-                buoym(m) = vmerge * buoym(m)
+                thetam(m) = vmerge * thetam(m)
 #ifndef ENABLE_DRY_MODE
-                hum(m) = vmerge * hum(m)
+                qvm(m) = vmerge * qvm(m)
+                qlm(m) = vmerge * qlm(m)
 #endif
                 vortm(:, m) = vmerge * vortm(:, m)
             enddo
@@ -286,9 +290,10 @@ module parcel_merging
                     parcels%position(2, ic) = posm(2, l)
                     parcels%position(3, ic) = posm(3, l)
 
-                    parcels%buoyancy(ic) = buoym(l)
+                    parcels%theta(ic) = thetam(l)
 #ifndef ENABLE_DRY_MODE
-                    parcels%humidity(ic) = hum(l)
+                    parcels%qv(ic) = qvm(l)
+                    parcels%ql(ic) = qlm(l)
 #endif
 #ifdef ENABLE_LABELS
                     parcels%label(ic) = labelm(l)

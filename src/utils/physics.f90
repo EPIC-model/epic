@@ -70,7 +70,12 @@ module physics
     ![m] MPIC specific, scale-height, H
     double precision, protected :: height_c = 1000.0d0
 
-    !
+    ![-] Molecular weight of dry air/ molecular weight of water - 1
+    double precision, protected :: qv_dens_coeff= 0.608
+
+    ! gas constant of gry air
+    double precision, protected :: r_d=287.05
+
     ! The following quantities are calculated:
     !
 
@@ -171,7 +176,6 @@ module physics
 
             glat = gravity * L_v / (c_p * theta_0)
             glati = one / glat
-
             lambda_c = one / height_c
 
             if (l_planet_vorticity) then

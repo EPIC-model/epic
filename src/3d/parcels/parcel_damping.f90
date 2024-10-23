@@ -60,14 +60,13 @@ module parcel_damping
                 vortg(nz+1, :, :, :) = vortg(nz-1, :, :, :)
 
 #ifndef ENABLE_DRY_MODE
-                humg(-1,   :, :) = humg(1, :, :)
-                humg(nz+1, :, :) = humg(nz-1, :, :)
-                dbuoyg(-1,   :, :) = dbuoyg(1, :, :)
-                dbuoyg(nz+1, :, :) = dbuoyg(nz-1, :, :)
-#else
-                tbuoyg(-1,   :, :) = tbuoyg(1, :, :)
-                tbuoyg(nz+1, :, :) = tbuoyg(nz-1, :, :)
+                qvg(-1,   :, :) = qvg(1, :, :)
+                qvg(nz+1, :, :) = qvg(nz-1, :, :)
+                qlg(-1,   :, :) = qlg(1, :, :)
+                qlg(nz+1, :, :) = qlg(nz-1, :, :)
 #endif
+                thetag(-1,   :, :) = thetag(1, :, :)
+                thetag(nz+1, :, :) = thetag(nz-1, :, :)
                 !$omp end parallel workshare
 
                 call get_strain_magnitude_field
@@ -91,11 +90,11 @@ module parcel_damping
             ! before modifying the parcel attribute
             double precision              :: vortend(3)
 #ifndef ENABLE_DRY_MODE
-            double precision              :: dbuoytend
-            double precision              :: humtend
-#else
-            double precision              :: tbuoytend
+            double precision              :: qvtend
+            double precision              :: qltend
 #endif
+            double precision              :: thetatend
+            
             call start_timer(damping_timer)
 
             ! This is only here to allow debug compilation
@@ -107,9 +106,9 @@ module parcel_damping
             !$omp parallel default(shared)
             !$omp do private(n, p, l, points, pvol, weight, surface_index) &
 #ifndef ENABLE_DRY_MODE
-            !$omp& private(is, js, ks, weights, vortend, humtend, dbuoytend, time_fact)
+            !$omp& private(is, js, ks, weights, vortend, qvtend, qltend, thetatend, time_fact)
 #else
-            !$omp& private(is, js, ks, weights, vortend, tbuoytend, time_fact)
+            !$omp& private(is, js, ks, weights, vortend, thetatend, time_fact)
 #endif
             do n = 1, n_parcels
                 ! check if only surface damping applies and we are far from surfaces
@@ -131,11 +130,10 @@ module parcel_damping
 #endif
                 vortend = zero
 #ifndef ENABLE_DRY_MODE
-                humtend = zero
-                dbuoytend = zero
-#else
-                tbuoytend = zero
+                qvtend = zero
+                qltend = zero
 #endif
+                thetatend = zero
 
                 ! we have 4 points per ellipsoid
                 do p = 1, n_points_p2g
@@ -154,11 +152,10 @@ module parcel_damping
                     if (damping%l_scalars) then
                         time_fact = one - exp(-damping%scalars_prefactor * strain_mag(ks:ks+1, js:js+1, is:is+1) * dt)
 #ifndef ENABLE_DRY_MODE
-                        humtend = humtend + sum(weight * time_fact * (humg(ks:ks+1, js:js+1, is:is+1) - parcels%humidity(n)))
-                        dbuoytend = dbuoytend + sum(weight * time_fact * (dbuoyg(ks:ks+1, js:js+1, is:is+1) - parcels%buoyancy(n)))
-#else
-                        tbuoytend = tbuoytend + sum(weight * time_fact * (tbuoyg(ks:ks+1, js:js+1, is:is+1) - parcels%buoyancy(n)))
+                        qvtend = qvtend + sum(weight * time_fact * (qvg(ks:ks+1, js:js+1, is:is+1) - parcels%qv(n)))
+                        qltend = qltend + sum(weight * time_fact * (qlg(ks:ks+1, js:js+1, is:is+1) - parcels%ql(n)))
 #endif
+                        thetatend = thetatend + sum(weight * time_fact * (thetag(ks:ks+1, js:js+1, is:is+1) - parcels%theta(n)))
                     endif
                     
                     if (damping%l_surface_vorticity .or. damping%l_surface_scalars) then
@@ -189,14 +186,13 @@ module parcel_damping
                         ! Note this exponential factor can be different for vorticity/scalars
                         time_fact = one - exp(-damping%scalars_prefactor * strain_mag(ks:ks+1, js:js+1, is:is+1) * dt)
 #ifndef ENABLE_DRY_MODE
-                        humtend = humtend + sum(weight(surface_index, :, :) * time_fact(surface_index, :, :) * &
-                                                  (humg(ks+surface_index, js:js+1, is:is+1) - parcels%humidity(n)))
-                        dbuoytend = dbuoytend + sum(weight(surface_index, :, :) * time_fact(surface_index, :, :) * &
-                                                  (dbuoyg(ks+surface_index, js:js+1, is:is+1) - parcels%buoyancy(n)))
-#else
-                        tbuoytend = tbuoytend + sum(weight(surface_index, :, :) * time_fact(surface_index, :, :) * &
-                                                        (tbuoyg(ks+surface_index, js:js+1, is:is+1) - parcels%buoyancy(n)))
+                        qvtend = qvtend + sum(weight(surface_index, :, :) * time_fact(surface_index, :, :) * &
+                                                  (qvg(ks+surface_index, js:js+1, is:is+1) - parcels%qv(n)))
+                        qltend = qltend + sum(weight(surface_index, :, :) * time_fact(surface_index, :, :) * &
+                                                  (qlg(ks+surface_index, js:js+1, is:is+1) - parcels%ql(n)))
 #endif
+                        thetatend = thetatend + sum(weight(surface_index, :, :) * time_fact(surface_index, :, :) * &
+                                                        (thetag(ks+surface_index, js:js+1, is:is+1) - parcels%theta(n)))
                     endif
                 enddo
                 ! Add all the tendencies only at the end
@@ -207,11 +203,10 @@ module parcel_damping
                 endif
                 if (damping%l_scalars .or. damping%l_surface_scalars) then
 #ifndef ENABLE_DRY_MODE
-                    parcels%humidity(n) = parcels%humidity(n) + humtend
-                    parcels%buoyancy(n) = parcels%buoyancy(n) + dbuoytend
-#else
-                    parcels%buoyancy(n) = parcels%buoyancy(n) + tbuoytend
+                    parcels%qv(n) = parcels%qv(n) + qvtend
+                    parcels%ql(n) = parcels%ql(n) + qltend
 #endif
+                    parcels%theta(n) = parcels%theta(n) + thetatend
                 endif
             enddo
             !$omp end do

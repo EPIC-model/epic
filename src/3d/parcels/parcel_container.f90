@@ -38,9 +38,10 @@ module parcel_container
                           IDX_B22,          & ! B22 shape matrix element
                           IDX_B23,          & ! B23 shape matrix element
                           IDX_VOL,          & ! volume
-                          IDX_BUO,          & ! buoyancy
+                          IDX_THETA,        & ! buoyancy
 #ifndef ENABLE_DRY_MODE
-                          IDX_HUM,          & ! humidity
+                          IDX_QV,           & ! water vapour specific humidity
+                          IDX_QL,           & ! liquid vapour specific humidity
 #endif
 #ifdef ENABLE_LABELS
                           IDX_LABEL,        & ! label
@@ -81,12 +82,13 @@ module parcel_container
         double precision, allocatable, dimension(:) :: &
             volume,     &
 #ifndef ENABLE_DRY_MODE
-            humidity,   &
+            qv,   &
+            ql,   &
 #endif
 #ifdef ENABLE_LABELS
             dilution,   &
 #endif
-            buoyancy
+            theta
 
         ! LS-RK4 variables
         double precision, allocatable, dimension(:, :) :: &
@@ -125,12 +127,13 @@ module parcel_container
             IDX_B22   = 10  ! B22 shape matrix element
             IDX_B23   = 11  ! B23 shape matrix element
             IDX_VOL   = 12  ! volume
-            IDX_BUO   = 13  ! buoyancy
+            IDX_THETA = 13  ! potential temperature
 
-            i = IDX_BUO + 1
+            i = IDX_THETA + 1
 #ifndef ENABLE_DRY_MODE
-            IDX_HUM  = i
-            i = i + 1
+            IDX_QV  = i
+            IDX_QL  = i + 1
+            i = i + 2
 #endif
 #ifdef ENABLE_LABELS
             IDX_LABEL  = i
@@ -265,9 +268,10 @@ module parcel_container
             parcels%position(:, n)  = parcels%position(:, m)
             parcels%vorticity(:, n) = parcels%vorticity(:, m)
             parcels%volume(n)       = parcels%volume(m)
-            parcels%buoyancy(n)     = parcels%buoyancy(m)
+            parcels%theta(n)        = parcels%theta(m)
 #ifndef ENABLE_DRY_MODE
-            parcels%humidity(n)     = parcels%humidity(m)
+            parcels%qv(n)           = parcels%qv(m)
+            parcels%ql(n)           = parcels%ql(m)
 #endif
 #ifdef ENABLE_LABELS
             parcels%label(n)        = parcels%label(m)
@@ -306,9 +310,10 @@ module parcel_container
             call resize_array(parcels%vorticity, new_size, n_parcels)
             call resize_array(parcels%B, new_size, n_parcels)
             call resize_array(parcels%volume, new_size, n_parcels)
-            call resize_array(parcels%buoyancy, new_size, n_parcels)
+            call resize_array(parcels%theta, new_size, n_parcels)
 #ifndef ENABLE_DRY_MODE
-            call resize_array(parcels%humidity, new_size, n_parcels)
+            call resize_array(parcels%qv, new_size, n_parcels)
+            call resize_array(parcels%ql, new_size, n_parcels)
 #endif
 #ifdef ENABLE_LABELS
             call resize_array(parcels%label, new_size, n_parcels)
@@ -339,9 +344,10 @@ module parcel_container
             allocate(parcels%vorticity(3, num))
             allocate(parcels%B(5, num))
             allocate(parcels%volume(num))
-            allocate(parcels%buoyancy(num))
+            allocate(parcels%theta(num))
 #ifndef ENABLE_DRY_MODE
-            allocate(parcels%humidity(num))
+            allocate(parcels%qv(num))
+            allocate(parcels%ql(num))
 #endif
 #ifdef ENABLE_LABELS
             allocate(parcels%label(num))
@@ -373,9 +379,10 @@ module parcel_container
             deallocate(parcels%vorticity)
             deallocate(parcels%B)
             deallocate(parcels%volume)
-            deallocate(parcels%buoyancy)
+            deallocate(parcels%theta)
 #ifndef ENABLE_DRY_MODE
-            deallocate(parcels%humidity)
+            deallocate(parcels%qv)
+            deallocate(parcels%ql)
 #endif
 #ifdef ENABLE_LABELS
             deallocate(parcels%label)
@@ -402,9 +409,10 @@ module parcel_container
             buffer(IDX_X_VOR:IDX_Z_VOR) = parcels%vorticity(:, n)
             buffer(IDX_B11:IDX_B23)     = parcels%B(:, n)
             buffer(IDX_VOL)             = parcels%volume(n)
-            buffer(IDX_BUO)             = parcels%buoyancy(n)
+            buffer(IDX_THETA)           = parcels%theta(n)
 #ifndef ENABLE_DRY_MODE
-            buffer(IDX_HUM)             = parcels%humidity(n)
+            buffer(IDX_QV)              = parcels%qv(n)
+            buffer(IDX_QL)              = parcels%ql(n)
 #endif
 #ifdef ENABLE_LABELS
             buffer(IDX_LABEL)           = parcels%label(n)
@@ -430,9 +438,10 @@ module parcel_container
             parcels%vorticity(:, n) = buffer(IDX_X_VOR:IDX_Z_VOR)
             parcels%B(:, n)         = buffer(IDX_B11:IDX_B23)
             parcels%volume(n)       = buffer(IDX_VOL)
-            parcels%buoyancy(n)     = buffer(IDX_BUO)
+            parcels%theta(n)        = buffer(IDX_THETA)
 #ifndef ENABLE_DRY_MODE
-            parcels%humidity(n)     = buffer(IDX_HUM)
+            parcels%qv(n)           = buffer(IDX_QV)
+            parcels%ql(n)           = buffer(IDX_QL)
 #endif
 #ifdef ENABLE_LABELS
             parcels%label(n)        = nint(buffer(IDX_LABEL))

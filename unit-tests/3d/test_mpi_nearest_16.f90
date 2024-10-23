@@ -141,7 +141,8 @@ program test_mpi_nearest_16
             parcels%position(2, l) = y - dx(2) * 0.4d0
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + world%rank * 100
+            parcels%theta(l) = l + world%rank * 100
+
             l = l + 1
 
             ! small parcel b
@@ -149,7 +150,8 @@ program test_mpi_nearest_16
             parcels%position(2, l) = y + dx(2) * 0.44d0
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + world%rank * 100
+            parcels%theta(l) = l + world%rank * 100
+
             l = l + 1
 
             ! small parcel c
@@ -157,7 +159,8 @@ program test_mpi_nearest_16
             parcels%position(2, l) = y + dx(2) * 0.44d0
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + world%rank * 100
+            parcels%theta(l) = l + world%rank * 100
+
             l = l + 1
 
             ! small parcel d
@@ -165,7 +168,8 @@ program test_mpi_nearest_16
             parcels%position(2, l) = y - dx(2) * 0.43d0
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + world%rank * 100
+            parcels%theta(l) = l + world%rank * 100
+
             l = l + 1
 
         end subroutine cell_placement_1
@@ -190,7 +194,8 @@ program test_mpi_nearest_16
             parcels%position(2, l) = y + dx(2) * 0.4d0
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + world%rank * 100
+            parcels%theta(l) = l + world%rank * 100
+
             l = l + 1
 
             ! small parcel b
@@ -198,7 +203,8 @@ program test_mpi_nearest_16
             parcels%position(2, l) = y - dx(2) * 0.44d0
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + world%rank * 100
+            parcels%theta(l) = l + world%rank * 100
+
             l = l + 1
 
             ! small parcel c
@@ -206,7 +212,8 @@ program test_mpi_nearest_16
             parcels%position(2, l) = y - dx(2) * 0.44d0
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + world%rank * 100
+            parcels%theta(l) = l + world%rank * 100
+
             l = l + 1
 
             ! small parcel d
@@ -214,7 +221,8 @@ program test_mpi_nearest_16
             parcels%position(2, l) = y + dx(2) * 0.43d0
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + world%rank * 100
+            parcels%theta(l) = l + world%rank * 100
+
             l = l + 1
         end subroutine cell_placement_2
 
@@ -238,7 +246,8 @@ program test_mpi_nearest_16
             parcels%position(2, l) = y - dx(2) * 0.4d0
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + world%rank * 100
+            parcels%theta(l) = l + world%rank * 100
+
             l = l + 1
 
             ! small parcel b
@@ -246,7 +255,8 @@ program test_mpi_nearest_16
             parcels%position(2, l) = y + dx(2) * 0.44d0
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + world%rank * 100
+            parcels%theta(l) = l + world%rank * 100
+
             l = l + 1
 
             ! small parcel c
@@ -254,7 +264,8 @@ program test_mpi_nearest_16
             parcels%position(2, l) = y + dx(2) * 0.44d0
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + world%rank * 100
+            parcels%theta(l) = l + world%rank * 100
+
             l = l + 1
 
             ! small parcel d
@@ -262,7 +273,8 @@ program test_mpi_nearest_16
             parcels%position(2, l) = y - dx(2) * 0.43d0
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + world%rank * 100
+            parcels%theta(l) = l + world%rank * 100
+
             l = l + 1
 
         end subroutine cell_placement_3
@@ -291,7 +303,8 @@ program test_mpi_nearest_16
             parcels%position(2, l) = y
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + world%rank * 100
+            parcels%theta(l) = l + world%rank * 100
+
             l = l + 1
 
             ! small parcel b
@@ -299,7 +312,8 @@ program test_mpi_nearest_16
             parcels%position(2, l) = y
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + world%rank * 100
+            parcels%theta(l) = l + world%rank * 100
+
             l = l + 1
 
             ! small parcel c
@@ -307,7 +321,8 @@ program test_mpi_nearest_16
             parcels%position(2, l) = y
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + world%rank * 100
+            parcels%theta(l) = l + world%rank * 100
+
             l = l + 1
 
             ! small parcel d
@@ -315,7 +330,8 @@ program test_mpi_nearest_16
             parcels%position(2, l) = y
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + world%rank * 100
+            parcels%theta(l) = l + world%rank * 100
+
             l = l + 1
 
 
@@ -328,7 +344,8 @@ program test_mpi_nearest_16
             parcels%position(2, l) = y + dx(2) * 0.3d0
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + world%rank * 100
+            parcels%theta(l) = l + world%rank * 100
+
             l = l + 1
 
             ! small parcel b
@@ -336,7 +353,8 @@ program test_mpi_nearest_16
             parcels%position(2, l) = y - dx(2) * 0.45d0
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + world%rank * 100
+            parcels%theta(l) = l + world%rank * 100
+
             l = l + 1
 
             ! small parcel c
@@ -344,7 +362,8 @@ program test_mpi_nearest_16
             parcels%position(2, l) = y - dx(2) * 0.3d0
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + world%rank * 100
+            parcels%theta(l) = l + world%rank * 100
+
             l = l + 1
 
             ! small parcel d
@@ -352,7 +371,8 @@ program test_mpi_nearest_16
             parcels%position(2, l) = y - dx(2) * 0.2d0
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + world%rank * 100
+            parcels%theta(l) = l + world%rank * 100
+
             l = l + 1
 
         end subroutine cell_placement_4
@@ -381,7 +401,8 @@ program test_mpi_nearest_16
             parcels%position(2, l) = y
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + world%rank * 100
+            parcels%theta(l) = l + world%rank * 100
+
             l = l + 1
 
             ! small parcel b
@@ -389,7 +410,8 @@ program test_mpi_nearest_16
             parcels%position(2, l) = y
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + world%rank * 100
+            parcels%theta(l) = l + world%rank * 100
+
             l = l + 1
 
             ! small parcel c
@@ -397,7 +419,8 @@ program test_mpi_nearest_16
             parcels%position(2, l) = y
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + world%rank * 100
+            parcels%theta(l) = l + world%rank * 100
+
             l = l + 1
 
             ! small parcel d
@@ -405,7 +428,8 @@ program test_mpi_nearest_16
             parcels%position(2, l) = y
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + world%rank * 100
+            parcels%theta(l) = l + world%rank * 100
+
             l = l + 1
 
 
@@ -418,7 +442,8 @@ program test_mpi_nearest_16
             parcels%position(2, l) = y + dx(2) * 0.2d0
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + world%rank * 100
+            parcels%theta(l) = l + world%rank * 100
+
             l = l + 1
 
             ! small parcel b
@@ -426,7 +451,8 @@ program test_mpi_nearest_16
             parcels%position(2, l) = y + dx(2) * 0.4d0
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + world%rank * 100
+            parcels%theta(l) = l + world%rank * 100
+
             l = l + 1
 
             ! small parcel c
@@ -434,7 +460,8 @@ program test_mpi_nearest_16
             parcels%position(2, l) = y - dx(2) * 0.45d0
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + world%rank * 100
+            parcels%theta(l) = l + world%rank * 100
+
             l = l + 1
 
             ! small parcel d
@@ -442,7 +469,8 @@ program test_mpi_nearest_16
             parcels%position(2, l) = y - dx(2) * 0.35d0
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + world%rank * 100
+            parcels%theta(l) = l + world%rank * 100
+
             l = l + 1
 
         end subroutine cell_placement_5

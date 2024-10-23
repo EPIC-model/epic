@@ -53,7 +53,7 @@ program test_mpi_parcel_diagnostics
                             parcels%position(1, l) = corner(1) + dx(1) * (dble(i) - f12) * im
                             parcels%position(2, l) = corner(2) + dx(2) * (dble(j) - f12) * im
                             parcels%position(3, l) = corner(3) + dx(3) * (dble(k) - f12) * im
-                            parcels%buoyancy(l) = parcels%position(3, l)
+                            parcels%theta(l) = parcels%position(3, l)
                             l = l + 1
                         enddo
                     enddo
