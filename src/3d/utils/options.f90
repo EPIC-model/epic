@@ -77,6 +77,17 @@ module options
     !
     logical :: allow_larger_anisotropy = .false.
 
+
+    !
+    !
+    !
+    type forcings_type
+        ! use large-scale forcing
+        logical :: l_ls_forcings = .false.
+    end type forcings_type
+
+    type(forcings_type) :: forcings
+
     !
     ! parcel options
     !
@@ -131,7 +142,7 @@ module options
             logical :: exists = .false.
 
             ! namelist definitions
-            namelist /EPIC/ field_file, flux_file, rk_order, boundary, output, parcel, time, damping
+            namelist /EPIC/ field_file, flux_file, rk_order, boundary, output, parcel, forcings, time, damping
 
             ! check whether file exists
             inquire(file=filename, exist=exists)
@@ -188,6 +199,8 @@ module options
             call write_netcdf_attribute(ncid, "correction_iters", parcel%correction_iters)
             call write_netcdf_attribute(ncid, "gradient_pref", parcel%gradient_pref)
             call write_netcdf_attribute(ncid, "max_compression", parcel%max_compression)
+            
+            call write_netcdf_attribute(ncid, "l_ls_forcings", forcings%l_ls_forcings)
 
             call write_netcdf_attribute(ncid, "parcel_freq", output%parcel_freq)
             call write_netcdf_attribute(ncid, "field_freq", output%field_freq)

@@ -5,7 +5,7 @@
 module parcel_ls_forcings
     use constants, only : zero, one, pi
     use mpi_timer, only : start_timer, stop_timer
-    use options, only : parcel
+    use options, only : parcel, forcings
     use parameters, only : nx,ny,nz, dxi, dx
     use parcel_container, only : parcels, n_parcels
     use parcel_ellipsoid
@@ -27,10 +27,13 @@ module parcel_ls_forcings
     contains
 
         subroutine apply_ls_forcings(dt)
-            double precision, intent(in)  :: dt
-           call apply_subsidence_and_vorticity_adjustment(dt)
-           call apply_ls_tendencies(dt)
-           call saturation_adjustment
+           double precision, intent(in)  :: dt
+           if(forcings%l_ls_forcings) then
+              call apply_subsidence_and_vorticity_adjustment(dt)
+              call apply_ls_tendencies(dt)
+              call saturation_adjustment
+           end if
+
         end subroutine apply_ls_forcings
         !
         ! @pre
