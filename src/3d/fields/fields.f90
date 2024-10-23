@@ -21,7 +21,6 @@ module fields
     double precision, allocatable, dimension(:, :, :, :) :: &
         velog,     &   ! velocity vector field (u, v, w)
         vortg,     &   ! vorticity vector field (\xi, \eta, \zeta)
-        vortpg,    &   ! vorticity pertubation tendency
         vtend,     &   ! vorticity tendency
         velgradg       ! velocity gradient tensor
                        ! ordering: du/dx, du/dy,
@@ -39,11 +38,8 @@ module fields
 #ifndef ENABLE_DRY_MODE
         qvg,        &   ! humidity
         qlg,        &   ! liquid water
-        qvpg,       &   ! humidity perturbation tendency
-        qlpg,       &   ! liquid water perturbation tendency
 #endif
         thetag,     &   ! dry buoyancy (or liquid-water buoyancy)
-        thetapg,    &   ! theta perturbation tendency
         tbuoyg,    &   ! buoyancy
 #ifndef NDEBUG
         sym_volg,  &   ! symmetry volume (debug mode only)
@@ -94,18 +90,14 @@ module fields
 #endif
 
             allocate(vortg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), n_dim))
-            allocate(vortpg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), n_dim))
 
             allocate(vtend(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), n_dim))
 
             allocate(tbuoyg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
             allocate(thetag(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
-            allocate(thetapg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
 #ifndef ENABLE_DRY_MODE
             allocate(qvg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
             allocate(qlg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
-            allocate(qvpg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
-            allocate(qlpg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
 #endif
 
             allocate(nparg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
@@ -124,16 +116,12 @@ module fields
             volg     = zero
             strain_mag = zero
             vortg    = zero
-            vortpg   = zero
             vtend    = zero
             tbuoyg   = zero
-            thetapg  = zero
             thetag   = zero
 #ifndef ENABLE_DRY_MODE
             qvg     = zero
             qlg     = zero
-            qvpg     = zero
-            qlpg     = zero
 #endif
             nparg    = zero
             nsparg   = zero
@@ -152,17 +140,13 @@ module fields
                 deallocate(velgradg)
                 deallocate(strain_mag)
                 deallocate(volg)
-                deallocate(vortpg)
                 deallocate(vortg)
                 deallocate(vtend)
                 deallocate(tbuoyg)
-                deallocate(thetapg)
                 deallocate(thetag)
 #ifndef ENABLE_DRY_MODE
                 deallocate(qvg)
                 deallocate(qlg)
-                deallocate(qvpg)
-                deallocate(qlpg)
 #endif
                 deallocate(nparg)
                 deallocate(nsparg)
