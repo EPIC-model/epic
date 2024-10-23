@@ -2,7 +2,11 @@
 !                           Module to split ellipsoids
 ! =============================================================================
 module parcel_split_mod
-    use options, only : verbose, parcel
+    use options, only : parcel
+    use datatypes, only : int64
+#if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
+    use options, only : verbose
+#endif
     use constants, only : pi, three, five, f12, f34
     use parameters, only : amax, max_num_parcels
     use parcel_container, only : parcels                &
@@ -25,7 +29,7 @@ module parcel_split_mod
     integer :: split_timer
 
     ! number of parcel splits (is reset in every write step)
-    integer :: n_parcel_splits = 0
+    integer(kind=int64) :: n_parcel_splits = 0
 
 
     contains
@@ -43,8 +47,8 @@ module parcel_split_mod
             integer              :: i, n, n_thread_loc
             integer              :: pid(2 * n_parcels)
             integer, allocatable :: invalid(:), indices(:)
-#ifdef ENABLE_VERBOSE
-            integer              :: orig_num
+#if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
+            integer(kind=int64)  :: orig_num
 
             orig_num = n_total_parcels
 #endif
@@ -145,6 +149,10 @@ module parcel_split_mod
                 parcels%qv(n_thread_loc) = parcels%qv(n)
                 parcels%ql(n_thread_loc) = parcels%ql(n)
 #endif
+#ifdef ENABLE_LABELS
+                parcels%label(n_thread_loc) = parcels%label(n)
+                parcels%dilution(n_thread_loc) = parcels%dilution(n)
+#endif
                 V(:, 1) = V(:, 1) * dh * dsqrt(D(1))
                 parcels%position(:, n_thread_loc) = parcels%position(:, n) - V(:, 1)
                 parcels%position(:, n) = parcels%position(:, n) + V(:, 1)
@@ -181,7 +189,7 @@ module parcel_split_mod
             ! apply periodic boundary condition
             call parcel_communicate(invalid)
 
-#ifdef ENABLE_VERBOSE
+#if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
             if (verbose .and. (world%rank == world%root)) then
                 print "(a36, i0, a3, i0)", &
                       "no. parcels before and after split: ", orig_num, "...", n_total_parcels

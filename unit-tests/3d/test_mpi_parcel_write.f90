@@ -1,4 +1,4 @@
-! =============================================================================
+! ============================================================================r
 !                           Test parallel parcel writing
 !
 !       This unit test checks the writing of parcels in parallel.
@@ -8,6 +8,7 @@ program test_mpi_parcel_write
     use constants, only : zero
     use parcel_container
     use parcel_netcdf
+    use netcdf_utils
     use mpi_environment
     use mpi_timer
     implicit none

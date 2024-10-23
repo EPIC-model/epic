@@ -10,7 +10,13 @@ program epic3d
     use parcel_merging, only : parcel_merge, merge_timer
     use parcel_nearest, only : merge_nearest_timer      &
                              , merge_tree_resolve_timer &
+                             , nearest_allreduce_timer  &
+                             , nearest_barrier_timer    &
+                             , nearest_rma_timer        &
                              , nearest_win_allocate     &
+#ifdef ENABLE_VERBOSE
+                             , simtime                  &
+#endif
                              , nearest_win_deallocate
     use parcel_correction, only : apply_laplace,          &
                                   apply_gradient,         &
@@ -22,6 +28,7 @@ program epic3d
     use parcel_diagnostics, only : parcel_stats_timer
     use parcel_netcdf, only : parcel_io_timer
     use parcel_diagnostics_netcdf, only : parcel_stats_io_timer
+    use parcel_damping, only : damping_timer
     use fields
     use field_netcdf, only : field_io_timer
     use field_diagnostics, only : field_stats_timer
@@ -87,8 +94,12 @@ program epic3d
             call register_timer('parcel push', rk_timer)
             call register_timer('merge nearest', merge_nearest_timer)
             call register_timer('merge tree resolve', merge_tree_resolve_timer)
+            call register_timer('MPI allreduce timer (in tree resolve)', nearest_allreduce_timer)
+            call register_timer('MPI barrier timer (in tree resolve)', nearest_barrier_timer)
+            call register_timer('MPI RMA timer (in tree resolve)', nearest_rma_timer)
             call register_timer('p2g/v2g halo (non-excl.)', halo_swap_timer)
             call register_timer('boundary fluxes', bndry_flux_timer)
+            call register_timer('damping', damping_timer)
 
             call start_timer(epic_timer)
 
@@ -115,9 +126,6 @@ program epic3d
 
         subroutine run
             use options, only : time, parcel
-#ifdef ENABLE_VERBOSE
-            use options, only : verbose
-#endif
             double precision :: t = zero    ! current time
             integer          :: cor_iter    ! iterator for parcel correction
 
@@ -125,15 +133,13 @@ program epic3d
 
             do while (t < time%limit)
 
-#ifdef ENABLE_VERBOSE
-                if (verbose .and. (world%rank == world%root)) then
-                    print "(a15, f0.4)", "time:          ", t
-                endif
-#endif
                 !call apply_vortcor
 
                 call ls_rk_step(t)
 
+#ifdef ENABLE_VERBOSE
+                simtime = t
+#endif
                 call parcel_merge
 
                 call parcel_split

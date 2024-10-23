@@ -33,6 +33,8 @@ echo "Update version string from ${current_version} to ${new_version}"
 
 sed -i "s:${current_version}:${new_version}:g" ${fname}
 
+bash generate_manual.sh
+
 git add ${fname}
 git commit -m "Update version string from ${current_version} to ${new_version}"
 git push

@@ -1,5 +1,5 @@
 module utils
-    use constants, only : one
+    use constants, only : zero, one
     use options, only : field_file          &
                       , flux_file           &
                       , output              &
@@ -9,6 +9,7 @@ module utils
                       , verbose
     use netcdf_utils, only : set_netcdf_dimensions, set_netcdf_axes
     use field_netcdf
+    use fields, only : vortg, field_default, tbuoyg
     use field_diagnostics_netcdf
     use field_diagnostics, only : calculate_field_diagnostics
     use parcel_init, only : parcel_default, init_parcels_from_grids
@@ -20,21 +21,37 @@ module utils
     use parcel_interpl, only : par2grid, grid2par
     use netcdf_reader, only : get_file_type, get_num_steps, get_time, get_netcdf_box
     use parameters, only : lower, extent, update_parameters, read_zeta_boundary_flag &
-                         , set_zeta_boundary_flag
+                         , set_zeta_boundary_flag, ny
     use bndry_fluxes, only : read_bndry_fluxes
-    use physics, only : read_physical_quantities, print_physical_quantities
+    use netcdf_utils, only : NF90_NOWRITE       &
+                           , close_netcdf_file  &
+                           , open_netcdf_file
+    use physics, only : read_physical_quantities        &
+#ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
+                      , calculate_basic_reference_state &
+#endif
+                      , print_physical_quantities
     use mpi_layout, only : mpi_layout_init
     use mpi_utils, only : mpi_exit_on_error
     implicit none
 
-    integer :: nfw  = 0    ! number of field writes
-    integer :: npw  = 0    ! number of parcel writes
-    integer :: nspw = 0    ! number of parcel diagnostics writes
-    integer :: nsfw = 0    ! number of field diagnostics writes
+    double precision :: t_fw  = zero    ! next intended time of field write
+    double precision :: t_pw  = zero    ! next intended time of parcel write
+    double precision :: t_pdw = zero    ! next intended time of parcel diagnostics write
+    double precision :: t_fdw = zero    ! next intended time of field diagnostics write
 
-    private :: nfw, npw, nspw, nsfw
+    private :: t_fw, t_pw, t_pdw, t_fdw, get_next_write_time
 
     contains
+
+        ! Get the next intended time of write
+        function get_next_write_time(freq, t) result(tnext)
+            double precision, intent(in) :: freq, t
+            double precision             :: tnext
+
+            tnext = freq * dble(int(t / freq) + 1)
+
+        end function get_next_write_time
 
         ! Create NetCDF files and set the step number
         subroutine setup_output_files
@@ -102,28 +119,24 @@ module utils
             endif
 
             ! make sure we always write initial setup
-            if (output%write_fields .and. &
-                (t + epsilon(zero) >= neg * dble(nfw) * output%field_freq)) then
+            if (output%write_fields .and. (t + epsilon(zero) >= neg * t_fw)) then
                 call write_netcdf_fields(t)
-                nfw = nfw + 1
+                t_fw = get_next_write_time(output%field_freq, t)
             endif
 
-            if (output%write_parcels .and. &
-                (t + epsilon(zero) >= neg * dble(npw) * output%parcel_freq)) then
+            if (output%write_parcels .and. (t + epsilon(zero) >= neg * t_pw)) then
                 call write_netcdf_parcels(t)
-                npw = npw + 1
+                t_pw = get_next_write_time(output%parcel_freq, t)
             endif
 
-            if (output%write_parcel_stats .and. &
-                (t + epsilon(zero) >= neg * dble(nspw) * output%parcel_stats_freq)) then
+            if (output%write_parcel_stats .and. (t + epsilon(zero) >= neg * t_pdw)) then
                 call write_netcdf_parcel_stats(t)
-                nspw = nspw + 1
+                t_pdw = get_next_write_time(output%parcel_stats_freq, t)
             endif
 
-            if (output%write_field_stats .and. &
-                (t + epsilon(zero) >= neg * dble(nsfw) * output%field_stats_freq)) then
+            if (output%write_field_stats .and. (t + epsilon(zero) >= neg * t_fdw)) then
                 call write_netcdf_field_stats(t)
-                nsfw = nsfw + 1
+                t_fdw = get_next_write_time(output%field_stats_freq, t)
             endif
 
         end subroutine write_step
@@ -139,12 +152,11 @@ module utils
             call get_time(ncid, t)
             call close_netcdf_file(ncid)
 
-            ! set counters (we need to increment by 1 since
-            ! we want to write the next time)
-            nfw = int(t / output%field_freq) + 1
-            npw = int(t / output%parcel_freq) + 1
-            nspw = int(t / output%parcel_stats_freq) + 1
-            nsfw = int(t / output%field_stats_freq) + 1
+            ! set the next intended time to write to files:
+            t_fw = get_next_write_time(output%field_freq, t)
+            t_pw = get_next_write_time(output%parcel_freq, t)
+            t_pdw = get_next_write_time(output%parcel_stats_freq, t)
+            t_fdw = get_next_write_time(output%field_stats_freq, t)
         end subroutine setup_restart
 
         subroutine setup_domain_and_parameters
@@ -189,6 +201,7 @@ module utils
         ! Reads always the last time step of a field file.
         subroutine setup_fields_and_parcels
             character(len=16) :: file_type
+            integer           :: ncid
 
             call field_default
 
@@ -207,15 +220,31 @@ module utils
                 endif
             else
                 time%initial = zero ! make sure user cannot start at arbirtrary time
-                call read_netcdf_fields(field_file, -1)
-                call init_parcels_from_grids
 
-                ! we must check if zeta must be kept zero
-                ! on a vertical boundary
-                call set_zeta_boundary_flag(vortg(:, :, :, I_Z))
+                call open_netcdf_file(field_file, NF90_NOWRITE, ncid)
+                call get_file_type(ncid, file_type)
+                call close_netcdf_file(ncid)
+
+                if (file_type == 'fields') then
+                    call read_netcdf_fields(field_file, -1)
+                    call init_parcels_from_grids
+
+                   ! we must check if zeta must be kept zero
+                   ! on a vertical boundary
+                   call set_zeta_boundary_flag(vortg(:, :, :, I_Z))
+               else if (file_type == 'parcels') then
+                   call read_netcdf_parcels(field_file)
+               else
+                   call mpi_exit_on_error('Input file must be of type "fields" or "parcels".')
+               endif
             endif
 
             call read_bndry_fluxes(trim(flux_file))
+
+#ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
+            ! Calculate the squared buoyancy frequency if not provided.
+            call calculate_basic_reference_state(nx, ny, nz, extent(3), tbuoyg)
+#endif
 
         end subroutine setup_fields_and_parcels
 

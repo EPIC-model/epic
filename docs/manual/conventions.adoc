@@ -1,1 +1,24 @@
 == Conventions and Units
+All computations in EPIC are performed in SI units. The position is defined in Cartesian coordinates
+stem:[\boldsymbol{x}=(x, y, z)], where stem:[x] is the zonal, stem:[y] the meridional and stem:[z] the vertical direction.
+A list of the units of the prognostic variables is provided
+in <<tab_units>>.
+
+.List of units of prognostic variables.
+[#tab_units, reftext=Table {counter:tab-cnt}]
+[%autowidth,role=center]
+|===
+| Prognostic variable | Symbol | Unit
+
+| Zonal vorticity       | stem:[\xi]    | stem:[s^{-1}]
+| Meridional vorticity  | stem:[\eta]   | stem:[s^{-1}]
+| Vertical vorticity    | stem:[\zeta]  | stem:[s^{-1}]
+
+| Zonal velocity        | stem:[u]      | stem:[ms^{-1}]
+| Meridional velocity   | stem:[v]      | stem:[ms^{-1}]
+| Vertical velocity     | stem:[w]      | stem:[ms^{-1}]
+
+| Buoyancy              | stem:[b]      | stem:[m s^{-2}]
+| Humidity              | stem:[q]      | stem:[-]
+
+|===

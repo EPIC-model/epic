@@ -13,6 +13,8 @@ module ls_rk
     use parcel_interpl, only : par2grid, grid2par, saturation_adjustment
     use parcel_damping, only : parcel_damp
     use parcel_ls_forcings, only : apply_ls_forcings
+    use parcel_interpl, only : par2grid, grid2par
+    use parcel_damping, only : parcel_damp
     use fields, only : velgradg, velog, vortg, vtend, tbuoyg
     use inversion_mod, only : vor2vel, vorticity_tendency
     use parcel_diagnostics, only : calculate_parcel_diagnostics
@@ -101,9 +103,11 @@ module ls_rk
 
             ! update the time step
             dt = get_time_step(t)
-
-            if (dabs(t - time%initial) < 1.0e-13) then
+            
+            if(.not. time%l_use_fixed_dt) then
+!            if (dabs(t - time%initial) < 1.0e-13) then
                 call bndry_fluxes_time_step(dt)
+!            endif
             endif
 
             call grid2par
@@ -156,7 +160,6 @@ module ls_rk
                 do n = 1, n_parcels
                     parcels%delta_b(:, n) = get_dBdt(parcels%B(:, n),           &
                                                      parcels%strain(:, n),      &
-                                                     parcels%vorticity(:, n),   &
                                                      parcels%volume(n))
                 enddo
                 !$omp end parallel do
@@ -176,7 +179,6 @@ module ls_rk
                     parcels%delta_b(:, n) = parcels%delta_b(:, n)               &
                                           + get_dBdt(parcels%B(:, n),           &
                                                      parcels%strain(:, n),      &
-                                                     parcels%vorticity(:, n),   &
                                                      parcels%volume(n))
                 enddo
                 !$omp end parallel do
@@ -219,9 +221,9 @@ module ls_rk
 
             call parcel_communicate
 
-            call par2grid
-
             call stop_timer(rk_timer)
+
+            call par2grid
 
         end subroutine ls_rk_substep
 

@@ -103,13 +103,13 @@ module bndry_fluxes
             integer                  :: ncid, start(3), cnt(3)
             integer                  :: lo(3), hi(3)
 
-            call start_timer(bndry_flux_timer)
-
             l_enable_flux = (fname /= '')
 
             if (.not. l_enable_flux) then
                 return
             endif
+
+            call start_timer(bndry_flux_timer)
 
             call open_netcdf_file(fname, NF90_NOWRITE, ncid)
 
@@ -179,7 +179,7 @@ module bndry_fluxes
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Correct the time step estimate including the buoyancy flux.
-        ! Uses g*dz/bf (where [bf] = m**2/s**3) to get a time measure.
+        ! Uses (dz/bf)**(1/3) (where [bf] = m/s**3) to get a time measure.
         subroutine bndry_fluxes_time_step(dt)
             double precision, intent(inout) :: dt
             double precision                :: abs_max

@@ -48,19 +48,22 @@ module fields
 #ifndef NDEBUG
         sym_volg,  &   ! symmetry volume (debug mode only)
 #endif
-        strain_mag, &  ! strain magnitude
-        volg           ! volume scalar field
+        volg, &        ! volume scalar field
+        strain_mag     ! strain magnitude
 
     integer, allocatable, dimension(:, :, :) :: &
         nparg,     &   ! number of parcels per grid box
         nsparg         ! number of small parcels per grid box
 
-    ! velocity strain indices
+    ! velocity strain indices (note that dw/dz is found from continuity)
     integer, parameter :: I_DUDX = 1 & ! index for du/dx strain component
                         , I_DUDY = 2 & ! index for du/dy strain component
-                        , I_DVDY = 3 & ! index for dv/dy strain component
-                        , I_DWDX = 4 & ! index for dw/dx strain component
-                        , I_DWDY = 5   ! index for dw/dy strain component
+                        , I_DUDZ = 3 & ! index for du/dz strain component
+                        , I_DVDX = 4 & ! index for dv/dx strain component
+                        , I_DVDY = 5 & ! index for dv/dy strain component
+                        , I_DVDZ = 6 & ! index for dv/dz strain component
+                        , I_DWDX = 7 & ! index for dw/dx strain component
+                        , I_DWDY = 8   ! index for dw/dy strain component
 
     contains
 
@@ -80,10 +83,11 @@ module fields
             hhi = box%hhi
 
             allocate(velog(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), n_dim))
-            allocate(velgradg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), 5))
+            allocate(velgradg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), 8))
 
             allocate(strain_mag(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
             allocate(volg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
+            allocate(strain_mag(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
 
 #ifndef NDEBUG
             allocate(sym_volg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))

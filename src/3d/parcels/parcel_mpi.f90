@@ -7,6 +7,7 @@ module parcel_mpi
     use options, only : parcel
 #ifndef NDEBUG
     use mpi_collectives, only : mpi_blocking_reduce
+    use datatypes, only : int64
 #endif
     use fields, only : get_index
     use parcel_bc, only : apply_periodic_bc
@@ -196,6 +197,9 @@ module parcel_mpi
             integer                                 :: n_total_sends, n
             integer                                 :: recv_count
             integer                                 :: recv_size, send_size
+#ifndef NDEBUG
+            integer(kind=int64)                     :: n_total
+#endif
 
             do n = 1, 8
                 call get_parcel_buffer_ptr(n, pid, send_buf)
@@ -267,9 +271,9 @@ module parcel_mpi
             call parcel_delete(invalid, n_total_sends)
 
 #ifndef NDEBUG
-            n = n_parcels
-            call mpi_blocking_reduce(n, MPI_SUM, world)
-            if ((world%rank == world%root) .and. (.not. n == n_total_parcels)) then
+            n_total = n_parcels
+            call mpi_blocking_reduce(n_total, MPI_SUM, world)
+            if ((world%rank == world%root) .and. (.not. n_total == n_total_parcels)) then
                 call mpi_exit_on_error(&
                     "in parcel_mpi::communicate_parcels: We lost parcels.")
             endif
@@ -360,21 +364,21 @@ module parcel_mpi
             ub = ceiling(vcell / vmin)
 
             ! number of cells sharing with north and south neighbour
-            nc = (box%hi(1) - box%lo(1) + 1) * nz
+            nc = (box%hi(1) - box%lo(1) + 1) * (nz + 2)
             n_max = 2 * nc
 
             allocate(north_pid(nc * ub * n_ids))
             allocate(south_pid(nc * ub * n_ids))
 
             ! number of cells sharing with west and east neighbour
-            nc = (box%hi(2) - box%lo(2) + 1) * nz
+            nc = (box%hi(2) - box%lo(2) + 1) * (nz + 2)
             n_max = n_max + 2 * nc
 
             allocate(west_pid(nc * ub * n_ids))
             allocate(east_pid(nc * ub * n_ids))
 
             ! number of cells sharing with corner neighbours
-            nc = nz
+            nc = nz + 2
             n_max = n_max + 4 * nc
 
             allocate(northwest_pid(nc * ub * n_ids))

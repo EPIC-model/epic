@@ -1,3 +1,56 @@
+## EPIC version 0.14.2
+* [Optimise nearest algorithm tree resolve step](https://github.com/EPIC-model/epic/pull/561)
+* [Implement generalised damping, including surface damping](https://github.com/EPIC-model/epic/pull/562)
+* [Add optimised rejection method](https://github.com/EPIC-model/epic/pull/563)
+* [Update webpage](https://github.com/EPIC-model/epic/pull/564)
+* [Add labels to code](https://github.com/EPIC-model/epic/pull/565)
+* [Reset labels and dilution when writing to netCDF](https://github.com/EPIC-model/epic/pull/566)
+* [Support for 64-bit integers](https://github.com/EPIC-model/epic/pull/560)
+* [Set total number of parcels before parcel_communicate](https://github.com/EPIC-model/epic/pull/567)
+* [Fix input to acos](https://github.com/EPIC-model/epic/pull/568)
+* [Fix rejection method](https://github.com/EPIC-model/epic/pull/570)
+* [Explicitly set the attributes to write](https://github.com/EPIC-model/epic/pull/571)
+* [Bugfixes to labelling](https://github.com/EPIC-model/epic/pull/569)
+* [Move GitHub page to organisation](https://github.com/EPIC-model/epic/pull/573)
+* [Add index.html which is a symbolic link to html/intro.html](https://github.com/EPIC-model/epic/pull/574)
+
+## EPIC version 0.14.1
+* [Added/changed ifort style flags](https://github.com/EPIC-model/epic/pull/494)
+* [Fix .zenodo.json](https://github.com/EPIC-model/epic/pull/542)
+* [Generalise configure.ac](https://github.com/EPIC-model/epic/pull/492)
+* [Selective parcel attribute writes](https://github.com/EPIC-model/epic/pull/543)
+* [Need to calculate buoyancy extrema for total buoyancy](https://github.com/EPIC-model/epic/pull/546)
+* [Update writing statistics to improved interface](https://github.com/EPIC-model/epic/pull/545)
+* [Fix rk_timer](https://github.com/EPIC-model/epic/pull/547)
+* [Collect merger statistics](https://github.com/EPIC-model/epic/pull/544)
+* [Update conda environment](https://github.com/EPIC-model/epic/pull/550)
+* [Damping implementation](https://github.com/EPIC-model/epic/pull/549)
+* [Add missing stop_timer; fix resetting parcel split and merge diagnostics](https://github.com/EPIC-model/epic/pull/552)
+* [Fix loop for nearest parcel check](https://github.com/EPIC-model/epic/pull/555)
+* [Gridded strain](https://github.com/EPIC-model/epic/pull/553)
+* [Ensure link exists before calling netcdf routine](https://github.com/EPIC-model/epic/pull/558)
+
+## EPIC version 0.14.0
+* [Fix the write frequency](https://github.com/EPIC-model/epic/pull/527)
+* [Add boundary surface fluxes](https://github.com/EPIC-model/epic/pull/451)
+* [Add missing field statistics timer stop](https://github.com/EPIC-model/epic/pull/537)
+* [Calculate squared buoyancy frequency only if not provided](https://github.com/EPIC-model/epic/pull/538)
+* [Compilation flag based 1-point par2grid and grid2par](https://github.com/EPIC-model/epic/pull/539)
+* [Overwrite default Zenodo metadata](https://github.com/EPIC-model/epic/pull/536)
+
+## EPIC version 0.13.1
+* [Write specific fields only](https://github.com/EPIC-model/epic/pull/520)
+* [Remove -fPIC flag](https://github.com/EPIC-model/epic/pull/519)
+* [Do halo swap for nparg and nsparg](https://github.com/EPIC-model/epic/pull/523)
+* [Fix OpenMP pragmas](https://github.com/EPIC-model/epic/pull/528)
+* [Change default value from 1/40 to 1/20](https://github.com/EPIC-model/epic/pull/526)
+* [Initialise buoyancy, vorticity and humidity](https://github.com/EPIC-model/epic/pull/534)
+* [Buoyancy perturbation mode](https://github.com/EPIC-model/epic/pull/532)
+* [Update Python packages](https://github.com/EPIC-model/epic/pull/522)
+* [Update Python tools](https://github.com/EPIC-model/epic/pull/529)
+* [Increase buffer in parcel communication](https://github.com/EPIC-model/epic/pull/530)
+* [Add data coarsening post-processing tool](https://github.com/EPIC-model/epic/pull/521)
+
 ## EPIC version 0.13.0
 * [Rename comm to comm_world](https://github.com/EPIC-model/epic/pull/364)
 * [Extend NetCDF interface to MPI](https://github.com/EPIC-model/epic/pull/363)
@@ -61,6 +114,13 @@
 * [Fix parcels on periodic edge](https://github.com/EPIC-model/epic/pull/509)
 * [Avoid array temporaries](https://github.com/EPIC-model/epic/pull/504)
 * [Remove max_vratio from configuration files](https://github.com/EPIC-model/epic/pull/510)
+* [Simplify parcel merge routine call](https://github.com/EPIC-model/epic/pull/514)
+* [Fix unit-tests -- register missing timer and fix function call](https://github.com/EPIC-model/epic/pull/513)
+* [Fix communicator issue](https://github.com/EPIC-model/epic/pull/512)
+* [Do not use MPI_COMM_WORLD as default in collectives](https://github.com/EPIC-model/epic/pull/515)
+* [MPI version of 3D model](https://github.com/EPIC-model/epic/pull/511)
+* [Fix OpenMP race condition in inversion_utils.f90](https://github.com/EPIC-model/epic/pull/516)
+
 
 ## EPIC version 0.12.6
 * [Pull optimizations to serial version](https://github.com/EPIC-model/epic/pull/500)

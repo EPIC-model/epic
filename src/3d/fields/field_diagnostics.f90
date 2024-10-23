@@ -55,6 +55,7 @@ module field_diagnostics
 
             field_stats(IDX_ABSERR_V) = maxval(abs(volg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1))  - vcell)) * vcelli
 
+            ! vertically only include 0 (= lo(3) to nz-1 (= hi(3) - 1)
             field_stats(IDX_MAX_NPAR) = maxval(nparg(lo(3):hi(3)-1, lo(2):hi(2), lo(1):hi(1)))
 
             field_stats(IDX_MIN_NPAR) = minval(nparg(lo(3):hi(3)-1, lo(2):hi(2), lo(1):hi(1)))
@@ -63,8 +64,24 @@ module field_diagnostics
 
             field_stats(IDX_AVG_NSPAR) = sum(nsparg(lo(3):hi(3)-1, lo(2):hi(2), lo(1):hi(1))) * ncelli
 
+#ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
+            ! add basic state
+            do iz = 0, nz
+                z(iz) = lower(3) + dble(iz) * dx(3)
+                tbuoyg(iz, :, :) = tbuoyg(iz, :, :) + bfsq * z(iz)
+            enddo
+#endif
+
+            ! do not take halo cells into account
             field_stats(IDX_MIN_BUOY) = minval(tbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)))
             field_stats(IDX_MAX_BUOY) = maxval(tbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)))
+
+#ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
+            ! remove basic state
+            do iz = 0, nz
+                tbuoyg(iz, :, :) = tbuoyg(iz, :, :) - bfsq * z(iz)
+            enddo
+#endif
 
             ! use half weights for boundary grid points
             field_stats(IDX_KEG) = f12 * sum( volg(1:nz-1, lo(2):hi(2), lo(1):hi(1))           &

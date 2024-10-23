@@ -3,6 +3,7 @@
 ! allocate and deallocate it.
 ! =============================================================================
 module parcel_container
+    use datatypes, only : int64
     use options, only : verbose
     use parameters, only : extent, extenti, center, lower, upper, set_max_num_parcels
     use parcel_ellipsoid, only : parcel_ellipsoid_allocate    &
@@ -19,8 +20,8 @@ module parcel_container
     use mpi_timer, only : start_timer, stop_timer
     implicit none
 
-    integer :: n_parcels        ! local number of parcels
-    integer :: n_total_parcels  ! global number of parcels (over all MPI ranks)
+    integer             :: n_parcels        ! local number of parcels
+    integer(kind=int64) :: n_total_parcels  ! global number of parcels (over all MPI ranks)
 
     integer :: resize_timer
 
@@ -42,6 +43,10 @@ module parcel_container
                           IDX_QV,           & ! water vapour specific humidity
                           IDX_QL,           & ! liquid vapour specific humidity
 #endif
+#ifdef ENABLE_LABELS
+                          IDX_LABEL,        & ! label
+                          IDX_DILUTION,     & ! dilution
+#endif
                           IDX_RK4_X_DPOS,   & ! RK4 variable delta x-position
                           IDX_RK4_Y_DPOS,   & ! RK4 variable delta y-position
                           IDX_RK4_Z_DPOS,   & ! RK4 variable delta z-position
@@ -55,7 +60,10 @@ module parcel_container
                           IDX_RK4_DB23,     & ! RK4 variable for B23
                           IDX_RK4_DUDX,     & ! RK4 variable du/dx
                           IDX_RK4_DUDY,     & ! RK4 variable du/dy
+                          IDX_RK4_DUDZ,     & ! RK4 variable du/dz
+                          IDX_RK4_DVDX,     & ! RK4 variable dv/dx
                           IDX_RK4_DVDY,     & ! RK4 variable dv/dy
+                          IDX_RK4_DVDZ,     & ! RK4 variable dv/dz
                           IDX_RK4_DWDX,     & ! RK4 variable dw/dx
                           IDX_RK4_DWDY        ! RK4 variable dw/dy
 
@@ -77,6 +85,9 @@ module parcel_container
             qv,   &
             ql,   &
 #endif
+#ifdef ENABLE_LABELS
+            dilution,   &
+#endif
             theta
 
         ! LS-RK4 variables
@@ -85,6 +96,12 @@ module parcel_container
             delta_vor,  &   ! vorticity tendency
             strain,     &
             delta_b         ! B-matrix tendency
+
+#ifdef ENABLE_LABELS
+        integer(kind=8), allocatable, dimension(:) :: &
+            label
+#endif
+
     end type parcel_container_type
 
     type(parcel_container_type) parcels
@@ -118,6 +135,11 @@ module parcel_container
             IDX_QL  = i + 1
             i = i + 2
 #endif
+#ifdef ENABLE_LABELS
+            IDX_LABEL  = i
+            IDX_DILUTION  = i +1
+            i = i + 2
+#endif
 
             ! LS-RK4 variables
             IDX_RK4_X_DPOS = i
@@ -133,11 +155,14 @@ module parcel_container
             IDX_RK4_DB23 = i + 10
             IDX_RK4_DUDX = i + 11
             IDX_RK4_DUDY = i + 12
-            IDX_RK4_DVDY = i + 13
-            IDX_RK4_DWDX = i + 14
-            IDX_RK4_DWDY = i + 15
+            IDX_RK4_DUDZ = i + 13
+            IDX_RK4_DVDX = i + 14
+            IDX_RK4_DVDY = i + 15
+            IDX_RK4_DVDZ = i + 16
+            IDX_RK4_DWDX = i + 17
+            IDX_RK4_DWDY = i + 18
 
-            i = i + 16
+            i = i + 19
 
             n_par_attrib = set_ellipsoid_buffer_indices(i)
 
@@ -234,7 +259,7 @@ module parcel_container
         subroutine parcel_replace(n, m)
             integer, intent(in) :: n, m
 
-#ifdef ENABLE_VERBOSE
+#if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
             if (verbose) then
                 print '(a19, i0, a6, i0)', '    replace parcel ', n, ' with ', m
             endif
@@ -247,6 +272,10 @@ module parcel_container
 #ifndef ENABLE_DRY_MODE
             parcels%qv(n)           = parcels%qv(m)
             parcels%ql(n)           = parcels%ql(m)
+#endif
+#ifdef ENABLE_LABELS
+            parcels%label(n)        = parcels%label(m)
+            parcels%dilution(n)     = parcels%dilution(m)
 #endif
             parcels%B(:, n)         = parcels%B(:, m)
 
@@ -286,6 +315,10 @@ module parcel_container
             call resize_array(parcels%qv, new_size, n_parcels)
             call resize_array(parcels%ql, new_size, n_parcels)
 #endif
+#ifdef ENABLE_LABELS
+            call resize_array(parcels%label, new_size, n_parcels)
+            call resize_array(parcels%dilution, new_size, n_parcels)
+#endif
             call parcel_ellipsoid_resize(new_size, n_parcels)
 
             ! LS-RK4 variables
@@ -316,12 +349,16 @@ module parcel_container
             allocate(parcels%qv(num))
             allocate(parcels%ql(num))
 #endif
+#ifdef ENABLE_LABELS
+            allocate(parcels%label(num))
+            allocate(parcels%dilution(num))
+#endif
             call parcel_ellipsoid_allocate(num)
 
             ! LS-RK4 variables
             allocate(parcels%delta_pos(3, num))
             allocate(parcels%delta_vor(3, num))
-            allocate(parcels%strain(5, num))
+            allocate(parcels%strain(8, num))
             allocate(parcels%delta_b(5, num))
 
         end subroutine parcel_alloc
@@ -346,6 +383,10 @@ module parcel_container
 #ifndef ENABLE_DRY_MODE
             deallocate(parcels%qv)
             deallocate(parcels%ql)
+#endif
+#ifdef ENABLE_LABELS
+            deallocate(parcels%label)
+            deallocate(parcels%dilution)
 #endif
             call parcel_ellipsoid_deallocate
 
@@ -373,6 +414,10 @@ module parcel_container
             buffer(IDX_QV)              = parcels%qv(n)
             buffer(IDX_QL)              = parcels%ql(n)
 #endif
+#ifdef ENABLE_LABELS
+            buffer(IDX_LABEL)           = parcels%label(n)
+            buffer(IDX_DILUTION)        = parcels%dilution(n)
+#endif
             ! LS-RK4 variables:
             buffer(IDX_RK4_X_DPOS:IDX_RK4_Z_DPOS) = parcels%delta_pos(:, n)
             buffer(IDX_RK4_X_DVOR:IDX_RK4_Z_DVOR) = parcels%delta_vor(:, n)
@@ -397,6 +442,10 @@ module parcel_container
 #ifndef ENABLE_DRY_MODE
             parcels%qv(n)           = buffer(IDX_QV)
             parcels%ql(n)           = buffer(IDX_QL)
+#endif
+#ifdef ENABLE_LABELS
+            parcels%label(n)        = nint(buffer(IDX_LABEL))
+            parcels%dilution(n)     = buffer(IDX_DILUTION)
 #endif
             ! LS-RK4 variables:
             parcels%delta_pos(:, n) = buffer(IDX_RK4_X_DPOS:IDX_RK4_Z_DPOS)

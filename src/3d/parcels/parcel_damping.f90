@@ -1,109 +1,222 @@
 ! =============================================================================
-! This module contains the subroutines to do parcel-to-grid and grid-to-parcel
-! interpolation.
+! This module contains the subroutines to do damping of parcel properties to
+! gridded fields in a conservative manner. It does this by nudging all the  
+! parcels associated with a grid point to the grid point value, with the strength
+! of damping proportional to the grid point contribution to the gridded value and
+! the strain rate at the grid point.
 ! =============================================================================
 module parcel_damping
-    use constants, only : zero, one, two, f14
+    use constants, only :  f14, zero, one
     use mpi_timer, only : start_timer, stop_timer
-    use parameters, only : nx, nz, vmin, l_bndry_zeta_zero
-    use options, only : parcel
+    use parameters, only : nx, nz, vmin 
     use parcel_container, only : parcels, n_parcels
-    use parcel_bc, only : apply_periodic_bc
     use parcel_ellipsoid
     use parcel_interpl
     use fields
-    use field_mpi, only : field_mpi_alloc                   &
-                        , field_mpi_dealloc                 &
-                        , field_buffer_to_halo              &
-                        , field_halo_to_buffer              &
-                        , field_buffer_to_interior          &
-                        , field_interior_to_buffer          &
-                        , interior_to_halo_communication    &
-                        , halo_to_interior_communication    &
-                        , field_halo_swap_scalar            
-    use physics, only : glat, lambda_c, q_0
     use omp_lib
-    use mpi_utils, only : mpi_exit_on_error
+    use mpi_layout, only : box 
+    use options, only : damping
+    use inversion_mod, only : vor2vel
+    use rk_utils, only : get_strain_magnitude_field
     implicit none
+
 
     private
 
     ! interpolation indices
     ! (first dimension x, y, z; second dimension l-th index)
     integer :: is, js, ks
-
+    integer :: damping_timer
+ 
     ! interpolation weights
     double precision :: weights(0:1,0:1,0:1)
     double precision :: weight(0:1,0:1,0:1)
     double precision :: time_fact(0:1,0:1,0:1)
-
-    integer, parameter :: IDX_VOL_SWAP    = 1   &
-                        , IDX_VORP_X_SWAP  = 2   &
-                        , IDX_VORP_Y_SWAP  = 3   &
-                        , IDX_VORP_Z_SWAP  = 4   &
-                        , IDX_THETAP_SWAP  = 5   
-#ifndef ENABLE_DRY_MODE
-    integer, parameter :: IDX_QVP_SWAP   = 6
-    integer, parameter :: IDX_QLP_SWAP   = 7
-
-    integer, parameter :: n_field_swap = 7
-#else
-    integer, parameter :: n_field_swap = 5
-#endif
-
-    public :: parcel_damp
+  
+    public :: parcel_damp, damping_timer
 
     contains
 
         subroutine parcel_damp(dt)
             double precision, intent(in)  :: dt
-            call par2grid_diag !get all gridded fields, including qv, ql and theta
-            call perturbation_damping(dt)
+
+            if (damping%l_vorticity .or. damping%l_scalars .or. &
+                damping%l_surface_vorticity .or. damping%l_surface_scalars) then 
+                ! ensure gridded fields are up to date
+                call par2grid(.false.)
+                call vor2vel
+
+                ! Reflect beyond boundaries to ensure damping is conservative
+                ! This is because the points below the surface contribute to the level above
+                !$omp parallel workshare
+                vortg(-1,   :, :, :) = vortg(1, :, :, :)
+                vortg(nz+1, :, :, :) = vortg(nz-1, :, :, :)
+
+#ifndef ENABLE_DRY_MODE
+                qvg(-1,   :, :) = qvg(1, :, :)
+                qvg(nz+1, :, :) = qvg(nz-1, :, :)
+                qlg(-1,   :, :) = qlg(1, :, :)
+                qlg(nz+1, :, :) = qlg(nz-1, :, :)
+#endif
+                thetag(-1,   :, :) = thetag(1, :, :)
+                thetag(nz+1, :, :) = thetag(nz-1, :, :)
+                !$omp end parallel workshare
+
+                call get_strain_magnitude_field
+                call perturbation_damping(dt, .true.)
+            end if
+
         end subroutine parcel_damp
 
         ! 
         ! @pre 
-        subroutine perturbation_damping(dt)
+        subroutine perturbation_damping(dt, l_reuse)
             double precision, intent(in)  :: dt
-            integer                       :: n, p, l, ii, jj, kk
-            double precision, parameter   :: pre_fact=1.0
-            double precision              :: points(3, 4)
+            logical, intent(in)           :: l_reuse
+#if defined (ENABLE_P2G_1POINT) && !defined (NDEBUG)
+            logical                       :: l_reuse_dummy
+#endif
+            integer                       :: n, p, l 
+            double precision              :: points(3, n_points_p2g)
             double precision              :: pvol
+            ! tendencies need to be summed up between associated 4 points
+            ! before modifying the parcel attribute
+            double precision              :: vortend(3)
+            double precision              :: thetatend
+#ifndef ENABLE_DRY_MODE
+            double precision              :: qltend
+            double precision              :: qvtend
+#endif
 
-            !call start_timer(grid2par_timer)
+            call start_timer(damping_timer)
 
-!            !$omp parallel default(shared)
-!            !$omp do private(n, l, is, js, ks, weight, weights, reduce_fact, parcel_strain_mag) &
+            ! This is only here to allow debug compilation
+            ! with a warning for unused variables
+#if defined (ENABLE_P2G_1POINT) && !defined (NDEBUG)
+            l_reuse_dummy=l_reuse
+#endif
+
+            !$omp parallel default(shared)
+            !$omp do private(n, p, l, points, pvol, weight) &
+#ifndef ENABLE_DRY_MODE
+            !$omp& private(is, js, ks, weights, vortend, thetatend, qvtend, qltend, time_fact) 
+#else
+            !$omp& private(is, js, ks, weights, vortend, thetatend, time_fact) 
+#endif
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
+#ifndef ENABLE_P2G_1POINT
                 points = get_ellipsoid_points(parcels%position(:, n), &
-                                              pvol, parcels%B(:, n), n, .false.)
+                                              parcels%B(:, n), n, l_reuse)
+#else
+                points(:, 1) = parcels%position(:, n)
+#endif
+                vortend = zero
+                thetatend = zero
+#ifndef ENABLE_DRY_MODE
+                qvtend = zero
+                qltend = zero
+#endif
 
                 ! we have 4 points per ellipsoid
-                do p = 1, 4
+                do p = 1, n_points_p2g
                     call trilinear(points(:, p), is, js, ks, weights)
-                    weight=0.25*weights
-                    do ii=0,1
-                      do jj=0,1
-                        do kk=0,1
-                           time_fact(kk,jj,ii)=1.0-exp(-pre_fact*strain_mag(ks+kk, js+jj, is+ii)*dt)
+                    weight = point_weight_p2g * weights
+                    if (damping%l_vorticity) then
+                        ! Note this exponential factor can be different for vorticity/scalars
+                        time_fact = one - exp(-damping%vorticity_prefactor * strain_mag(ks:ks+1, js:js+1, is:is+1) * dt)
+                        do l = 1,3
+                            vortend(l) = vortend(l)+sum(weight * time_fact * (vortg(ks:ks+1, js:js+1, is:is+1, l) &
+                                       - parcels%vorticity(l,n)))
                         enddo
-                      enddo
-                    enddo
-                    do l=1,3
-                        parcels%vorticity(l,n)=parcels%vorticity(l,n)*(1.0-sum(weight*time_fact))&
-                        +sum(weight*time_fact*vortg(ks:ks+1, js:js+1, is:is+1, l))
-                    enddo
-                    parcels%theta(n)=parcels%theta(n)*(1.0-sum(weight*time_fact))&
-                    +sum(weight*time_fact*thetag(ks:ks+1, js:js+1, is:is+1))
+                    else if (damping%l_surface_vorticity) then
+                        ! outside the bounds
+                        if (ks < box%lo(3))  then
+                            ! Note this exponential factor can be different for vorticity/scalars
+                            time_fact = one - exp(-damping%vorticity_prefactor * strain_mag(ks:ks+1, js:js+1, is:is+1) * dt)
+                            do l = 1,3
+                                vortend(l) = vortend(l)+sum(weight(1, :, :) * time_fact(1, :, :) * &
+                                         (vortg(ks+1, js:js+1, is:is+1, l)  - parcels%vorticity(l,n)))
+                            enddo
+                        elseif ((ks < box%lo(3)+1) .or. (ks+1 > box%hi(3))) then
+                            ! Note this exponential factor can be different for vorticity/scalars
+                            time_fact = one - exp(-damping%vorticity_prefactor * strain_mag(ks:ks+1, js:js+1, is:is+1) * dt)
+                            do l = 1,3
+                                vortend(l) = vortend(l)+sum(weight(0, :, :) * time_fact(0, :, :) * &
+                                         (vortg(ks, js:js+1, is:is+1, l)  - parcels%vorticity(l,n)))
+                            enddo
+                        elseif (ks+1 > box%hi(3)-1) then
+                            ! Note this exponential factor can be different for vorticity/scalars
+                            time_fact = one - exp(-damping%vorticity_prefactor * strain_mag(ks:ks+1, js:js+1, is:is+1) * dt)
+                            do l = 1,3
+                                vortend(l) = vortend(l)+sum(weight(1, :, :) * time_fact(1, :, :) * &
+                                         (vortg(ks+1, js:js+1, is:is+1, l)  - parcels%vorticity(l,n)))
+                            enddo
+                         endif
+                    endif
+                    if (damping%l_scalars) then
+                        time_fact = one - exp(-damping%scalars_prefactor * strain_mag(ks:ks+1, js:js+1, is:is+1) * dt)
 #ifndef ENABLE_DRY_MODE
-                    parcels%qv(n)=parcels%qv(n)*(1.0-sum(weight*time_fact))&
-                    +sum(weight*time_fact*qvg(ks:ks+1, js:js+1, is:is+1))
-                    parcels%ql(n)=parcels%ql(n)*(1.0-sum(weight*time_fact))&
-                    +sum(weight*time_fact*qlg(ks:ks+1, js:js+1, is:is+1))
-                enddo
+                        qvtend = qvtend + sum(weight * time_fact * (qvg(ks:ks+1, js:js+1, is:is+1) - parcels%qv(n)))
+                        qltend = qltend + sum(weight * time_fact * (qlg(ks:ks+1, js:js+1, is:is+1) - parcels%ql(n)))
 #endif
-             enddo
+                        thetatend = thetatend + sum(weight * time_fact * (thetag(ks:ks+1, js:js+1, is:is+1) - parcels%theta(n)))
+                    else if (damping%l_surface_scalars) then
+                        ! outside the bounds
+                        if (ks < box%lo(3))  then
+                            ! Note this exponential factor can be different for vorticity/scalars
+                            time_fact = one - exp(-damping%scalars_prefactor * strain_mag(ks:ks+1, js:js+1, is:is+1) * dt)
+#ifndef ENABLE_DRY_MODE
+                            qvtend = qvtend + sum(weight(1, :, :) * time_fact(1, :, :) * &
+                                                  (qvg(ks+1, js:js+1, is:is+1) - parcels%qv(n)))
+                            qltend = qltend + sum(weight(1, :, :) * time_fact(1, :, :) * &
+                                                  (qlg(ks+1, js:js+1, is:is+1) - parcels%ql(n)))
+#endif
+                            thetatend = thetatend + sum(weight(1, :, :) * time_fact(1, :, :) * &
+                                                        (thetag(ks+1, js:js+1, is:is+1) - parcels%theta(n)))
+                        elseif ((ks < box%lo(3)+1) .or. (ks+1 > box%hi(3))) then
+                            ! Note this exponential factor can be different for vorticity/scalars
+                            time_fact = one - exp(-damping%scalars_prefactor * strain_mag(ks:ks+1, js:js+1, is:is+1) * dt)
+#ifndef ENABLE_DRY_MODE
+                            qvtend = qvtend + sum(weight(0, :, :) * time_fact(0, :, :) * &
+                                                  (qvg(ks, js:js+1, is:is+1) - parcels%qv(n)))
+                            qltend = qltend + sum(weight(0, :, :) * time_fact(0, :, :) * &
+                                                  (qlg(ks, js:js+1, is:is+1) - parcels%ql(n)))
+#endif
+                            thetatend = thetatend + sum(weight(0, :, :) * time_fact(0, :, :) * &
+                                                        (thetag(ks, js:js+1, is:is+1) - parcels%theta(n)))
+                        elseif (ks+1 > box%hi(3)-1) then
+                            ! Note this exponential factor can be different for vorticity/scalars
+                            time_fact = one - exp(-damping%scalars_prefactor * strain_mag(ks:ks+1, js:js+1, is:is+1) * dt)
+#ifndef ENABLE_DRY_MODE
+                            qvtend = qvtend + sum(weight(1, :, :) * time_fact(1, :, :) * &
+                                                  (qvg(ks+1, js:js+1, is:is+1) - parcels%qv(n)))
+                            qltend = qltend + sum(weight(1, :, :) * time_fact(1, :, :) * &
+                                                  (qlg(ks+1, js:js+1, is:is+1) - parcels%ql(n)))
+#endif
+                            thetatend = thetatend + sum(weight(1, :, :) * time_fact(1, :, :) * &
+                                                        (thetag(ks+1, js:js+1, is:is+1) - parcels%theta(n)))
+                         endif
+                    endif
+                enddo
+                ! Add all the tendencies only at the end
+                if (damping%l_vorticity .or. damping%l_surface_vorticity) then
+                    do l=1,3
+                        parcels%vorticity(l,n) = parcels%vorticity(l,n) + vortend(l)
+                    enddo
+                endif
+                if (damping%l_scalars .or. damping%l_surface_scalars) then
+#ifndef ENABLE_DRY_MODE
+                    parcels%qv(n) = parcels%qv(n) + qvtend
+                    parcels%ql(n) = parcels%ql(n) + qltend
+#endif
+                    parcels%theta(n) = parcels%theta(n) + thetatend
+                endif
+            enddo
+            !$omp end do
+            !$omp end parallel
+
+            call stop_timer(damping_timer)
 
         end subroutine perturbation_damping
 

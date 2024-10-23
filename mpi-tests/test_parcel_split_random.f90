@@ -2,7 +2,7 @@ program test_parcel_split_random
     use mpi_environment
     use options, only : parcel
     use constants, only : zero, one, two
-    use parameters, only : update_parameters, nx, ny, nz, lower, extent
+    use parameters, only : update_parameters, nx, ny, nz, lower, extent, max_num_parcels
     use parcel_container
     use parcel_init, only : parcel_default
     use parcel_mpi, only : parcel_communicate
@@ -15,10 +15,10 @@ program test_parcel_split_random
     implicit none
 
     integer, parameter   :: nt = 100
-    integer              :: i, n, sk, j, n_orig, n_splits
-    integer, allocatable :: seed(:)
+    integer              :: i, n, j, n_orig, n_splits
     double precision     :: rn(3)
     double precision     :: vol, b(5)
+    logical, allocatable :: picked(:)
 
     !--------------------------------------------------------------------------
     ! Initialise MPI and setup all timers:
@@ -29,11 +29,7 @@ program test_parcel_split_random
         print '(a35, i6, a11)', "Running 'test_parcel_split_random' with ", world%size, " MPI ranks."
     endif
 
-    call random_seed(size=sk)
-    allocate(seed(1:sk))
-    seed(:) = world%rank
-    call random_seed(put=seed)
-
+    call init_rng
 
     call register_all_timers
 
@@ -54,6 +50,10 @@ program test_parcel_split_random
 
     parcel%n_per_cell = 8
     parcel%lambda_max = 4.0d0
+
+    allocate(picked(max_num_parcels))
+
+    picked = .false.
 
     !--------------------------------------------------------------------------
     ! Setup fields: All fields are zero
@@ -80,20 +80,23 @@ program test_parcel_split_random
             print '(a15, i4)', "Performing step", i
         endif
 
-        ! Move each parcel by random value in x and y
         do n = 1, n_parcels
             call random_number(rn)
 
             if (rn(3) > 0.5d0) then
                 call random_number(rn(3))
                 j = nint(n_parcels * rn(3)) + 1
-                parcels%B(1, j) = 5.0d0 * parcels%B(1, j)
-                parcels%theta(j) = 1.0d0
+
+                if (.not. picked(j)) then
+                    parcels%B(1, j) = 5.0d0 * parcels%B(1, j)
+
+                    picked(j) = .true.
+                endif
             endif
 
         enddo
 
-        n_splits = int(sum(parcels%theta(1:n_parcels)))
+        n_splits = count(picked)
         call perform_integer_reduction(n_splits)
 
         if (world%rank == world%root) then
@@ -115,12 +118,13 @@ program test_parcel_split_random
         n_parcels = n_orig
         do n = 1, n_parcels
             parcels%volume(n) = vol
-            parcels%theta(n) = 0.0d0
             parcels%B(:, n) = b
 
             call random_number(rn)
             parcels%position(:, n) = box%lower + box%extent * rn
         enddo
+
+        picked = .false.
 
         call perform_integer_reduction(n_orig)
         n_total_parcels = n_orig
@@ -142,6 +146,8 @@ program test_parcel_split_random
     call stop_timer(epic_timer)
 
     call print_timer
+
+    deallocate(picked)
 
     call mpi_env_finalise
 
