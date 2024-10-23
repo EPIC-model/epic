@@ -63,6 +63,7 @@ module parcel_interpl
     integer, parameter :: n_field_swap_diag = 4
 #else
     integer, parameter :: n_field_swap_diag = 2
+#endif
 
 #ifndef ENABLE_G2P_1POINT
     integer, parameter :: n_points_g2p = 4
@@ -89,7 +90,7 @@ module parcel_interpl
             , halo_swap_timer   &
             , trilinear         &
             , saturation_adjustment &
-            , bilinear
+            , bilinear          &
             , n_points_p2g      &
             , point_weight_p2g
 

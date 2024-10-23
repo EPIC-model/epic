@@ -170,7 +170,7 @@ module test_utils
                             parcels%vorticity(3, l) = 20.0d0 * rn(6) - 10.d0
 
                             ! buoyancy between -1 and 1: y = 2 * x - 1
-                            parcels%buoyancy(l) = 2.0d0 * rn(7) - 1.d0
+                            parcels%theta(l) = 2.0d0 * rn(7) - 1.d0
 
                             if ((x >= xlo) .and. (x <= xhi)  .and. &
                                 (y >= ylo) .and. (y <= yhi)  .and. &
@@ -242,9 +242,9 @@ module test_utils
                parcels%vorticity(:, rand_target) = parcels%vorticity(:, shuffle_index)
                parcels%vorticity(:, shuffle_index) = tmp_vec
 
-               tmp_var = parcels%buoyancy(rand_target)
-               parcels%buoyancy(rand_target) = parcels%buoyancy(shuffle_index)
-               parcels%buoyancy(shuffle_index) = tmp_var
+               tmp_var = parcels%theta(rand_target)
+               parcels%theta(rand_target) = parcels%theta(shuffle_index)
+               parcels%theta(shuffle_index) = tmp_var
 
                tmp_var = parcels%volume(rand_target)
                parcels%volume(rand_target) = parcels%volume(shuffle_index)
