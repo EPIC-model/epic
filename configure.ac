@@ -89,15 +89,13 @@ else
 fi
 
 AC_LANG_PUSH([C])
-AC_SEARCH_LIBS([nc_open], [netcdf], [], [], [])
+AC_SEARCH_LIBS([nc_create], [netcdf], [], [], [])
 AC_MSG_CHECKING([whether we can compile a NetCDF C program])
 AC_LINK_IFELSE(
-[AC_LANG_PROGRAM([], [
-    #include <netcdf.h>
-    int main() {
-        int ncid;
-        nc_create("dummy.nc", NC_CLOBBER, &ncid);
-    }])],
+[AC_LANG_PROGRAM([#include <netcdf.h>], [
+    int ncid;
+    nc_create("dummy.nc", NC_CLOBBER, &ncid);
+    ])],
 [netcdf_c_found=yes],
 [netcdf_c_found=no])
 AC_MSG_RESULT([$netcdf_c_found])
