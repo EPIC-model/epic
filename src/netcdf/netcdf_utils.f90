@@ -26,9 +26,37 @@ module netcdf_utils
         integer              :: dtype     = -1
         integer              :: varid     = -1
         logical              :: l_enabled = .false.
+
+        contains
+            procedure :: set_info
     end type netcdf_info
 
     contains
+
+        subroutine set_info(this, name, long_name, std_name, unit, dtype)
+            class(netcdf_info), intent(inout) :: this
+            character(*),       intent(in)    :: name
+            character(*),       intent(in)    :: long_name
+            character(*),       intent(in)    :: std_name
+            character(*),       intent(in)    :: unit
+            integer,            intent(in)    :: dtype
+            integer                           :: l
+
+            l = len(name)
+            this%name(1:l) = name
+
+            l = len(long_name)
+            this%long_name(1:l) = long_name
+
+            l = len(std_name)
+            this%std_name(1:l) = std_name
+
+            l = len(unit)
+            this%unit(1:l) = unit
+
+            this%dtype = dtype
+
+        end subroutine set_info
 
         ! This subroutine takes an array of length 3 or 4
         ! single characters defining the dimension names.

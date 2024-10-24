@@ -211,7 +211,7 @@ module field_diagnostics_netcdf
 
         subroutine set_netcdf_field_diagnostics_info
 
-            nc_dset(NC_RMS_VOL) = netcdf_info(                          &
+            call nc_dset(NC_RMS_VOL)%set_info(                          &
                 name='rms_v',                                           &
                 long_name='relative rms volume error',                  &
                 std_name='',                                            &
@@ -219,70 +219,70 @@ module field_diagnostics_netcdf
                 dtype=NF90_DOUBLE)
 
 
-            nc_dset(NC_ABS_ERR_VOL) = netcdf_info(                      &
+            call nc_dset(NC_ABS_ERR_VOL)%set_info(                      &
                 name='abserr_v',                                        &
                 long_name='max absolute normalised volume error',       &
                 std_name='',                                            &
                 unit='m^3',                                             &
                 dtype=NF90_DOUBLE)
 
-            nc_dset(NC_MAX_NPAR) = netcdf_info(                         &
+            call nc_dset(NC_MAX_NPAR)%set_info(                         &
                 name='max_npar',                                        &
                 long_name='max num parcels per cell',                   &
                 std_name='',                                            &
                 unit='1',                                               &
                 dtype=NF90_INT)
 
-            nc_dset(NC_MIN_NPAR) = netcdf_info(                         &
+            call nc_dset(NC_MIN_NPAR)%set_info(                         &
                 name='min_npar',                                        &
                 long_name='min num parcels per cell',                   &
                 std_name='',                                            &
                 unit='1',                                               &
                 dtype=NF90_INT)
 
-            nc_dset(NC_AVG_NPAR) = netcdf_info(                         &
+            call nc_dset(NC_AVG_NPAR)%set_info(                         &
                 name='avg_npar',                                        &
                 long_name='average num parcels per cell',               &
                 std_name='',                                            &
                 unit='1',                                               &
                 dtype=NF90_DOUBLE)
 
-            nc_dset(NC_AVG_NSPAR) = netcdf_info(                        &
+            call nc_dset(NC_AVG_NSPAR)%set_info(                        &
                 name='avg_nspar',                                       &
                 long_name='average num small parcels per cell',         &
                 std_name='',                                            &
                 unit='1',                                               &
                 dtype=NF90_DOUBLE)
 
-            nc_dset(NC_KE) = netcdf_info(                               &
+            call nc_dset(NC_KE)%set_info(                               &
                 name='ke',                                              &
                 long_name='domain-averaged kinetic energy',             &
                 std_name='',                                            &
                 unit='m^2/s^2',                                         &
                 dtype=NF90_DOUBLE)
 
-            nc_dset(NC_APE) = netcdf_info(                              &
+            call nc_dset(NC_APE)%set_info(                              &
                 name='ape',                                             &
                 long_name='domain-averaged available potential energy', &
                 std_name='',                                            &
                 unit='m^2/s^2',                                         &
                 dtype=NF90_DOUBLE)
 
-            nc_dset(NC_EN) = netcdf_info(                               &
+            call nc_dset(NC_EN)%set_info(                               &
                 name='en',                                              &
                 long_name='domain-averaged enstrophy',                  &
                 std_name='',                                            &
                 unit='1/s^2',                                           &
                 dtype=NF90_DOUBLE)
 
-            nc_dset(NC_MIN_BUOY) = netcdf_info(                         &
+            call nc_dset(NC_MIN_BUOY)%set_info(                         &
                 name='min_buoyancy',                                    &
                 long_name='minimum gridded buoyancy',                   &
                 std_name='',                                            &
                 unit='m/s^2',                                           &
                 dtype=NF90_DOUBLE)
 
-            nc_dset(NC_MAX_BUOY) = netcdf_info(                         &
+            call nc_dset(NC_MAX_BUOY)%set_info(                         &
                 name='max_buoyancy',                                    &
                 long_name='maximum gridded buoyancy',                   &
                 std_name='',                                            &
