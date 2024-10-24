@@ -462,99 +462,99 @@ module field_netcdf
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine set_netcdf_field_info
-            nc_dset(NC_X_VEL) = netcdf_info(name='x_velocity',                    &
+            call nc_dset(NC_X_VEL)%set_info(name='x_velocity',                    &
                                             long_name='x velocity component',     &
                                             std_name='',                          &
                                             unit='m/s',                           &
                                             dtype=NF90_DOUBLE)
 
-            nc_dset(NC_Y_VEL) = netcdf_info(name='y_velocity',                    &
+            call nc_dset(NC_Y_VEL)%set_info(name='y_velocity',                    &
                                             long_name='y velocity component',     &
                                             std_name='',                          &
                                             unit='m/s',                           &
                                             dtype=NF90_DOUBLE)
 
-            nc_dset(NC_Z_VEL) = netcdf_info(name='z_velocity',                    &
+            call nc_dset(NC_Z_VEL)%set_info(name='z_velocity',                    &
                                             long_name='z velocity component',     &
                                             std_name='',                          &
                                             unit='m/s',                           &
                                             dtype=NF90_DOUBLE)
 
-            nc_dset(NC_X_VTEND) = netcdf_info(name='x_vorticity_tendency',        &
+            call nc_dset(NC_X_VTEND)%set_info(name='x_vorticity_tendency',        &
                                               long_name='x vorticity tendency',   &
                                               std_name='',                        &
                                               unit='1/s',                         &
                                               dtype=NF90_DOUBLE)
 
-            nc_dset(NC_Y_VTEND) = netcdf_info(name='y_vorticity_tendency',        &
+            call nc_dset(NC_Y_VTEND)%set_info(name='y_vorticity_tendency',        &
                                               long_name='y vorticity tendency',   &
                                               std_name='',                        &
                                               unit='1/s',                         &
                                               dtype=NF90_DOUBLE)
 
-            nc_dset(NC_Z_VTEND) = netcdf_info(name='z_vorticity_tendency',        &
+            call nc_dset(NC_Z_VTEND)%set_info(name='z_vorticity_tendency',        &
                                               long_name='z vorticity tendency',   &
                                               std_name='',                        &
                                               unit='1/s',                         &
                                               dtype=NF90_DOUBLE)
 
-            nc_dset(NC_NPARG) = netcdf_info(name='nparg',                            &
+            call nc_dset(NC_NPARG)%set_info(name='nparg',                            &
                                             long_name='number of parcels per cell',  &
                                             std_name='',                             &
                                             unit='1',                                &
                                             dtype=NF90_INT)
 
-            nc_dset(NC_NSPARG) = netcdf_info(name='nsparg',                                &
+            call nc_dset(NC_NSPARG)%set_info(name='nsparg',                                &
                                              long_name='number of small parcels per cell', &
                                              std_name='',                                  &
                                              unit='1',                                     &
                                              dtype=NF90_INT)
 
-            nc_dset(NC_X_VOR) = netcdf_info(name='x_vorticity',                   &
+            call nc_dset(NC_X_VOR)%set_info(name='x_vorticity',                   &
                                             long_name='x vorticity component',    &
                                             std_name='',                          &
                                             unit='1/s',                           &
                                             dtype=NF90_DOUBLE)
 
-            nc_dset(NC_Y_VOR) = netcdf_info(name='y_vorticity',                   &
+            call nc_dset(NC_Y_VOR)%set_info(name='y_vorticity',                   &
                                             long_name='y vorticity component',    &
                                             std_name='',                          &
                                             unit='1/s',                           &
                                             dtype=NF90_DOUBLE)
 
-            nc_dset(NC_Z_VOR) = netcdf_info(name='z_vorticity',                   &
+            call nc_dset(NC_Z_VOR)%set_info(name='z_vorticity',                   &
                                             long_name='z vorticity component',    &
                                             std_name='',                          &
                                             unit='1/s',                           &
                                             dtype=NF90_DOUBLE)
 
-            nc_dset(NC_TBUOY) = netcdf_info(name='buoyancy',                      &
+            call nc_dset(NC_TBUOY)%set_info(name='buoyancy',                      &
                                             long_name='total buoyancy',           &
                                             std_name='',                          &
                                             unit='m/s^2',                         &
                                             dtype=NF90_DOUBLE)
 
 #ifndef ENABLE_DRY_MODE
-            nc_dset(NC_DBUOY) = netcdf_info(name='dry_buoyancy',                  &
+            call nc_dset(NC_DBUOY)%set_info(name='dry_buoyancy',                  &
                                             long_name='dry buoyancy',             &
                                             std_name='',                          &
                                             unit='m/s^2',                         &
                                             dtype=NF90_DOUBLE)
 
-            nc_dset(NC_HUM) = netcdf_info(name='humidity',                        &
+            call nc_dset(NC_HUM)%set_info(name='humidity',                        &
                                           long_name='specific humidity',          &
                                           std_name='',                            &
                                           unit='kg/kg',                           &
                                           dtype=NF90_DOUBLE)
 
-            nc_dset(NC_LBUOY) = netcdf_info(name='liquid_water_content',          &
+            call nc_dset(NC_LBUOY)%set_info(name='liquid_water_content',          &
                                             long_name='liquid-water content',     &
                                             std_name='',                          &
                                             unit='1',                             &
                                             dtype=NF90_DOUBLE)
 #endif
 
-            nc_dset(NC_VOL) = netcdf_info(name='volume',                          &
+            call nc_dset(NC_VOL)%set_info(name='volume',                          &
                                           long_name='volume',                     &
                                           std_name='',                            &
                                           unit='m^3',                             &
