@@ -260,28 +260,28 @@ module parcel_diagnostics_netcdf
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine set_netcdf_parcel_diagnostics_info
-            nc_dset(NC_APE) = netcdf_info(                                  &
+            call nc_dset(NC_APE)%set_info(                                  &
                 name='ape',                                                 &
                 long_name='domain-averaged available potential energy',     &
                 std_name='',                                                &
                 unit='m^2/s^2',                                             &
                 dtype=NF90_DOUBLE)
 
-            nc_dset(NC_KE) = netcdf_info(                                   &
+            call nc_dset(NC_KE)%set_info(                                   &
                 name='ke',                                                  &
                 long_name='domain-averaged kinetic energy',                 &
                 std_name='',                                                &
                 unit='m^2/s^2',                                             &
                 dtype=NF90_DOUBLE)
 
-            nc_dset(NC_TE) = netcdf_info(                                   &
+            call nc_dset(NC_TE)%set_info(                                   &
                 name='te',                                                  &
                 long_name='domain-averaged total energy',                   &
                 std_name='',                                                &
                 unit='m^2/s^2',                                             &
                 dtype=NF90_DOUBLE)
 
-            nc_dset(NC_EN) = netcdf_info(                                   &
+            call nc_dset(NC_EN)%set_info(                                   &
                 name='en',                                                  &
                 long_name='domain-averaged enstrophy',                      &
                 std_name='',                                                &
@@ -289,70 +289,70 @@ module parcel_diagnostics_netcdf
                 dtype=NF90_DOUBLE)
 
             ! write as a 64-bit double as netCDF only supports 32-bit integers
-            nc_dset(NC_NPAR) = netcdf_info(                                 &
+            call nc_dset(NC_NPAR)%set_info(                                 &
                 name='n_parcels',                                           &
                 long_name='number of parcels',                              &
                 std_name='',                                                &
                 unit='1',                                                   &
                 dtype=NF90_DOUBLE)
 
-            nc_dset(NC_NSPAR) = netcdf_info(                                &
+            call nc_dset(NC_NSPAR)%set_info(                                &
                 name='n_small_parcel',                                      &
                 long_name='number of small parcels',                        &
                 std_name='',                                                &
                 unit='1',                                                   &
                 dtype=NF90_INT)
 
-            nc_dset(NC_AVG_LAM) = netcdf_info(                              &
+            call nc_dset(NC_AVG_LAM)%set_info(                              &
                 name='avg_lam',                                             &
                 long_name='average aspect ratio',                           &
                 std_name='',                                                &
                 unit='1',                                                   &
                 dtype=NF90_DOUBLE)
 
-            nc_dset(NC_STD_LAM) = netcdf_info(                              &
+            call nc_dset(NC_STD_LAM)%set_info(                              &
                 name='std_lam',                                             &
                 long_name='standard deviation aspect ratio',                &
                 std_name='',                                                &
                 unit='1',                                                   &
                 dtype=NF90_DOUBLE)
 
-            nc_dset(NC_AVG_VOL) = netcdf_info(                              &
+            call nc_dset(NC_AVG_VOL)%set_info(                              &
                 name='avg_vol',                                             &
                 long_name='average volume',                                 &
                 std_name='',                                                &
                 unit='m^3',                                                 &
                 dtype=NF90_DOUBLE)
 
-            nc_dset(NC_STD_VOL) = netcdf_info(                              &
+            call nc_dset(NC_STD_VOL)%set_info(                              &
                 name='std_vol',                                             &
                 long_name='standard deviation volume',                      &
                 std_name='',                                                &
                 unit='m^3',                                                 &
                 dtype=NF90_DOUBLE)
 
-            nc_dset(NC_SUM_VOL) = netcdf_info(                              &
+            call nc_dset(NC_SUM_VOL)%set_info(                              &
                 name='sum_vol',                                             &
                 long_name='total volume',                                   &
                 std_name='',                                                &
                 unit='m^3',                                                 &
                 dtype=NF90_DOUBLE)
 
-            nc_dset(NC_RMS_X_VOR) = netcdf_info(                            &
+            call nc_dset(NC_RMS_X_VOR)%set_info(                            &
                 name='x_rms_vorticity',                                     &
                 long_name='root mean square of x vorticity component',      &
                 std_name='',                                                &
                 unit='1/s',                                                 &
                 dtype=NF90_DOUBLE)
 
-            nc_dset(NC_RMS_Y_VOR) = netcdf_info(                            &
+            call nc_dset(NC_RMS_Y_VOR)%set_info(                            &
                 name='y_rms_vorticity',                                     &
                 long_name='root mean square of y vorticity component',      &
                 std_name='',                                                &
                 unit='1/s',                                                 &
                 dtype=NF90_DOUBLE)
 
-            nc_dset(NC_RMS_Z_VOR) = netcdf_info(                            &
+            call nc_dset(NC_RMS_Z_VOR)%set_info(                            &
                 name='z_rms_vorticity',                                     &
                 long_name='root mean square of z vorticity component',      &
                 std_name='',                                                &
@@ -360,7 +360,7 @@ module parcel_diagnostics_netcdf
                 dtype=NF90_DOUBLE)
 
             ! write as a 64-bit double as netCDF only supports 32-bit integers
-            nc_dset(NC_NPAR_SPLIT) = netcdf_info(                           &
+            call nc_dset(NC_NPAR_SPLIT)%set_info(                           &
                 name='n_parcel_splits',                                     &
                  long_name='number of parcel splits since last time',       &
                  std_name='',                                               &
@@ -368,7 +368,7 @@ module parcel_diagnostics_netcdf
                  dtype=NF90_DOUBLE)
 
             ! write as a 64-bit double as netCDF only supports 32-bit integers
-            nc_dset(NC_NBIG_CLOSE) = netcdf_info(                           &
+            call nc_dset(NC_NBIG_CLOSE)%set_info(                           &
                 name='n_big_neighbour',                                     &
                  long_name='number of big parcel neighbours',               &
                  std_name='',                                               &
@@ -376,21 +376,21 @@ module parcel_diagnostics_netcdf
                  dtype=NF90_DOUBLE)
 
             ! write as a 64-bit double as netCDF only supports 32-bit integers
-            nc_dset(NC_NPAR_MERGE) = netcdf_info(                           &
+            call nc_dset(NC_NPAR_MERGE)%set_info(                           &
                 name='n_parcel_merges',                                     &
                  long_name='number of parcel merges since last time',       &
                  std_name='',                                               &
                  unit='1',                                                  &
                  dtype=NF90_DOUBLE)
 
-            nc_dset(NC_MIN_BUOY) = netcdf_info(                             &
+            call nc_dset(NC_MIN_BUOY)%set_info(                             &
                 name='min_buoyancy',                                        &
                 long_name='minimum parcel buoyancy',                        &
                 std_name='',                                                &
                 unit='m/s^2',                                               &
                 dtype=NF90_DOUBLE)
 
-            nc_dset(NC_MAX_BUOY) = netcdf_info(                             &
+            call nc_dset(NC_MAX_BUOY)%set_info(                             &
                 name='max_buoyancy',                                        &
                 long_name='maximum parcel buoyancy',                        &
                 std_name='',                                                &
@@ -398,7 +398,7 @@ module parcel_diagnostics_netcdf
                 dtype=NF90_DOUBLE)
 
             ! write as a 64-bit double as netCDF only supports 32-bit integers
-            nc_dset(NC_NWAY_MERGE) = netcdf_info(                           &
+            call nc_dset(NC_NWAY_MERGE)%set_info(                           &
                 name='n_way_merging',                                       &
                 long_name='n-way merging',                                  &
                 std_name='',                                                &

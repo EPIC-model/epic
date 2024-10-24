@@ -680,7 +680,7 @@ module parcel_netcdf
             ! reset the labels to Fortran index which corresponds to current label
             ! reset the dilution to get this from time step to time step
             do n = pfirst, plast
-               parcels%label(n) = first + n - pfirst 
+               parcels%label(n) = first + n - pfirst
                parcels%dilution(n) = 0
             end do
 #endif
@@ -827,134 +827,134 @@ module parcel_netcdf
 
         subroutine set_netcdf_parcel_info
 
-            nc_dset(NC_X_POS) = netcdf_info(name='x_position',                   &
+            call nc_dset(NC_X_POS)%set_info(name='x_position',                   &
                                             long_name='x position component',    &
                                             std_name='',                         &
                                             unit='m',                            &
                                             dtype=NF90_DOUBLE)
 
-            nc_dset(NC_Y_POS) = netcdf_info(name='y_position',                   &
+            call nc_dset(NC_Y_POS)%set_info(name='y_position',                   &
                                             long_name='y position component',    &
                                             std_name='',                         &
                                             unit='m',                            &
                                             dtype=NF90_DOUBLE)
 
-            nc_dset(NC_Z_POS) = netcdf_info(name='z_position',                   &
+            call nc_dset(NC_Z_POS)%set_info(name='z_position',                   &
                                             long_name='z position component',    &
                                             std_name='',                         &
                                             unit='m',                            &
                                             dtype=NF90_DOUBLE)
 
-            nc_dset(NC_START) = netcdf_info(name='start_index',                  &
+            call nc_dset(NC_START)%set_info(name='start_index',                  &
                                             long_name='MPI rank start index',    &
                                             std_name='',                         &
                                             unit='1',                            &
                                             dtype=NF90_INT)
 
-            nc_dset(NC_XLO) = netcdf_info(name='xlo',                           &
+            call nc_dset(NC_XLO)%set_info(name='xlo',                           &
                                           long_name='lower box boundary in x',  &
                                           std_name='',                          &
                                           unit='1',                             &
                                           dtype=NF90_INT)
 
-            nc_dset(NC_XHI) = netcdf_info(name='xhi',                           &
+            call nc_dset(NC_XHI)%set_info(name='xhi',                           &
                                           long_name='upper box boundary in x',  &
                                           std_name='',                          &
                                           unit='1',                             &
                                           dtype=NF90_INT)
 
-            nc_dset(NC_YLO) = netcdf_info(name='ylo',                           &
+            call nc_dset(NC_YLO)%set_info(name='ylo',                           &
                                           long_name='lower box boundary in y',  &
                                           std_name='',                          &
                                           unit='1',                             &
                                           dtype=NF90_INT)
 
-            nc_dset(NC_YHI) = netcdf_info(name='yhi',                           &
+            call nc_dset(NC_YHI)%set_info(name='yhi',                           &
                                           long_name='upper box boundary in y',  &
                                           std_name='',                          &
                                           unit='1',                             &
                                           dtype=NF90_INT)
 
-            nc_dset(NC_B11) = netcdf_info(name='B11',                              &
+            call nc_dset(NC_B11)%set_info(name='B11',                              &
                                           long_name='B11 element of shape matrix', &
                                           std_name='',                             &
                                           unit='m^2',                              &
                                           dtype=NF90_DOUBLE)
 
-            nc_dset(NC_B12) = netcdf_info(name='B12',                              &
+            call nc_dset(NC_B12)%set_info(name='B12',                              &
                                           long_name='B12 element of shape matrix', &
                                           std_name='',                             &
                                           unit='m^2',                              &
                                           dtype=NF90_DOUBLE)
 
-            nc_dset(NC_B13) = netcdf_info(name='B13',                              &
+            call nc_dset(NC_B13)%set_info(name='B13',                              &
                                           long_name='B13 element of shape matrix', &
                                           std_name='',                             &
                                           unit='m^2',                              &
                                           dtype=NF90_DOUBLE)
 
-            nc_dset(NC_B22) = netcdf_info(name='B22',                              &
+            call nc_dset(NC_B22)%set_info(name='B22',                              &
                                           long_name='B22 element of shape matrix', &
                                           std_name='',                             &
                                           unit='m^2',                              &
                                           dtype=NF90_DOUBLE)
 
-            nc_dset(NC_B23) = netcdf_info(name='B23',                              &
+            call nc_dset(NC_B23)%set_info(name='B23',                              &
                                           long_name='B23 element of shape matrix', &
                                           std_name='',                             &
                                           unit='m^2',                              &
                                           dtype=NF90_DOUBLE)
 
-            nc_dset(NC_VOL) = netcdf_info(name='volume',                           &
+            call nc_dset(NC_VOL)%set_info(name='volume',                           &
                                           long_name='parcel volume',               &
                                           std_name='',                             &
                                           unit='m^3',                              &
                                           dtype=NF90_DOUBLE)
 
-            nc_dset(NC_X_VOR) = netcdf_info(name='x_vorticity',                      &
+            call nc_dset(NC_X_VOR)%set_info(name='x_vorticity',                      &
                                             long_name='x vorticity component',       &
                                             std_name='',                             &
                                             unit='1/s',                              &
                                             dtype=NF90_DOUBLE)
 
-            nc_dset(NC_Y_VOR) = netcdf_info(name='y_vorticity',                      &
+            call nc_dset(NC_Y_VOR)%set_info(name='y_vorticity',                      &
                                             long_name='y vorticity component',       &
                                             std_name='',                             &
                                             unit='1/s',                              &
                                             dtype=NF90_DOUBLE)
 
-            nc_dset(NC_Z_VOR) = netcdf_info(name='z_vorticity',                      &
+            call nc_dset(NC_Z_VOR)%set_info(name='z_vorticity',                      &
                                             long_name='z vorticity component',       &
                                             std_name='',                             &
                                             unit='1/s',                              &
                                             dtype=NF90_DOUBLE)
 
-            nc_dset(NC_THETA) = netcdf_info(name='theta'               ,             &
+            call nc_dset(NC_THETA)%set_info(name='theta'               ,             &
                                            long_name='parcel potential temperature', &
                                            std_name='',                              &
                                            unit='K',                                 &
                                            dtype=NF90_DOUBLE)
 
 #ifndef ENABLE_DRY_MODE
-            nc_dset(NC_QV) = netcdf_info(name='qv',                                      &
+            call nc_dset(NC_QV)%set_info(name='qv',                                      &
                                           long_name='parcel water vapour mixing ratio',  &
                                           std_name='',                                   &
                                           unit='1',                                      &
                                           dtype=NF90_DOUBLE)
-            nc_dset(NC_QL) = netcdf_info(name='ql',                                      &
+            call nc_dset(NC_QL)%set_info(name='ql',                                      &
                                           long_name='parcel liquid water mixing ratio',  &
                                           std_name='',                                   &
                                           unit='1',                                      &
                                           dtype=NF90_DOUBLE)
 #endif
 #ifdef ENABLE_LABELS
-            nc_dset(NC_LABEL) = netcdf_info(name='label',                          &
+            call nc_dset(NC_LABEL)%set_info(name='label',                          &
                                           long_name='parcel label',                &
                                           std_name='',                             &
                                           unit='1',                                &
                                           dtype=NF90_INT64)
 
-            nc_dset(NC_DILUTION) = netcdf_info(name='dilution',                    &
+            call nc_dset(NC_DILUTION)%set_info(name='dilution',                    &
                                           long_name='parcel log dilution',         &
                                           std_name='',                             &
                                           unit='1',                                &
