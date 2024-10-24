@@ -43,15 +43,31 @@ module netcdf_utils
             integer                           :: l
 
             l = len(name)
+            if (l > len(this%name)) then
+                call mpi_stop(&
+                    "Error in netcdf_info::set_info: 'name' input '" // name // "' longer than allowed.")
+            endif
             this%name(1:l) = name
 
             l = len(long_name)
+            if (l > len(this%long_name)) then
+                call mpi_stop(&
+                    "Error in netcdf_info::set_info: 'long_name' input '" // long_name // "' longer than allowed.")
+            endif
             this%long_name(1:l) = long_name
 
             l = len(std_name)
+            if (l > len(this%std_name)) then
+                call mpi_stop(&
+                    "Error in netcdf_info::set_info: 'std_name' input '" // std_name // "' longer than allowed.")
+            endif
             this%std_name(1:l) = std_name
 
             l = len(unit)
+            if (l > len(this%unit)) then
+                call mpi_stop(&
+                    "Error in netcdf_info::set_info: 'unit' input '" // unit // "' longer than allowed.")
+            endif
             this%unit(1:l) = unit
 
             this%dtype = dtype
