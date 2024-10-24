@@ -83,7 +83,6 @@ module fields
 
             allocate(strain_mag(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
             allocate(volg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
-            allocate(strain_mag(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
 
 #ifndef NDEBUG
             allocate(sym_volg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
