@@ -181,8 +181,8 @@ module physics
             if (l_planet_vorticity) then
                 lat_ref = lat_degrees * deg2rad
                 f_cor(1) = zero
-                f_cor(2) = two * ang_vel * dcos(lat_ref)
-                f_cor(3) = two * ang_vel * dsin(lat_ref)
+                f_cor(2) = two * ang_vel * cos(lat_ref)
+                f_cor(3) = two * ang_vel * sin(lat_ref)
             else
                 f_cor = zero
             endif

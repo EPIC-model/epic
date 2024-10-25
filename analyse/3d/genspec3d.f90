@@ -90,10 +90,10 @@ program genspec
     rkymax = scy * dble(ny / 2)
     delk = sqrt(scx ** 2 + scy ** 2)
     delki = one / delk
-    kmax = nint(dsqrt(rkxmax ** 2 + rkymax ** 2) * delki)
+    kmax = nint(sqrt(rkxmax ** 2 + rkymax ** 2) * delki)
     do ky = 0, ny - 1
         do kx = 0, nx - 1
-            kmag(kx, ky) = nint(dsqrt(rkx(kx) ** 2 + rky(ky) ** 2) * delki)
+            kmag(kx, ky) = nint(sqrt(rkx(kx) ** 2 + rky(ky) ** 2) * delki)
         enddo
     enddo
 

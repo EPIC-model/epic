@@ -48,12 +48,12 @@ program test_ellipsoid_split
 
     do i = 0, 7
         theta = dble(i) * f14 * pi
-        st = dsin(theta)
-        ct = dcos(theta)
+        st = sin(theta)
+        ct = cos(theta)
         do j = 0, 7
             phi = dble(j) * f14 * pi
-            sp = dsin(phi)
-            cp = dcos(phi)
+            sp = sin(phi)
+            cp = cos(phi)
 
             call setup_parcels
 
@@ -99,7 +99,7 @@ program test_ellipsoid_split
 
         subroutine check_result
             ! analytic split
-            h = f12 * dsqrt(three / five * a2)
+            h = f12 * sqrt(three / five * a2)
             B11 = B11 - f34 * a2 * ct ** 2 * sp ** 2
             B12 = B12 - f34 * a2 * st * ct * sp ** 2
             B13 = B13 - f34 * a2 * ct * sp * cp

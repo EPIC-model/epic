@@ -4,7 +4,6 @@ module sta3dfft
                           , reverse_y               &
                           , intialise_mpi_reverse   &
                           , finalise_mpi_reverse
-    use stafft, only : dct, dst
     use constants, only : zero, one
     use stafft
     use sta2dfft

@@ -43,8 +43,8 @@ program test_ellipse_reflection
         !
 
         parcels%position(:, 1) = (/f12, - f12 * dx(2)/)
-        B11 = a2 * dcos(angle) ** 2 + b2 * dsin(angle) ** 2
-        B12 = f12 * (a2 - b2) * dsin(two * angle)
+        B11 = a2 * cos(angle) ** 2 + b2 * sin(angle) ** 2
+        B12 = f12 * (a2 - b2) * sin(two * angle)
         parcels%B(1, 1) = B11
         parcels%B(2, 1) = B12
 
@@ -59,8 +59,8 @@ program test_ellipse_reflection
         angle = dble(iter) * pi / 180.0d0
 
         parcels%position(:, 1) = (/f12, one + f12 * dx(2)/)
-        B11 = a2 * dcos(angle) ** 2 + b2 * dsin(angle) ** 2
-        B12 = f12 * (a2 - b2) * dsin(two * angle)
+        B11 = a2 * cos(angle) ** 2 + b2 * sin(angle) ** 2
+        B12 = f12 * (a2 - b2) * sin(two * angle)
         parcels%B(1, 1) = B11
         parcels%B(2, 1) = B12
 

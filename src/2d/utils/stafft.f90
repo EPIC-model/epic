@@ -119,8 +119,8 @@ module stafft
             enddo
 
             do i = 1, n-1
-                trig(n+i) = -dsin(trig(i))
-                trig(i)   =  dcos(trig(i))
+                trig(n+i) = -sin(trig(i))
+                trig(i)   =  cos(trig(i))
             enddo
         end subroutine
 
@@ -273,7 +273,7 @@ module stafft
 
             ! Multiply by the normalisation constant and put
             ! transformed array in the right location:
-            normfac = one / dsqrt(dble(n))
+            normfac = one / sqrt(dble(n))
             if (orig) then
                 do i= 0, m * n - 1
                     x(i) = x(i) * normfac
@@ -388,7 +388,7 @@ module stafft
 
         ! Multiply by the normalisation constant and put
         ! transformed array in the right location:
-        normfac = two / dsqrt(dble(n))
+        normfac = two / sqrt(dble(n))
         if (orig) then
             do i = 0, m * n - 1
                 x(i) = x(i) * normfac
@@ -412,7 +412,7 @@ module stafft
         integer                         :: i, j, nd2
 
         fpin = pi / dble(n)
-        rtn = dsqrt(dble(n))
+        rtn = sqrt(dble(n))
 
         !Pre-process the array and store it in wk:
         do i = 1, m
@@ -421,7 +421,7 @@ module stafft
 
         do j = 1, n - 1
             do i = 1, m
-                wk(i, j) = f12 * (x(i, j) + x(i, n - j)) - dsin(dble(j) * fpin) * (x(i, j) - x(i, n - j))
+                wk(i, j) = f12 * (x(i, j) + x(i, n - j)) - sin(dble(j) * fpin) * (x(i, j) - x(i, n - j))
             enddo
         enddo
 
@@ -432,7 +432,7 @@ module stafft
             rowsum = zero
             rowsum = rowsum + f12 * x(i, 0)
             do j = 1, n - 1
-                rowsum = rowsum + x(i, j) * dcos(dble(j) * fpin)
+                rowsum = rowsum + x(i, j) * cos(dble(j) * fpin)
             enddo
             rowsum = rowsum - f12 * x(i, n)
             x(i, n) = rt2 * rowsum / rtn
@@ -492,7 +492,7 @@ module stafft
         !Next set up the rest of the array:
         do j = 1, n - 1
             do i = 1, m
-                wk(i, j) = f12 * (x(i, j) - x(i, n - j)) + dsin(dble(j) * fpin) * (x(i, j) + x(i, n - j))
+                wk(i, j) = f12 * (x(i, j) - x(i, n - j)) + sin(dble(j) * fpin) * (x(i, j) + x(i, n - j))
             enddo
         enddo
 

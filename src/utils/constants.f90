@@ -20,7 +20,7 @@ module constants
     double precision, parameter :: hundred  = ten ** 2
     double precision, parameter :: thousand = ten ** 3
 
-    double precision, parameter :: pi     = dacos(-one)
+    double precision, parameter :: pi     = acos(-one)
     double precision, parameter :: twopi  = two * pi
     double precision, parameter :: fpi    = one / pi
     double precision, parameter :: fpi2   = pi / two

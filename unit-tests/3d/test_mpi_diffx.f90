@@ -48,7 +48,7 @@ program test_mpi_diffx
             y = lower(2) + dble(j) * dx(2)
             do k = box%lo(3), box%hi(3)
                 z = lower(3) + dble(k) * dx(3)
-                fp(k, j, i) = dcos(four * x)
+                fp(k, j, i) = cos(four * x)
             enddo
         enddo
     enddo
@@ -72,7 +72,7 @@ program test_mpi_diffx
             y = lower(2) + dble(j) * dx(2)
             do k = box%lo(3), box%hi(3)
                 z = lower(3) + dble(k) * dx(3)
-                passed = (passed .and. (fp(k, j, i) - (-four * dsin(four * x)) < 1.0e-12))
+                passed = (passed .and. (fp(k, j, i) - (-four * sin(four * x)) < 1.0e-12))
             enddo
         enddo
     enddo

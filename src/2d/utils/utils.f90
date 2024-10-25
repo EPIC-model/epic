@@ -13,7 +13,6 @@ module utils
     use parcel_diagnostics_netcdf, only : create_netcdf_parcel_stats_file, &
                                           write_netcdf_parcel_stats
     use parcel_diagnostics, only : calculate_parcel_diagnostics, calculate_peref
-    use field_diagnostics_netcdf
     use field_diagnostics, only : calculate_field_diagnostics
     use parcel_init, only : init_parcels
     use parcel_container, only : n_parcels, parcel_alloc

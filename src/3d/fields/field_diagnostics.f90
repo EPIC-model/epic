@@ -146,7 +146,7 @@ module field_diagnostics
             !
             ! final calculations
             !
-            field_stats(IDX_RMS_V) = dsqrt(field_stats(IDX_RMS_V) * ngridi) * vcelli
+            field_stats(IDX_RMS_V) = sqrt(field_stats(IDX_RMS_V) * ngridi) * vcelli
 
             call stop_timer(field_stats_timer)
 

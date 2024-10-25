@@ -50,7 +50,7 @@ program test_mpi_dst
             y = lower(2) + dble(j) * dx(2)
             do k = box%lo(3), box%hi(3)
                 z = lower(3) + dble(k) * dx(3)
-                fp1(k, j, i) = dcos(four * x) * dsin(y) * dsin(z)
+                fp1(k, j, i) = cos(four * x) * sin(y) * sin(z)
                 fp2(k, j, i) = fp1(k, j, i)
             enddo
         enddo
@@ -72,7 +72,7 @@ program test_mpi_dst
 
     call finalise_fft
 
-    error = maxval(dabs(fp1(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)) - &
+    error = maxval(abs(fp1(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)) - &
                         fp2(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1))))
 
     if (world%rank == world%root) then

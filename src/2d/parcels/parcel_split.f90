@@ -65,7 +65,7 @@ module parcel_split
                 parcels%B(1, n) = B11 - f34 * a2 * evec(1) ** 2
                 parcels%B(2, n) = B12 - f34 * a2 * (evec(1) * evec(2))
 
-                h = f14 * dsqrt(three * a2)
+                h = f14 * sqrt(three * a2)
                 parcels%volume(n) = f12 * V
 
                 !$omp critical

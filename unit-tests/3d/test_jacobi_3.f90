@@ -34,21 +34,21 @@ program test_jacobi_3
         call jacobi_diagonalise(B, D, V)
 
         ! check eigenvalues
-        error = max(error, dabs(eval - D(1)) &
-                         + dabs(eval - D(2)) &
-                         + dabs(eval - D(3)))
+        error = max(error, abs(eval - D(1)) &
+                         + abs(eval - D(2)) &
+                         + abs(eval - D(3)))
 
         ! check eigenvectors
         B = matmul(matmul(transpose(V), B), V)
 
-        B = dabs(A - B)
+        B = abs(A - B)
 
         error = max(error, sum(B))
 
         ! check if orthogonal
-        error = max(error, dabs(dot_product(V(:, 1), V(:, 2))))
-        error = max(error, dabs(dot_product(V(:, 1), V(:, 3))))
-        error = max(error, dabs(dot_product(V(:, 2), V(:, 3))))
+        error = max(error, abs(dot_product(V(:, 1), V(:, 2))))
+        error = max(error, abs(dot_product(V(:, 1), V(:, 3))))
+        error = max(error, abs(dot_product(V(:, 2), V(:, 3))))
     enddo
 
     call print_result_dp('Test Jacobi 3', error, atol=dble(1.0e-11))
@@ -89,9 +89,9 @@ program test_jacobi_3
                 enddo
 
                 ! Check orthogonalization error:
-                val = dabs(dot_product(Q(:, 1), Q(:, 2))) &
-                    + dabs(dot_product(Q(:, 1), Q(:, 3))) &
-                    + dabs(dot_product(Q(:, 2), Q(:, 3)))
+                val = abs(dot_product(Q(:, 1), Q(:, 2))) &
+                    + abs(dot_product(Q(:, 1), Q(:, 3))) &
+                    + abs(dot_product(Q(:, 2), Q(:, 3)))
 
                 valid = (val < 1.0e-13)
             enddo

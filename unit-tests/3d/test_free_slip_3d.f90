@@ -63,8 +63,8 @@ program test_free_slip_3d
     abc = get_abc(parcels%volume(1))
     abc23 = abc ** f23
     a2 = ten * abc23
-    b2 = abc23 / dsqrt(two)
-    c2 = abc23 / dsqrt(five)
+    b2 = abc23 / sqrt(two)
+    c2 = abc23 / sqrt(five)
 
     parcels%B(1, :) = c2
     parcels%B(2, :) = zero

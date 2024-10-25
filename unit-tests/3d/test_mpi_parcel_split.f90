@@ -61,7 +61,7 @@ program test_mpi_parcel_split
     b2 = f18 * abc
     c2 = b2
 
-    abc = dsqrt(a2)
+    abc = sqrt(a2)
     call set_amax(abc)
 
     ! place parcels in the last interior cells in the west
@@ -143,10 +143,10 @@ program test_mpi_parcel_split
             double precision, intent(in) :: angle
             double precision             :: B11, B12, B13, B22, B23, st, ct, sp, cp
 
-            st = dsin(angle)
-            ct = dcos(angle)
-            sp = zero ! = dsin(phi) with phi = 0
-            cp = one  ! = dcos(phi) with phi = 0
+            st = sin(angle)
+            ct = cos(angle)
+            sp = zero ! = sin(phi) with phi = 0
+            cp = one  ! = cos(phi) with phi = 0
 
             B11 = a2 * ct ** 2 * sp ** 2 + b2 * st ** 2 + c2 * ct ** 2 * cp ** 2
             B12 = a2 * st * ct * sp ** 2 - b2 * st * ct + c2 * st * ct * cp ** 2

@@ -40,13 +40,13 @@ program test_mpi_field_diagnostics
     call calculate_field_diagnostics
 
     if (world%rank == world%root) then
-        passed = (passed .and. (dabs(field_stats(IDX_RMS_V) - vcelli) == zero))
-        passed = (passed .and. (dabs(field_stats(IDX_ABSERR_V) - vcelli) == zero))
+        passed = (passed .and. (abs(field_stats(IDX_RMS_V) - vcelli) == zero))
+        passed = (passed .and. (abs(field_stats(IDX_ABSERR_V) - vcelli) == zero))
         passed = (passed .and. (field_stats(IDX_MAX_NPAR) == one))
         passed = (passed .and. (field_stats(IDX_MIN_NPAR) == one))
         passed = (passed .and. (field_stats(IDX_AVG_NPAR) == one))
         passed = (passed .and. (field_stats(IDX_AVG_NSPAR) == one))
-        passed = (passed .and. dabs(field_stats(IDX_KEG) - 0.375d0 * dble(ncell) * (vcell + one)) < 1.0e-14)
+        passed = (passed .and. abs(field_stats(IDX_KEG) - 0.375d0 * dble(ncell) * (vcell + one)) < 1.0e-14)
     endif
 
     call mpi_env_finalise

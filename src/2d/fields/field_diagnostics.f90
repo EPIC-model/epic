@@ -35,7 +35,7 @@ module field_diagnostics
             ! do not take halo cells into account
             sqerrsum = sum((volg(0:nz, :) - vcell) ** 2)
 
-            rms_v = dsqrt(sqerrsum * ngridi) * vcelli
+            rms_v = sqrt(sqerrsum * ngridi) * vcelli
 
             abserr_v = maxval(abs(volg(0:nz, :)  - vcell)) * vcelli
 
@@ -74,7 +74,7 @@ module field_diagnostics
             endif
 
 #ifndef NDEBUG
-            max_vol_sym_err = maxval(dabs(sym_volg(0:nz, :)))
+            max_vol_sym_err = maxval(abs(sym_volg(0:nz, :)))
 #endif
 
             call stop_timer(field_stats_timer)

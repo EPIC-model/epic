@@ -259,7 +259,7 @@ module parcel_merge
 
                     ! normalize such that determinant of the merger is (ab)**2
                     ! ab / sqrt(det(B))
-                    factor = get_ab(V(l)) / dsqrt(B11(l) * B22(l) - B12(l) ** 2)
+                    factor = get_ab(V(l)) / sqrt(B11(l) * B22(l) - B12(l) ** 2)
 
                     parcels%B(1, ic) = B11(l) * factor
                     parcels%B(2, ic) = B12(l) * factor
