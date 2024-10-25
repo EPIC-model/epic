@@ -73,7 +73,7 @@ module field_ops
 
             call mpi_check_for_error(world, "in MPI_Allreduce of field_ops::get_rms.")
 
-            rms = dsqrt(rms)
+            rms = sqrt(rms)
 
         end function get_rms
 
@@ -83,7 +83,7 @@ module field_ops
                                                box%hlo(1):box%hhi(1))
             double precision :: abs_max
 
-            abs_max = maxval(dabs(ff(box%lo(3):box%hi(3),   &
+            abs_max = maxval(abs(ff(box%lo(3):box%hi(3),   &
                                      box%lo(2):box%hi(2),   &
                                      box%lo(1):box%hi(1))))
 

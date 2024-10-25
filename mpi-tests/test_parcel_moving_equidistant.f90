@@ -169,8 +169,8 @@ program test_parcel_moving_equidistant
                 vmin = minval(vortg(0:nz, :, :, j))
                 vmax = maxval(vortg(0:nz, :, :, j))
 
-                if ((dabs(vmin - VOR(j)) > 100.0d0 * epsilon(vmin)) .or. &
-                    (dabs(vmax - VOR(j)) > 100.0d0 * epsilon(vmax))) then
+                if ((abs(vmin - VOR(j)) > 100.0d0 * epsilon(vmin)) .or. &
+                    (abs(vmax - VOR(j)) > 100.0d0 * epsilon(vmax))) then
                     print *, "check_gridded_vorticity: Error in " // dir(j) // "-vorticity!"
                     call MPI_Abort(world%comm, -1, world%err)
                 endif

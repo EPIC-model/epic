@@ -82,7 +82,7 @@ module beltrami_3d
             kk = dble(beltrami_flow%k)
             ll = dble(beltrami_flow%l)
             mm = dble(beltrami_flow%m)
-            alpha = dsqrt(kk ** 2 + ll ** 2 + mm ** 2)
+            alpha = sqrt(kk ** 2 + ll ** 2 + mm ** 2)
             fk2l2 = alpha / dble(beltrami_flow%k ** 2 + beltrami_flow%l ** 2)
 
             do i = 0, nx - 1
@@ -110,10 +110,10 @@ module beltrami_3d
             y = pos(2)
             z = pos(3)
 
-            cosmz = dcos(mm * z)
-            sinmz = dsin(mm * z)
-            sinkxly = dsin(kk * x + ll * y)
-            coskxly = dcos(kk * x + ll * y)
+            cosmz = cos(mm * z)
+            sinmz = sin(mm * z)
+            sinkxly = sin(kk * x + ll * y)
+            coskxly = cos(kk * x + ll * y)
 
             omega(1) = fk2l2 * (kk * mm * sinmz - ll * alpha * cosmz) * sinkxly
             omega(2) = fk2l2 * (ll * mm * sinmz + kk * alpha * cosmz) * sinkxly

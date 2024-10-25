@@ -73,16 +73,16 @@ program test_mpi_parcel_diagnostics
 
     if (world%rank == world%root) then
         total_vol = dble(n_total) * parcels%volume(1)
-        passed = (passed .and. (dabs(parcel_stats(IDX_KE) - 0.375d0 * total_vol) == zero))
-        passed = (passed .and. (dabs(parcel_stats(IDX_N_SMALL) - n_total) == zero))
-        passed = (passed .and. (dabs(parcel_stats(IDX_AVG_LAM) - one) < 1.0e-13))
+        passed = (passed .and. (abs(parcel_stats(IDX_KE) - 0.375d0 * total_vol) == zero))
+        passed = (passed .and. (abs(parcel_stats(IDX_N_SMALL) - n_total) == zero))
+        passed = (passed .and. (abs(parcel_stats(IDX_AVG_LAM) - one) < 1.0e-13))
         passed = (passed .and. (parcel_stats(IDX_STD_LAM) < 1.0e-7))
         passed = (passed .and. (parcel_stats(IDX_STD_VOL) < 1.0e-15))
-        passed = (passed .and. (dabs(parcel_stats(IDX_SUM_VOL) - total_vol) < 1.0e-15))
-        passed = (passed .and. (dabs(parcel_stats(IDX_NTOT_PAR) - n_total) == zero))
-        passed = (passed .and. (dabs(parcel_stats(IDX_RMS_XI) - f12) < 1.0e-15))
-        passed = (passed .and. (dabs(parcel_stats(IDX_RMS_ETA) - f12) < 1.0e-15))
-        passed = (passed .and. (dabs(parcel_stats(IDX_RMS_ZETA) - f12) < 1.0e-15))
+        passed = (passed .and. (abs(parcel_stats(IDX_SUM_VOL) - total_vol) < 1.0e-15))
+        passed = (passed .and. (abs(parcel_stats(IDX_NTOT_PAR) - n_total) == zero))
+        passed = (passed .and. (abs(parcel_stats(IDX_RMS_XI) - f12) < 1.0e-15))
+        passed = (passed .and. (abs(parcel_stats(IDX_RMS_ETA) - f12) < 1.0e-15))
+        passed = (passed .and. (abs(parcel_stats(IDX_RMS_ZETA) - f12) < 1.0e-15))
     endif
 
     call mpi_env_finalise

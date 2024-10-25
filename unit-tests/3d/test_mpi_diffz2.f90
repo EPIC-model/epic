@@ -55,8 +55,8 @@ program test_mpi_diffz2
             y = lower(2) + iy * dx(2)
             do iz = 0, nz
                 z = lower(3) + dble(iz) * dx(3)
-                fp(iz, iy, ix) = dcos(x) * dcos(y) * dcos(z)
-                ref_sol(iz, iy, ix) = -dcos(x) * dcos(y) * dsin(z)
+                fp(iz, iy, ix) = cos(x) * cos(y) * cos(z)
+                ref_sol(iz, iy, ix) = -cos(x) * cos(y) * sin(z)
             enddo
         enddo
     enddo
@@ -68,7 +68,7 @@ program test_mpi_diffz2
     call central_diffz_semi_spectral(fs, ds)
     call fftxys2p(ds, dp)
 
-    error = maxval(dabs(dp(:, box%lo(2):box%hi(2), box%lo(1):box%hi(1)) &
+    error = maxval(abs(dp(:, box%lo(2):box%hi(2), box%lo(1):box%hi(1)) &
                  - ref_sol(:, box%lo(2):box%hi(2), box%lo(1):box%hi(1))))
 
     call field_decompose_physical(fp, fs)
@@ -76,7 +76,7 @@ program test_mpi_diffz2
     call field_combine_physical(ds, dp)
 
 
-    error = max(error, maxval(dabs(dp(:, box%lo(2):box%hi(2), box%lo(1):box%hi(1)) &
+    error = max(error, maxval(abs(dp(:, box%lo(2):box%hi(2), box%lo(1):box%hi(1)) &
                                  - ref_sol(:, box%lo(2):box%hi(2), box%lo(1):box%hi(1)))))
 
     if (world%rank == world%root) then

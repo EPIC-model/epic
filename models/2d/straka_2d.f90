@@ -71,13 +71,13 @@ module straka_2d
                     L = ((pos(1) - xc) / xr) ** 2 &
                       + ((pos(2) - zc) / zr) ** 2
 
-                    L = dsqrt(L)
+                    L = sqrt(L)
 
                     ! potential temperature perturbation
                     dtheta = zero
 
                     if (L <= one) then
-                        dtheta = dtheta_max * (dcos(pi * L) + one)
+                        dtheta = dtheta_max * (cos(pi * L) + one)
                     endif
 
                     ! MPIC paper:

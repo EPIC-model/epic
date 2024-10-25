@@ -184,7 +184,7 @@ module parcel_interpl
 #ifndef ENABLE_DRY_MODE
                 ! liquid water content
                 q_c = parcels%humidity(n) &
-                    - q_0 * dexp(lambda_c * (lower(3) - parcels%position(3, n)))
+                    - q_0 * exp(lambda_c * (lower(3) - parcels%position(3, n)))
                 q_c = max(zero, q_c)
 
                 ! total buoyancy (including effects of latent heating)

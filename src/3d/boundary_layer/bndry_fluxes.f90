@@ -188,7 +188,7 @@ module bndry_fluxes
             endif
 
             ! local maximum of absolute value (units: m/s**3)
-            abs_max = maxval(dabs(binc(box%lo(2):box%hi(2), box%lo(1):box%hi(1))))
+            abs_max = maxval(abs(binc(box%lo(2):box%hi(2), box%lo(1):box%hi(1))))
 
             ! get global abs_max
             call MPI_Allreduce(MPI_IN_PLACE,            &

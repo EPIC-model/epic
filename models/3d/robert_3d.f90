@@ -108,7 +108,7 @@ module robert_3d
                           + (pos(2) - yc) ** 2 &
                           + (pos(3) - zc) ** 2
 
-                        r = dsqrt(r)
+                        r = sqrt(r)
 
                         ! potential temperature perturbation
                         dtheta = zero
@@ -116,7 +116,7 @@ module robert_3d
                         if (r <= r_in) then
                             dtheta = dtheta_max
                         else
-                            dtheta = dtheta_max * dexp(-(r - r_in) ** 2 * fs2)
+                            dtheta = dtheta_max * exp(-(r - r_in) ** 2 * fs2)
                         endif
 
                         ! MPIC paper:

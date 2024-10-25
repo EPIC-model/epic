@@ -34,9 +34,9 @@ program test_ellipse_orientation
 
         angle = dble(iter) * pi / 180.0d0
 
-        B11 = a2 * dcos(angle) ** 2 + b2 * dsin(angle) ** 2
+        B11 = a2 * cos(angle) ** 2 + b2 * sin(angle) ** 2
 
-        B12 = (a2 - b2) * dsin(angle) * dcos(angle)
+        B12 = (a2 - b2) * sin(angle) * cos(angle)
 
         parcels%B(1, 1) = B11
 

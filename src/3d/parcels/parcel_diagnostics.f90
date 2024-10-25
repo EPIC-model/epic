@@ -144,15 +144,15 @@ module parcel_diagnostics
             parcel_stats(IDX_ENSTROPHY) = f12 * parcel_stats(IDX_ENSTROPHY)* vdomaini
 
             parcel_stats(IDX_AVG_LAM) = parcel_stats(IDX_AVG_LAM) * ntoti
-            parcel_stats(IDX_STD_LAM) = dsqrt(abs(parcel_stats(IDX_STD_LAM) * ntoti &
+            parcel_stats(IDX_STD_LAM) = sqrt(abs(parcel_stats(IDX_STD_LAM) * ntoti &
                                                 - parcel_stats(IDX_AVG_LAM) ** 2))
 
-            parcel_stats(IDX_RMS_XI)   = dsqrt(parcel_stats(IDX_RMS_XI)   / parcel_stats(IDX_SUM_VOL))
-            parcel_stats(IDX_RMS_ETA)  = dsqrt(parcel_stats(IDX_RMS_ETA)  / parcel_stats(IDX_SUM_VOL))
-            parcel_stats(IDX_RMS_ZETA) = dsqrt(parcel_stats(IDX_RMS_ZETA) / parcel_stats(IDX_SUM_VOL))
+            parcel_stats(IDX_RMS_XI)   = sqrt(parcel_stats(IDX_RMS_XI)   / parcel_stats(IDX_SUM_VOL))
+            parcel_stats(IDX_RMS_ETA)  = sqrt(parcel_stats(IDX_RMS_ETA)  / parcel_stats(IDX_SUM_VOL))
+            parcel_stats(IDX_RMS_ZETA) = sqrt(parcel_stats(IDX_RMS_ZETA) / parcel_stats(IDX_SUM_VOL))
 
             parcel_stats(IDX_AVG_VOL) = parcel_stats(IDX_SUM_VOL) * ntoti
-            parcel_stats(IDX_STD_VOL) = dsqrt(abs(parcel_stats(IDX_STD_VOL) * ntoti &
+            parcel_stats(IDX_STD_VOL) = sqrt(abs(parcel_stats(IDX_STD_VOL) * ntoti &
                                                 - parcel_stats(IDX_AVG_VOL) ** 2))
 
             call stop_timer(parcel_stats_timer)

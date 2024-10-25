@@ -51,11 +51,11 @@ program test_lapinv0_2
     vmult = -(akx ** 2 + aky ** 2 + akz ** 2)
 
     do ix = 1, nx
-        sikx = dsin(akx * (lower(1) + dx(1) * dble(ix-1)))
+        sikx = sin(akx * (lower(1) + dx(1) * dble(ix-1)))
         do iy = 1, ny
-            siky = dsin(aky * (lower(2) + dx(2) *dble(iy-1)))
+            siky = sin(aky * (lower(2) + dx(2) *dble(iy-1)))
             do iz = 0, nz
-                sikz = dsin(akz * dx(3) * dble(iz))
+                sikz = sin(akz * dx(3) * dble(iz))
                 potxe(iz, iy, ix) = sikx * siky * sikz
                 vorx(iz, iy, ix) = vmult * potxe(iz, iy, ix)
             enddo

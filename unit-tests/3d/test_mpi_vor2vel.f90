@@ -65,14 +65,14 @@ program test_mpi_vor2vel
                 z = lower(3) + iz * dx(3)
 
                 ! vorticity
-                vortg(iz, iy, ix, 1) = (b * CC - c * BB) * dsin(a * x) * dcos(b * y) * dcos(c * z)
-                vortg(iz, iy, ix, 2) = (c * AA - a * CC) * dcos(a * x) * dsin(b * y) * dcos(c * z)
-                vortg(iz, iy, ix, 3) = (a * BB - b * AA) * dcos(a * x) * dcos(b * y) * dsin(c * z)
+                vortg(iz, iy, ix, 1) = (b * CC - c * BB) * sin(a * x) * cos(b * y) * cos(c * z)
+                vortg(iz, iy, ix, 2) = (c * AA - a * CC) * cos(a * x) * sin(b * y) * cos(c * z)
+                vortg(iz, iy, ix, 3) = (a * BB - b * AA) * cos(a * x) * cos(b * y) * sin(c * z)
 
                 ! velocity (reference solution)
-                velog_ref(iz, iy, ix, 1) = AA * dcos(a * x) * dsin(b * y) * dsin(c * z)
-                velog_ref(iz, iy, ix, 2) = BB * dsin(a * x) * dcos(b * y) * dsin(c * z)
-                velog_ref(iz, iy, ix, 3) = CC * dsin(a * x) * dsin(b * y) * dcos(c * z)
+                velog_ref(iz, iy, ix, 1) = AA * cos(a * x) * sin(b * y) * sin(c * z)
+                velog_ref(iz, iy, ix, 2) = BB * sin(a * x) * cos(b * y) * sin(c * z)
+                velog_ref(iz, iy, ix, 3) = CC * sin(a * x) * sin(b * y) * cos(c * z)
 
             enddo
         enddo
@@ -82,7 +82,7 @@ program test_mpi_vor2vel
 
     call vor2vel
 
-    error = maxval(dabs(velog_ref(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1), :) &
+    error = maxval(abs(velog_ref(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1), :) &
                           - velog(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1), :)))
 
     if (world%rank == world%root) then

@@ -22,12 +22,12 @@ module parcel_ellipsoid
     use armanip, only : resize_array
     implicit none
 
-    double precision, parameter :: rho = dsqrt(two / five)
+    double precision, parameter :: rho = sqrt(two / five)
     double precision, parameter :: f3pi4 = three * fpi4
     double precision, parameter :: f5pi4 = five * fpi4
     double precision, parameter :: f7pi4 = seven * fpi4
-    double precision, parameter :: costheta(4) = dcos((/fpi4, f3pi4, f5pi4, f7pi4/))
-    double precision, parameter :: sintheta(4) = dsin((/fpi4, f3pi4, f5pi4, f7pi4/))
+    double precision, parameter :: costheta(4) = cos((/fpi4, f3pi4, f5pi4, f7pi4/))
+    double precision, parameter :: sintheta(4) = sin((/fpi4, f3pi4, f5pi4, f7pi4/))
 
     double precision, allocatable :: Vetas(:, :), Vtaus(:, :)
 
@@ -257,7 +257,7 @@ module parcel_ellipsoid
 
             abc = get_abc(volume)
 
-            if (dabs(B(I_B11) * B(I_B22) - B(I_B12) ** 2) <= epsilon(abc)) then
+            if (abs(B(I_B11) * B(I_B22) - B(I_B12) ** 2) <= epsilon(abc)) then
                 call mpi_exit_on_error(&
                     "in parcel_ellipsoid::get_B33: Division by small number!")
             endif
@@ -291,7 +291,7 @@ module parcel_ellipsoid
             double precision, intent(in) :: D(n_dim)
             double precision             :: lam
 
-            lam = dsqrt(D(I_X) / D(I_Z))
+            lam = sqrt(D(I_X) / D(I_Z))
         end function get_aspect_ratio
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -318,8 +318,8 @@ module parcel_ellipsoid
                     Vtau = Vtaus(:, n)
                 else
                     call diagonalise(B, volume, D, V)
-                    Veta = dsqrt(dabs(D(I_X) - D(I_Z))) * rho * V(:, I_X)
-                    Vtau = dsqrt(dabs(D(I_Y) - D(I_Z))) * rho * V(:, I_Y)
+                    Veta = sqrt(abs(D(I_X) - D(I_Z))) * rho * V(:, I_X)
+                    Vtau = sqrt(abs(D(I_Y) - D(I_Z))) * rho * V(:, I_Y)
 
                     Vetas(:, n) = Veta
                     Vtaus(:, n) = Vtau
@@ -329,8 +329,8 @@ module parcel_ellipsoid
                 ! D = (/a2, b2, c2/)
                 call diagonalise(B, volume, D, V)
 
-                Veta = dsqrt(dabs(D(I_X) - D(I_Z))) * rho * V(:, I_X)
-                Vtau = dsqrt(dabs(D(I_Y) - D(I_Z))) * rho * V(:, I_Y)
+                Veta = sqrt(abs(D(I_X) - D(I_Z))) * rho * V(:, I_X)
+                Vtau = sqrt(abs(D(I_Y) - D(I_Z))) * rho * V(:, I_Y)
 
                 Vetas(:, n) = Veta
                 Vtaus(:, n) = Vtau
@@ -360,10 +360,10 @@ module parcel_ellipsoid
             evec = get_eigenvectors(B, volume)
 
             ! azimuthal angle
-            angles(I_X) = datan2(evec(I_Y, I_X), evec(I_X, I_X))
+            angles(I_X) = atan2(evec(I_Y, I_X), evec(I_X, I_X))
 
             ! polar angle
-            angles(I_Y) = dasin(evec(I_Z, I_Z))
+            angles(I_Y) = asin(evec(I_Z, I_Z))
 
         end function get_angles
 

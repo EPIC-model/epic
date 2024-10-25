@@ -56,11 +56,11 @@ program test_ellipsoid_reflection
             theta = dble(iter_t) * pi / 180.0d0     ! azimuthal angle, [0, 2pi[
             phi = dble(iter_p) * pi / 180.0d0       ! polar angle, [0, pi]
 
-            st = dsin(theta)
-            ct = dcos(theta)
+            st = sin(theta)
+            ct = cos(theta)
 
-            sp = dsin(phi)
-            cp = dcos(phi)
+            sp = sin(phi)
+            cp = cos(phi)
 
             B11 = a2 * ct ** 2 * sp ** 2 + b2 * st ** 2 + c2 * ct ** 2 * cp ** 2
             B12 = a2 * st * ct * sp ** 2 - b2 * st * ct + c2 * st * ct * cp ** 2
@@ -140,7 +140,7 @@ program test_ellipsoid_reflection
             endif
 
             ! rotated by pi/2
-            if (dabs(dabs(theta - angles(1)) - pi) < 10000.0d0 * epsilon(pi)) then
+            if (abs(abs(theta - angles(1)) - pi) < 10000.0d0 * epsilon(pi)) then
                 if (theta > angles(1)) then
                     angles(1) = pi + angles(1)
                 else
@@ -151,7 +151,7 @@ program test_ellipsoid_reflection
 
             ! 0 <= angles(2) <= pi/2
             if (phi > pi/2) then
-                angles(2) = pi - dabs(angles(2))
+                angles(2) = pi - abs(angles(2))
             endif
 
             ! Neglect if phi = 0, pi/2 and pi, since then theta does not matter
@@ -159,7 +159,7 @@ program test_ellipsoid_reflection
                 error = max(error, abs(theta - angles(1)))
             endif
 
-            error = max(error, dabs(dabs(phi) - dabs(angles(2))))
+            error = max(error, abs(abs(phi) - abs(angles(2))))
 
             error = max(error, abs(f12 - parcels%position(1, 1)))
             error = max(error, abs(f12 - parcels%position(2, 1)))

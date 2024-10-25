@@ -53,7 +53,7 @@ program test_ellipse_multi_merge_3
         subroutine parcel_setup
             double precision :: d
 
-            d = (dsqrt(a1b1) + dsqrt(a2b2)) * f12 * dsqrt(two)
+            d = (sqrt(a1b1) + sqrt(a2b2)) * f12 * sqrt(two)
 
             parcels%vorticity = zero
             parcels%buoyancy = zero
@@ -88,7 +88,7 @@ program test_ellipse_multi_merge_3
             double precision :: ab, B11, B12, B22, vol, d, factor
 
             ! reference solution
-            d = (dsqrt(a1b1) + dsqrt(a2b2)) * f12 * dsqrt(two)
+            d = (sqrt(a1b1) + sqrt(a2b2)) * f12 * sqrt(two)
             ab = a1b1 + two * a2b2
             vol = ab * pi
 
@@ -96,7 +96,7 @@ program test_ellipse_multi_merge_3
             B12 = two * a2b2 / ab * (four * d ** 2)
             B22 = B11
 
-            factor = ab / dsqrt(B11 * B22 - B12 ** 2)
+            factor = ab / sqrt(B11 * B22 - B12 ** 2)
             B11 = B11 * factor
             B12 = B12 * factor
             B22 = B22 * factor

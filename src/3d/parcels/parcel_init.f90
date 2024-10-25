@@ -169,7 +169,7 @@ module parcel_init
             do while (lam >= parcel%lambda_max)
                 call parcel_split
                 evals = get_eigenvalues(parcels%B(1, :), parcels%volume(1))
-                lam = dsqrt(evals(1) / evals(3))
+                lam = sqrt(evals(1) / evals(3))
             end do
         end subroutine init_refine
 

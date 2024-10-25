@@ -195,8 +195,8 @@ module parameters
                                world%comm,              &
                                world%err)
 
-            rms_interior = dsqrt(val(1) * nhcelli / (nz-1))
-            rms_bndry = dsqrt(val(2:3) * nhcelli)
+            rms_interior = sqrt(val(1) * nhcelli / (nz-1))
+            rms_bndry = sqrt(val(2:3) * nhcelli)
 
             thres = boundary%zeta_tol * rms_interior + epsilon(rms_interior)
 

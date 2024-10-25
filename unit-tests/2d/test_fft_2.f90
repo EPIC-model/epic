@@ -79,7 +79,7 @@ program test_fft_2
             dx = twopi / dble(n)
             do j = 0, n-1
                 xx = -pi + dx * dble(j)
-                f1(j+1) = one / (one - a * dcos(xx + phase))
+                f1(j+1) = one / (one - a * cos(xx + phase))
             enddo
         end function func_1
 
@@ -98,7 +98,7 @@ program test_fft_2
             dx = twopi / dble(n)
             do j = 0, n-1
                 xx = -pi + dx * dble(j)
-                f2(j+1) = one / (one - a * dsin(xx + phase))
+                f2(j+1) = one / (one - a * sin(xx + phase))
             enddo
         end function func_2
 
@@ -117,12 +117,12 @@ program test_fft_2
             do k = 0, m - 1
                 do l = 0, m - 1
                     arg = fac * dble(k * l)
-                    fhat(k+1)   = fhat(k+1)   + f(l+1) * dcos(arg)
-                    fhat(k+1+m) = fhat(k+1+m) - f(l+1) * dsin(arg)
+                    fhat(k+1)   = fhat(k+1)   + f(l+1) * cos(arg)
+                    fhat(k+1+m) = fhat(k+1+m) - f(l+1) * sin(arg)
                 enddo
             enddo
 
-            sfac = one / dsqrt(dble(m))
+            sfac = one / sqrt(dble(m))
 
             fhat = fhat * sfac
 

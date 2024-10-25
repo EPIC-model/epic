@@ -171,12 +171,12 @@ module parcel_diagnostics
             endif
 
             avg_lam = lsum / dble(n_parcels)
-            std_lam = dsqrt(abs(l2sum / dble(n_parcels) - avg_lam ** 2))
+            std_lam = sqrt(abs(l2sum / dble(n_parcels) - avg_lam ** 2))
 
-            rms_zeta = dsqrt(rms_zeta / vsum)
+            rms_zeta = sqrt(rms_zeta / vsum)
 
             avg_vol = vsum / dble(n_parcels)
-            std_vol = dsqrt(abs(v2sum / dble(n_parcels) - avg_vol ** 2))
+            std_vol = sqrt(abs(v2sum / dble(n_parcels) - avg_vol ** 2))
 
 
 #ifdef ENABLE_DIAGNOSE
@@ -261,13 +261,13 @@ module parcel_diagnostics
             ! involved parcels)
 
             ! make sure we do not divide by zero
-            if (dabs(bvsum) < epsilon(zero)) then
+            if (abs(bvsum) < epsilon(zero)) then
                 bvsum = epsilon(zero)
             else
                 bvsum = one / bvsum
             endif
 
-            if (dabs(vvsum) < epsilon(zero)) then
+            if (abs(vvsum) < epsilon(zero)) then
                 vvsum = epsilon(zero)
             else
                 vvsum = one / vvsum

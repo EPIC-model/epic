@@ -70,7 +70,7 @@ program test_mpi_fft1
     call finalise_fft
 
     ! final check
-    error = maxval(dabs(fp1(:, box%lo(2):box%hi(2), box%lo(1):box%hi(1)) &
+    error = maxval(abs(fp1(:, box%lo(2):box%hi(2), box%lo(1):box%hi(1)) &
                       - fp2(:, box%lo(2):box%hi(2), box%lo(1):box%hi(1))))
 
     if (world%rank == world%root) then

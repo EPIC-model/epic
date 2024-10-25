@@ -38,7 +38,7 @@ module scherzinger
             integer                         :: i
 
             ! sum of off-diagonal entries
-            tmp = dabs(A(1, 2)) + dabs(A(1, 3)) + dabs(A(2, 3))
+            tmp = abs(A(1, 2)) + abs(A(1, 3)) + abs(A(2, 3))
 
             ! check if a diagonal matrix
             if (tmp < atol) then
@@ -126,7 +126,7 @@ module scherzinger
             double precision                :: tmp
 
             ! sum of off-diagonal entries
-            tmp = dabs(A(1, 2)) + dabs(A(1, 3)) + dabs(A(2, 3))
+            tmp = abs(A(1, 2)) + abs(A(1, 3)) + abs(A(2, 3))
 
             ! check if a diagonal matrix
             if (tmp < atol) then
@@ -172,14 +172,14 @@ module scherzinger
             ! (e.g. cases like -1.0000000000000004 occurred)
             smp = min(max(-one, smp), one)
 
-            alpha = f13 * dacos(smp)
+            alpha = f13 * acos(smp)
 
             if (alpha > fpi6) then
                 alpha = alpha + f23 * pi
             endif
 
             ! eq 6:
-            eta(1) = two * dsqrt(f13 * j2) * dcos(alpha)
+            eta(1) = two * sqrt(f13 * j2) * cos(alpha)
 
             ! eq 19:
             r(:, 1) = (/ A(1, 1) - eta(1), A(2, 1),          A(3, 1)          /)
@@ -232,7 +232,7 @@ module scherzinger
 
             ! second eigenvalue, eq 27:
             eta(2) = f12 * smp                                                    &
-                   - f12 * signum(tmp) * dsqrt(tmp ** 2 + four * s1As2 * s2As1)
+                   - f12 * signum(tmp) * sqrt(tmp ** 2 + four * s1As2 * s2As1)
 
             !  third eigenvalue, eq 27:
             eta(3) = smp - eta(2)
