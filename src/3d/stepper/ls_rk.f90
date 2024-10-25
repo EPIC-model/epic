@@ -129,7 +129,6 @@ module ls_rk
             call apply_parcel_reflective_bc
             call stop_timer(rk_timer)
 
-            call get_strain_magnitude_field
             call parcel_damp(dt)
             call apply_ls_forcings(dt)
 
