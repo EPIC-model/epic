@@ -1,5 +1,5 @@
 = EPIC - Elliptical Parcel-In-Cell
-Matthias Frey (Univ. of St Andrews); David G. Dritschel (Univ. of St Andrews); Steven J. Böing (Univ. of Leeds);
+Matthias Frey (Univ. of St Andrews); David G. Dritschel (Univ. of St Andrews); Steven J. Böing (Univ. of Leeds); Rui F. G. Apóstolo (EPCC, Univ. of Edinburgh);
 v@VERSION@
 :version-label: Version
 :page-layout: default

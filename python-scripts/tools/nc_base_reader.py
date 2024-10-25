@@ -16,6 +16,9 @@ class nc_base_reader(ABC):
     def close(self):
         self._ncfile.close()
 
+    def handle(self):
+        return self._ncfile
+
     @abstractmethod
     def get_num_steps(self, **kwargs):
         pass

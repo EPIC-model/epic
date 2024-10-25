@@ -2,7 +2,7 @@
 !                       Test nearest algorithm
 !
 !               This unit test checks (a, b) - c - d = e and
-!               (a, b) - C - (d, e) across MPI boundaries.
+!               across MPI boundaries for a subcommunicator.
 !
 ! To plot the initial condition use:
 ! import numpy as np
@@ -10,7 +10,7 @@
 !
 ! x, y, n, r = np.loadtxt('initial.dat', unpack=True)
 !
-! ng = 10
+! ng = 16
 !
 ! h = 1.0 / ng
 !
@@ -33,7 +33,7 @@
 !
 ! rank, is_x, is_y, iss, ic_x, ic_y, icc = np.loadtxt('final.dat', unpack=True)
 !
-! ng = 10
+! ng = 16
 !
 ! h = 1.0 / ng
 ! colors = ['red', 'blue', 'orange', 'green', 'cyan', 'magenta']
@@ -50,7 +50,7 @@
 ! plt.savefig('final.png', dpi=500)
 ! plt.close()
 ! =============================================================================
-program test_mpi_nearest_20
+program test_mpi_nearest_subcomm
     use unit_test
     use constants, only : pi, zero, one, two, five, ten
     use parcel_container
@@ -61,7 +61,7 @@ program test_mpi_nearest_20
     use mpi_layout
     use mpi_timer
     use mpi_utils, only : mpi_exit_on_error
-!     use mpi_utils, only : mpi_stop
+    use mpi_utils, only : mpi_stop
     implicit none
 
     logical                            :: passed = .true.
@@ -74,9 +74,9 @@ program test_mpi_nearest_20
 
     passed = (passed .and. (world%err == 0))
 
-    nx = 10
-    ny = 10
-    nz = 10
+    nx = 16
+    ny = 16
+    nz = 16
     lower  = (/zero, zero, zero/)
     extent = (/one, one, one/)
 
@@ -98,9 +98,9 @@ program test_mpi_nearest_20
     call parcel_alloc(max_num_parcels)
 
     !
-    ! Test 1: (a, b) - c - d = e
+    ! Test 1: One patch in the centre (a, b) - c - d = e
     !
-    call parcel_setup(1)
+    call parcel_setup(2)
 
     call find_nearest(isma, iclo, inva, n_merge, n_invalid)
 
@@ -121,20 +121,7 @@ program test_mpi_nearest_20
     call check_result(300)
 
     if (world%rank == world%root) then
-        call print_result_logical('Test MPI nearest algorithm: (a, b) - c - d = e', passed)
-    endif
-
-    !
-    ! Test 2: (a, b) - C - (d, e)
-    !
-    call parcel_setup(2)
-
-    call find_nearest(isma, iclo, inva, n_merge, n_invalid)
-
-    call check_result(400)
-
-    if (world%rank == world%root) then
-        call print_result_logical('Test MPI nearest algorithm: (a, b) - C - (d, e)', passed)
+        call print_result_logical('Test MPI nearest algorithm subcomm', passed)
     endif
 
     call nearest_win_deallocate
@@ -143,12 +130,13 @@ program test_mpi_nearest_20
 
     contains
 
+        ! One patch (4x4 grid cells) of small parcels in the centre:
         ! (a, b) - c - d = e
         subroutine cell_placement_1(l, i, j, k)
             integer, intent(inout) :: l
             integer, intent(in)    :: i, j, k
             integer                :: ix, iy, iz
-            double precision       :: x, y, z
+            double precision       :: x, y, z, fac
 
             ix = i
             iy = j
@@ -158,11 +146,17 @@ program test_mpi_nearest_20
             y = lower(2) + (0.5d0 + dble(iy)) * dx(2)
             z = lower(3) + (0.5d0 + dble(iz)) * dx(3)
 
+            fac = 1.2d0
+
+            if ((i > 5) .and. (i < 10) .and. (j > 5) .and. (j < 10)) then
+                fac = 0.9d0
+            endif
+
             ! small parcel a
             parcels%position(1, l) = x + dx(1) * 0.4d0
             parcels%position(2, l) = y - dx(2) * 0.35d0
             parcels%position(3, l) = z
-            parcels%volume(l) = 0.9d0 * vmin
+            parcels%volume(l) = fac * vmin
             parcels%buoyancy(l) = l + world%rank * 100
             l = l + 1
 
@@ -170,7 +164,7 @@ program test_mpi_nearest_20
             parcels%position(1, l) = x + dx(1) * 0.44d0
             parcels%position(2, l) = y + dx(2) * 0.4d0
             parcels%position(3, l) = z
-            parcels%volume(l) = 0.9d0 * vmin
+            parcels%volume(l) = fac * vmin
             parcels%buoyancy(l) = l + world%rank * 100
             l = l + 1
 
@@ -178,7 +172,7 @@ program test_mpi_nearest_20
             parcels%position(1, l) = x - dx(1) * 0.45d0
             parcels%position(2, l) = y - dx(2) * 0.44d0
             parcels%position(3, l) = z
-            parcels%volume(l) = 0.9d0 * vmin
+            parcels%volume(l) = fac * vmin
             parcels%buoyancy(l) = l + world%rank * 100
             l = l + 1
 
@@ -186,7 +180,7 @@ program test_mpi_nearest_20
             parcels%position(1, l) = x - dx(1) * 0.35d0
             parcels%position(2, l) = y + dx(2) * 0.44d0
             parcels%position(3, l) = z
-            parcels%volume(l) = 0.9d0 * vmin
+            parcels%volume(l) = fac * vmin
             parcels%buoyancy(l) = l + world%rank * 100
             l = l + 1
 
@@ -194,18 +188,19 @@ program test_mpi_nearest_20
             parcels%position(1, l) = x - dx(1) * 0.27d0
             parcels%position(2, l) = y + dx(2) * 0.38d0
             parcels%position(3, l) = z
-            parcels%volume(l) = 0.9d0 * vmin
+            parcels%volume(l) = fac * vmin
             parcels%buoyancy(l) = l + world%rank * 100
             l = l + 1
 
         end subroutine cell_placement_1
 
-        ! (a, b) - C - (d, e)
+        ! Multiple patches (4x4 grid cells) of small parcels:
+        ! (a, b) - c - d = e
         subroutine cell_placement_2(l, i, j, k)
             integer, intent(inout) :: l
             integer, intent(in)    :: i, j, k
             integer                :: ix, iy, iz
-            double precision       :: x, y, z
+            double precision       :: x, y, z, fac
 
             ix = i
             iy = j
@@ -215,43 +210,55 @@ program test_mpi_nearest_20
             y = lower(2) + (0.5d0 + dble(iy)) * dx(2)
             z = lower(3) + (0.5d0 + dble(iz)) * dx(3)
 
+            fac = 1.2d0
+
+            if ((i >= 0) .and. (i < 4) .and. (j >= 0) .and. (j < 4)) then
+                fac = 0.9d0
+            else if ((i >= 9) .and. (i < 14) .and. (j >= 3) .and. (j < 7)) then
+                fac = 0.9d0
+            else if ((i > 2) .and. (i < 6) .and. (j > 10) .and. (j < 14)) then
+                fac = 0.9d0
+            else
+                return
+            endif
+
             ! small parcel a
             parcels%position(1, l) = x + dx(1) * 0.4d0
-            parcels%position(2, l) = y + dx(2) * 0.35d0
+            parcels%position(2, l) = y - dx(2) * 0.35d0
             parcels%position(3, l) = z
-            parcels%volume(l) = 0.9d0 * vmin
+            parcels%volume(l) = fac * vmin
             parcels%buoyancy(l) = l + world%rank * 100
             l = l + 1
 
             ! small parcel b
             parcels%position(1, l) = x + dx(1) * 0.44d0
-            parcels%position(2, l) = y - dx(2) * 0.4d0
+            parcels%position(2, l) = y + dx(2) * 0.4d0
             parcels%position(3, l) = z
-            parcels%volume(l) = 0.9d0 * vmin
+            parcels%volume(l) = fac * vmin
             parcels%buoyancy(l) = l + world%rank * 100
             l = l + 1
 
-            ! big parcel C
+            ! small parcel c
             parcels%position(1, l) = x - dx(1) * 0.45d0
-            parcels%position(2, l) = y + dx(2) * 0.44d0
+            parcels%position(2, l) = y - dx(2) * 0.44d0
             parcels%position(3, l) = z
-            parcels%volume(l) = 1.1d0 * vmin
+            parcels%volume(l) = fac * vmin
             parcels%buoyancy(l) = l + world%rank * 100
             l = l + 1
 
             ! small parcel d
             parcels%position(1, l) = x - dx(1) * 0.35d0
-            parcels%position(2, l) = y - dx(2) * 0.4d0
+            parcels%position(2, l) = y + dx(2) * 0.44d0
             parcels%position(3, l) = z
-            parcels%volume(l) = 0.9d0 * vmin
+            parcels%volume(l) = fac * vmin
             parcels%buoyancy(l) = l + world%rank * 100
             l = l + 1
 
             ! small parcel e
-            parcels%position(1, l) = x - dx(1) * 0.33d0
+            parcels%position(1, l) = x - dx(1) * 0.27d0
             parcels%position(2, l) = y + dx(2) * 0.38d0
             parcels%position(3, l) = z
-            parcels%volume(l) = 0.9d0 * vmin
+            parcels%volume(l) = fac * vmin
             parcels%buoyancy(l) = l + world%rank * 100
             l = l + 1
 
@@ -259,8 +266,8 @@ program test_mpi_nearest_20
 
         subroutine parcel_setup(num)
             integer, intent(in) :: num
-            integer :: i, j, k
-!             integer :: r
+            integer             :: i, j, k
+!             integer             :: r
 
             n = 1
             do k = box%lo(3)+1, box%lo(3)+1
@@ -328,4 +335,4 @@ program test_mpi_nearest_20
             endif
         end subroutine check_result
 
-end program test_mpi_nearest_20
+end program test_mpi_nearest_subcomm

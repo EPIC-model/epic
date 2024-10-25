@@ -101,9 +101,11 @@ module ls_rk
             ! update the time step
             dt = get_time_step(t)
 
-!            if (abs(t - time%initial) < 1.0e-13) then
+            if(.not. time%l_use_fixed_dt) then
+!            if (dabs(t - time%initial) < 1.0e-13) then
                 call bndry_fluxes_time_step(dt)
 !            endif
+            endif
 
             call grid2par
 

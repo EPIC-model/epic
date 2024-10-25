@@ -102,13 +102,13 @@ module bndry_fluxes
             integer                  :: ncid, start(3), cnt(3)
             integer                  :: lo(3), hi(3)
 
-            call start_timer(bndry_flux_timer)
-
             l_enable_flux = (fname /= '')
 
             if (.not. l_enable_flux) then
                 return
             endif
+
+            call start_timer(bndry_flux_timer)
 
             call open_netcdf_file(fname, NF90_NOWRITE, ncid)
 

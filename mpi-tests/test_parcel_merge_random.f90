@@ -2,7 +2,7 @@ program test_parcel_merge_random
     use mpi_environment
     use options, only : parcel
     use constants, only : zero, one, two
-    use parameters, only : update_parameters, nx, ny, nz, lower, extent, vmin
+    use parameters, only : update_parameters, nx, ny, nz, lower, extent, vmin, max_num_parcels
     use parcel_container
     use parcel_init, only : parcel_default
     use parcel_mpi, only : parcel_communicate
@@ -16,10 +16,10 @@ program test_parcel_merge_random
     implicit none
 
     integer, parameter   :: nt = 100
-    integer              :: i, n, sk, j, n_orig, n_merges
-    integer, allocatable :: seed(:)
+    integer              :: i, n, j, n_orig, n_merges
     double precision     :: rn(3)
     double precision     :: vol, b(5)
+    logical, allocatable :: picked(:)
 
     !--------------------------------------------------------------------------
     ! Initialise MPI and setup all timers:
@@ -30,11 +30,7 @@ program test_parcel_merge_random
         print '(a35, i6, a11)', "Running 'test_parcel_merge_random' with ", world%size, " MPI ranks."
     endif
 
-    call random_seed(size=sk)
-    allocate(seed(1:sk))
-    seed(:) = world%rank
-    call random_seed(put=seed)
-
+    call init_rng
 
     call register_all_timers
 
@@ -54,6 +50,10 @@ program test_parcel_merge_random
     call update_parameters
 
     parcel%n_per_cell = 8
+
+    allocate(picked(max_num_parcels))
+
+    picked = .false.
 
     call nearest_win_allocate
 
@@ -89,13 +89,16 @@ program test_parcel_merge_random
             if (rn(3) > 0.5d0) then
                 call random_number(rn(3))
                 j = nint(n_parcels * rn(3)) + 1
-                parcels%volume(j) = 0.9d0 * vmin
-                parcels%buoyancy(j) = 1.0d0
+
+                if (.not. picked(j)) then
+                    parcels%volume(j) = 0.9d0 * vmin
+                    picked(j) = .true.
+                endif
             endif
 
         enddo
 
-        n_merges = int(sum(parcels%buoyancy(1:n_parcels)))
+        n_merges = count(picked)
         call perform_integer_reduction(n_merges)
 
         if (world%rank == world%root) then
@@ -117,12 +120,13 @@ program test_parcel_merge_random
         n_parcels = n_orig
         do n = 1, n_parcels
             parcels%volume(n) = vol
-            parcels%buoyancy(n) = 0.0d0
             parcels%B(:, n) = b
 
             call random_number(rn)
             parcels%position(:, n) = box%lower + box%extent * rn
         enddo
+
+        picked = .false.
 
         call perform_integer_reduction(n_orig)
         n_total_parcels = n_orig
@@ -146,6 +150,8 @@ program test_parcel_merge_random
     call stop_timer(epic_timer)
 
     call print_timer
+
+    deallocate(picked)
 
     call mpi_env_finalise
 

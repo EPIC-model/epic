@@ -15,6 +15,10 @@ module parcel_netcdf
     use options, only : write_netcdf_options
     use physics, only : write_physical_quantities
     use mpi_environment
+    use mpi_datatypes, only : MPI_INTEGER_64BIT
+    use mpi_layout, only : box
+    use mpi_ops, only : MPI_SUM_64BIT
+    use datatypes, only : int64
     use mpi_utils, only : mpi_exit_on_error, mpi_print, mpi_check_for_error
     use fields, only : is_contained
     implicit none
@@ -35,28 +39,49 @@ module parcel_netcdf
     double precision   :: restart_time
 
     integer, parameter :: NC_START = 1  &
-                        , NC_VOL   = 2  &
-                        , NC_X_POS = 3  &
-                        , NC_Y_POS = 4  &
-                        , NC_Z_POS = 5  &
-                        , NC_BUOY  = 6  &
-                        , NC_X_VOR = 7  &
-                        , NC_Y_VOR = 8  &
-                        , NC_Z_VOR = 9  &
-                        , NC_B11   = 10 &
-                        , NC_B12   = 11 &
-                        , NC_B13   = 12 &
-                        , NC_B22   = 13 &
-                        , NC_B23   = 14
+                        , NC_XLO   = 2  &
+                        , NC_XHI   = 3  &
+                        , NC_YLO   = 4  &
+                        , NC_YHI   = 5  &
+                        , NC_VOL   = 6  &
+                        , NC_X_POS = 7  &
+                        , NC_Y_POS = 8  &
+                        , NC_Z_POS = 9  &
+                        , NC_BUOY  = 10 &
+                        , NC_X_VOR = 11 &
+                        , NC_Y_VOR = 12 &
+                        , NC_Z_VOR = 13 &
+                        , NC_B11   = 14 &
+                        , NC_B12   = 15 &
+                        , NC_B13   = 16 &
+                        , NC_B22   = 17 &
+                        , NC_B23   = 18
 
     logical :: l_first_write = .true.
+    logical :: l_unable = .false.
 
 #ifndef ENABLE_DRY_MODE
-    integer, parameter :: NC_HUM   = 15
+    integer, parameter :: NC_HUM   = 19
 
+#ifdef ENABLE_LABELS
+    integer, parameter :: NC_LABEL    = 20 &
+                       ,  NC_DILUTION = 21
+
+    type(netcdf_info) :: nc_dset(NC_DILUTION)
+#else
     type(netcdf_info) :: nc_dset(NC_HUM)
+#endif
+
+#else
+
+#ifdef ENABLE_LABELS
+    integer, parameter :: NC_LABEL    = 19 &
+                       ,  NC_DILUTION = 20
+
+    type(netcdf_info) :: nc_dset(NC_DILUTION)
 #else
     type(netcdf_info) :: nc_dset(NC_B23)
+#endif
 #endif
 
     public :: create_netcdf_parcel_file &
@@ -75,7 +100,7 @@ module parcel_netcdf
             logical,      intent(in)  :: l_restart
             logical                   :: l_exist
             integer                   :: dimids(2)
-            integer                   :: n
+            integer                   :: n, n_total
 
             call set_netcdf_parcel_output
 
@@ -101,6 +126,21 @@ module parcel_netcdf
                 return
             endif
 
+            ! all cores must know the correct number of total parcels
+            n_total_parcels = n_parcels
+            call MPI_Allreduce(MPI_IN_PLACE, n_total_parcels, 1, MPI_INTEGER_64BIT, &
+                               MPI_SUM_64BIT, world%comm, world%err)
+
+            if ((world%rank == world%root) .and. (n_total_parcels > huge(n_total))) then
+                print *, "WARNING: Unable to write parcels to the NetCDF file"
+                print *, "         as the number of total parcel exceeds integer limit."
+                l_unable = .true.
+                return
+            endif
+            l_unable = .false.
+
+            n_total = int(n_total_parcels)
+
             call create_netcdf_file(ncfname, overwrite, ncid)
 
             ! define global attributes
@@ -115,15 +155,10 @@ module parcel_netcdf
 
             call write_netcdf_options(ncid)
 
-            ! all cores must know the correct number of total parcels
-            n_total_parcels = n_parcels
-            call MPI_Allreduce(MPI_IN_PLACE, n_total_parcels, 1, MPI_INTEGER, &
-                               MPI_SUM, world%comm, world%err)
-
             ! define dimensions
-            call define_netcdf_dimension(ncid=ncid,                         &
-                                         name='n_parcels',                  &
-                                         dimsize=n_total_parcels,           &
+            call define_netcdf_dimension(ncid=ncid,                 &
+                                         name='n_parcels',          &
+                                         dimsize=n_total,           &
                                          dimid=npar_dim_id)
 
             call define_netcdf_dimension(ncid=ncid,                  &
@@ -136,19 +171,20 @@ module parcel_netcdf
             dimids = (/npar_dim_id, t_dim_id/)
 
             ! define parcel attributes
-            n = NC_START
-            if (nc_dset(n)%l_enabled) then
-                call define_netcdf_dataset(ncid=ncid,                       &
-                                           name=nc_dset(n)%name,            &
-                                           long_name=nc_dset(n)%long_name,  &
-                                           std_name=nc_dset(n)%std_name,    &
-                                           unit=nc_dset(n)%unit,            &
-                                           dtype=nc_dset(n)%dtype,          &
-                                           dimids=(/mpi_dim_id/),           &
-                                           varid=nc_dset(n)%varid)
-            endif
+            do n = NC_START, NC_YHI
+                if (nc_dset(n)%l_enabled) then
+                    call define_netcdf_dataset(ncid=ncid,                       &
+                                               name=nc_dset(n)%name,            &
+                                               long_name=nc_dset(n)%long_name,  &
+                                               std_name=nc_dset(n)%std_name,    &
+                                               unit=nc_dset(n)%unit,            &
+                                               dtype=nc_dset(n)%dtype,          &
+                                               dimids=(/mpi_dim_id/),           &
+                                               varid=nc_dset(n)%varid)
+                endif
+            enddo
 
-            do n = 2, size(nc_dset)
+            do n = NC_VOL, size(nc_dset)
                 if (nc_dset(n)%l_enabled) then
                     call define_netcdf_dataset(ncid=ncid,                       &
                                                name=nc_dset(n)%name,            &
@@ -174,6 +210,9 @@ module parcel_netcdf
             integer                      :: cnt(2), start(2)
             integer                      :: recvcounts(world%size)
             integer                      :: sendbuf(world%size), start_index
+#ifdef ENABLE_LABELS
+            integer                      :: n
+#endif
 
             call start_timer(parcel_io_timer)
 
@@ -183,6 +222,11 @@ module parcel_netcdf
             endif
 
             call create_netcdf_parcel_file(trim(ncbasename), .true., .false.)
+
+            if (l_unable) then
+                call stop_timer(parcel_io_timer)
+                return
+            endif
 
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
 
@@ -222,6 +266,26 @@ module parcel_netcdf
                                           start=(/1+world%rank, 1/), cnt=(/1, 1/))
             endif
 
+            if (nc_dset(NC_XLO)%l_enabled) then
+                call write_netcdf_dataset(ncid, nc_dset(NC_XLO)%varid, (/box%lo(1)/), &
+                                          start=(/1+world%rank, 1/), cnt=(/1, 1/))
+            endif
+
+            if (nc_dset(NC_XHI)%l_enabled) then
+                call write_netcdf_dataset(ncid, nc_dset(NC_XHI)%varid, (/box%hi(1)/), &
+                                          start=(/1+world%rank, 1/), cnt=(/1, 1/))
+            endif
+
+            if (nc_dset(NC_YLO)%l_enabled) then
+                call write_netcdf_dataset(ncid, nc_dset(NC_YLO)%varid, (/box%lo(2)/), &
+                                          start=(/1+world%rank, 1/), cnt=(/1, 1/))
+            endif
+
+            if (nc_dset(NC_YHI)%l_enabled) then
+                call write_netcdf_dataset(ncid, nc_dset(NC_YHI)%varid, (/box%hi(2)/), &
+                                          start=(/1+world%rank, 1/), cnt=(/1, 1/))
+            endif
+
             call write_parcel_attribute(NC_X_POS, parcels%position(1, :), start, cnt)
             call write_parcel_attribute(NC_Y_POS, parcels%position(2, :), start, cnt)
             call write_parcel_attribute(NC_Z_POS, parcels%position(3, :), start, cnt)
@@ -242,6 +306,16 @@ module parcel_netcdf
 
 #ifndef ENABLE_DRY_MODE
             call write_parcel_attribute(NC_HUM, parcels%humidity, start, cnt)
+#endif
+#ifdef ENABLE_LABELS
+            call write_parcel_attribute_int(NC_LABEL, parcels%label, start, cnt)
+            call write_parcel_attribute(NC_DILUTION, parcels%dilution, start, cnt)
+            ! reset the labels to Fortran index which corresponds to current label
+            ! reset the dilution to get this from time step to time step
+            do n = 1, n_parcels
+               parcels%label(n) = start_index + n - 1
+               parcels%dilution(n) = 0
+            end do
 #endif
             ! increment counter
             n_writes = n_writes + 1
@@ -266,15 +340,29 @@ module parcel_netcdf
             endif
         end subroutine write_parcel_attribute
 
+#ifdef ENABLE_LABELS
+        subroutine write_parcel_attribute_int(id, pdata, start, cnt)
+            integer,          intent(in) :: id
+            integer(kind=8),  intent(in) :: pdata(:)
+            integer,          intent(in) :: cnt(2), start(2)
+
+            if (nc_dset(id)%l_enabled) then
+                call write_netcdf_dataset(ncid, nc_dset(id)%varid,  &
+                                          pdata(1:n_parcels),       &
+                                          start, cnt)
+            endif
+        end subroutine write_parcel_attribute_int
+#endif
+
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine read_netcdf_parcels(fname)
             character(*),     intent(in) :: fname
             integer                      :: start_index, num_indices, end_index
-            integer, allocatable         :: invalid(:)
-            integer                      :: n, m, n_total, pfirst, plast
-            integer                      :: start(2)
+            integer                      :: n, n_total, pfirst, plast
             integer                      :: avail_size, n_remaining, n_read
+            integer                      :: start(2), xlo, xhi, ylo, yhi
+            logical                      :: l_same_world_size
 
             call start_timer(parcel_io_timer)
 
@@ -282,14 +370,16 @@ module parcel_netcdf
 
             call open_netcdf_file(fname, NF90_NOWRITE, ncid)
 
-            call get_num_parcels(ncid, n_total_parcels)
+            call get_num_parcels(ncid, n_total)
 
-            if (has_dataset(ncid, 'start_index')) then
-                call get_dimension_size(ncid, 'world%size', num_indices)
+            n_total_parcels = n_total
 
-                if (num_indices .ne. world%size) then
-                    call mpi_exit_on_error("The number of MPI ranks disagree!")
-                endif
+            ! The number of MPI ranks disagree! We cannot use the 'start_index'
+            ! to read in parcels
+            call get_dimension_size(ncid, 'world%size', num_indices)
+            l_same_world_size = (num_indices == world%size)
+
+            if (l_same_world_size .and. has_dataset(ncid, 'start_index')) then
 
                 if (world%rank < world%size - 1) then
                     ! we must add +1 since the start index is 1
@@ -299,9 +389,8 @@ module parcel_netcdf
                     end_index = start(2) - 1
                 else
                     ! the last MPI rank must only read the start index
-                    call read_netcdf_dataset(ncid, 'start_index', start, (/num_indices/), (/1/))
-                    start_index = start(1)
-                    end_index = n_total_parcels
+                    call read_netcdf_dataset(ncid, 'start_index', start_index, num_indices)
+                    end_index = n_total
                 endif
 
                 n_parcels = end_index - start_index + 1
@@ -313,46 +402,70 @@ module parcel_netcdf
                 endif
 
                 call read_chunk(start_index, end_index, 1)
+            else if (has_dataset(ncid, 'xlo') .and. has_dataset(ncid, 'xhi') .and. &
+                     has_dataset(ncid, 'ylo') .and. has_dataset(ncid, 'yhi') .and. &
+                     has_dataset(ncid, 'start_index')) then
+                !
+                ! READ PARCEL WITH REJECTION METHOD BUT MAKING USE OF
+                ! MPI BOX LAYOUT
+                !
+                call mpi_print("WARNING: MPI ranks disagree. Reading parcels with optimised rejection method!")
+
+                n_parcels = 0
+                pfirst = 1
+
+                do n = 1, num_indices
+
+                    ! read local box
+                    call read_netcdf_dataset(ncid, 'xlo', xlo, start=n)
+                    call read_netcdf_dataset(ncid, 'xhi', xhi, start=n)
+                    call read_netcdf_dataset(ncid, 'ylo', ylo, start=n)
+                    call read_netcdf_dataset(ncid, 'yhi', yhi, start=n)
+
+                    ! check if box overlap (19 April 2024, https://stackoverflow.com/a/3269471):
+                    if ((xlo <= box%hi(1)) .and. (box%lo(1) <= xhi) .and. &
+                        (ylo <= box%hi(2)) .and. (box%lo(2) <= yhi)) then
+
+                        ! get start and end index:
+                        if (n < num_indices) then
+                            call read_netcdf_dataset(ncid, 'start_index', start, (/n/), (/2/))
+                            start_index = start(1)
+                            ! we must subtract 1, otherwise rank reads the first parcel of the next domain
+                            end_index = start(2) - 1
+                        else
+                            ! for the last index we can only read the start index
+                            call read_netcdf_dataset(ncid, 'start_index', start_index, num_indices)
+                            call get_num_parcels(ncid, n_total)
+                            end_index = n_total
+                        endif
+
+                        call rejection_method(start_index, end_index, pfirst)
+
+                        ! set pfirst to the end of the parcel container
+                        pfirst = n_parcels + 1
+                    endif
+                enddo
             else
                 !
                 ! READ PARCELS WITH REJECTION METHOD
                 ! (reject all parcels that are not part of
                 !  the sub-domain owned by *this* MPI rank)
                 !
-                call mpi_print("WARNING: The start index is not provided. All MPI ranks read all parcels!")
-                start_index = 1
-                end_index = min(max_num_parcels, n_total_parcels)
-                pfirst = 1
-                n_remaining = n_total_parcels
+                call mpi_print("WARNING: Unable to retrieve information for fast parcel reading.")
+                call mpi_print("         All MPI ranks read all parcels!")
 
-                ! if all MPI ranks read all parcels, each MPI rank must delete the parcels
-                ! not belonging to its domain
-                allocate(invalid(0:end_index))
+                start_index = 1
+                end_index = min(max_num_parcels, n_total)
+                pfirst = 1
+                n_remaining = n_total
+                n_parcels = 0
 
                 do while (start_index <= end_index)
 
-                    call read_chunk(start_index, end_index, pfirst)
-
                     n_read = end_index - start_index + 1
                     n_remaining = n_remaining - n_read
-                    n_parcels = pfirst + n_read - 1
 
-                    m = 1
-                    do n = pfirst, n_parcels
-                        if (is_contained(parcels%position(:, n))) then
-                            cycle
-                        endif
-
-                        invalid(m) = n
-
-                        m = m + 1
-                    enddo
-
-                    ! remove last increment
-                    m = m - 1
-
-                    ! updates the variable n_parcels
-                    call parcel_delete(invalid(0:m), n_del=m)
+                    call rejection_method(start_index, end_index, pfirst)
 
                     ! adjust the chunk size to fit the remaining memory
                     ! in the parcel container
@@ -360,7 +473,7 @@ module parcel_netcdf
 
                     ! update start index to fill container
                     pfirst = 1 + n_parcels
-                    plast = min(pfirst + avail_size, n_total_parcels, max_num_parcels)
+                    plast = min(pfirst + avail_size, n_total, max_num_parcels)
 
                     ! we must make sure that we have enough data in the
                     ! file as well as in the parcel container
@@ -370,8 +483,6 @@ module parcel_netcdf
                     start_index = 1 + end_index
                     end_index = end_index + n_read
                 enddo
-
-                deallocate(invalid)
             endif
 
             call close_netcdf_file(ncid)
@@ -398,6 +509,45 @@ module parcel_netcdf
 
         end subroutine read_netcdf_parcels
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine rejection_method(start_index, end_index, pfirst)
+            integer, intent(in)  :: start_index
+            integer, intent(in)  :: end_index
+            integer, intent(in)  :: pfirst
+            integer              :: m, k, n_read
+            integer, allocatable :: invalid(:)
+
+            call read_chunk(start_index, end_index, pfirst)
+            n_read = end_index - start_index + 1
+            n_parcels = n_parcels + n_read
+
+            ! if all MPI ranks read all parcels, each MPI rank must delete the parcels
+            ! not belonging to its domain
+            allocate(invalid(0:n_read))
+
+            m = 1
+            do k = pfirst, n_parcels
+                if (is_contained(parcels%position(:, k))) then
+                    cycle
+                endif
+
+                invalid(m) = k
+
+                m = m + 1
+            enddo
+
+            ! remove last increment
+            m = m - 1
+
+            ! updates the variable n_parcels
+            call parcel_delete(invalid(0:m), n_del=m)
+
+            deallocate(invalid)
+
+        end subroutine rejection_method
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! This subroutine assumes the NetCDF file to be open.
         subroutine read_chunk(first, last, pfirst)
@@ -405,6 +555,9 @@ module parcel_netcdf
             logical             :: l_valid = .false.
             integer             :: cnt(2), start(2)
             integer             :: num, plast
+#ifdef ENABLE_LABELS
+            integer             :: n
+#endif
 
             num = last - first + 1
             plast = pfirst + num - 1
@@ -492,6 +645,7 @@ module parcel_netcdf
             endif
 
             if (has_dataset(ncid, 'y_vorticity')) then
+                l_valid = .true.
                 call read_netcdf_dataset(ncid, 'y_vorticity', &
                                          parcels%vorticity(2, pfirst:plast), start, cnt)
             endif
@@ -515,6 +669,15 @@ module parcel_netcdf
                                          parcels%humidity(pfirst:plast), start, cnt)
             endif
 #endif
+#ifdef ENABLE_LABELS
+            ! reset the labels to Fortran index which corresponds to current label
+            ! reset the dilution to get this from time step to time step
+            do n = pfirst, plast
+               parcels%label(n) = first + n - pfirst
+               parcels%dilution(n) = 0
+            end do
+#endif
+
 
             if (.not. l_valid) then
                 call mpi_exit_on_error(&
@@ -544,8 +707,16 @@ module parcel_netcdf
 #ifndef ENABLE_DRY_MODE
                 nc_dset(NC_HUM)%l_enabled   = .true.
 #endif
+#ifdef ENABLE_LABELS
+                nc_dset(NC_LABEL)%l_enabled   = .true.
+                nc_dset(NC_DILUTION)%l_enabled   = .true.
+#endif
                 nc_dset(NC_VOL)%l_enabled   = .true.
                 nc_dset(NC_START)%l_enabled = .true.
+                nc_dset(NC_XLO)%l_enabled   = .true.
+                nc_dset(NC_XHI)%l_enabled   = .true.
+                nc_dset(NC_YLO)%l_enabled   = .true.
+                nc_dset(NC_YHI)%l_enabled   = .true.
                 nc_dset(NC_B11)%l_enabled   = .true.
                 nc_dset(NC_B12)%l_enabled   = .true.
                 nc_dset(NC_B13)%l_enabled   = .true.
@@ -573,6 +744,10 @@ module parcel_netcdf
                     print *, ""
                 endif
                 nc_dset(NC_START)%l_enabled = .true.
+                nc_dset(NC_XLO)%l_enabled   = .true.
+                nc_dset(NC_XHI)%l_enabled   = .true.
+                nc_dset(NC_YLO)%l_enabled   = .true.
+                nc_dset(NC_YHI)%l_enabled   = .true.
                 nc_dset(NC_X_POS)%l_enabled = .true.
                 nc_dset(NC_Y_POS)%l_enabled = .true.
                 nc_dset(NC_Z_POS)%l_enabled = .true.
@@ -582,6 +757,10 @@ module parcel_netcdf
                 nc_dset(NC_BUOY)%l_enabled  = .true.
 #ifndef ENABLE_DRY_MODE
                 nc_dset(NC_HUM)%l_enabled   = .true.
+#endif
+#ifdef ENABLE_LABELS
+                nc_dset(NC_LABEL)%l_enabled   = .true.
+                nc_dset(NC_DILUTION)%l_enabled   = .true.
 #endif
                 nc_dset(NC_VOL)%l_enabled   = .true.
                 nc_dset(NC_B11)%l_enabled   = .true.
@@ -639,93 +818,130 @@ module parcel_netcdf
 
         subroutine set_netcdf_parcel_info
 
-            nc_dset(NC_X_POS) = netcdf_info(name='x_position',                   &
+            call nc_dset(NC_X_POS)%set_info(name='x_position',                   &
                                             long_name='x position component',    &
                                             std_name='',                         &
                                             unit='m',                            &
                                             dtype=NF90_DOUBLE)
 
-            nc_dset(NC_Y_POS) = netcdf_info(name='y_position',                   &
+            call nc_dset(NC_Y_POS)%set_info(name='y_position',                   &
                                             long_name='y position component',    &
                                             std_name='',                         &
                                             unit='m',                            &
                                             dtype=NF90_DOUBLE)
 
-            nc_dset(NC_Z_POS) = netcdf_info(name='z_position',                   &
+            call nc_dset(NC_Z_POS)%set_info(name='z_position',                   &
                                             long_name='z position component',    &
                                             std_name='',                         &
                                             unit='m',                            &
                                             dtype=NF90_DOUBLE)
 
-            nc_dset(NC_START) = netcdf_info(name='start_index',                  &
+            call nc_dset(NC_START)%set_info(name='start_index',                  &
                                             long_name='MPI rank start index',    &
                                             std_name='',                         &
                                             unit='1',                            &
                                             dtype=NF90_INT)
 
-            nc_dset(NC_B11) = netcdf_info(name='B11',                              &
+            call nc_dset(NC_XLO)%set_info(name='xlo',                           &
+                                          long_name='lower box boundary in x',  &
+                                          std_name='',                          &
+                                          unit='1',                             &
+                                          dtype=NF90_INT)
+
+            call nc_dset(NC_XHI)%set_info(name='xhi',                           &
+                                          long_name='upper box boundary in x',  &
+                                          std_name='',                          &
+                                          unit='1',                             &
+                                          dtype=NF90_INT)
+
+            call nc_dset(NC_YLO)%set_info(name='ylo',                           &
+                                          long_name='lower box boundary in y',  &
+                                          std_name='',                          &
+                                          unit='1',                             &
+                                          dtype=NF90_INT)
+
+            call nc_dset(NC_YHI)%set_info(name='yhi',                           &
+                                          long_name='upper box boundary in y',  &
+                                          std_name='',                          &
+                                          unit='1',                             &
+                                          dtype=NF90_INT)
+
+            call nc_dset(NC_B11)%set_info(name='B11',                              &
                                           long_name='B11 element of shape matrix', &
                                           std_name='',                             &
                                           unit='m^2',                              &
                                           dtype=NF90_DOUBLE)
 
-            nc_dset(NC_B12) = netcdf_info(name='B12',                              &
+            call nc_dset(NC_B12)%set_info(name='B12',                              &
                                           long_name='B12 element of shape matrix', &
                                           std_name='',                             &
                                           unit='m^2',                              &
                                           dtype=NF90_DOUBLE)
 
-            nc_dset(NC_B13) = netcdf_info(name='B13',                              &
+            call nc_dset(NC_B13)%set_info(name='B13',                              &
                                           long_name='B13 element of shape matrix', &
                                           std_name='',                             &
                                           unit='m^2',                              &
                                           dtype=NF90_DOUBLE)
 
-            nc_dset(NC_B22) = netcdf_info(name='B22',                              &
+            call nc_dset(NC_B22)%set_info(name='B22',                              &
                                           long_name='B22 element of shape matrix', &
                                           std_name='',                             &
                                           unit='m^2',                              &
                                           dtype=NF90_DOUBLE)
 
-            nc_dset(NC_B23) = netcdf_info(name='B23',                              &
+            call nc_dset(NC_B23)%set_info(name='B23',                              &
                                           long_name='B23 element of shape matrix', &
                                           std_name='',                             &
                                           unit='m^2',                              &
                                           dtype=NF90_DOUBLE)
 
-            nc_dset(NC_VOL) = netcdf_info(name='volume',                           &
+            call nc_dset(NC_VOL)%set_info(name='volume',                           &
                                           long_name='parcel volume',               &
                                           std_name='',                             &
                                           unit='m^3',                              &
                                           dtype=NF90_DOUBLE)
 
-            nc_dset(NC_X_VOR) = netcdf_info(name='x_vorticity',                      &
+            call nc_dset(NC_X_VOR)%set_info(name='x_vorticity',                      &
                                             long_name='x vorticity component',       &
                                             std_name='',                             &
                                             unit='1/s',                              &
                                             dtype=NF90_DOUBLE)
 
-            nc_dset(NC_Y_VOR) = netcdf_info(name='y_vorticity',                      &
+            call nc_dset(NC_Y_VOR)%set_info(name='y_vorticity',                      &
                                             long_name='y vorticity component',       &
                                             std_name='',                             &
                                             unit='1/s',                              &
                                             dtype=NF90_DOUBLE)
 
-            nc_dset(NC_Z_VOR) = netcdf_info(name='z_vorticity',                      &
+            call nc_dset(NC_Z_VOR)%set_info(name='z_vorticity',                      &
                                             long_name='z vorticity component',       &
                                             std_name='',                             &
                                             unit='1/s',                              &
                                             dtype=NF90_DOUBLE)
 
-            nc_dset(NC_BUOY) = netcdf_info(name='buoyancy',                         &
+            call nc_dset(NC_BUOY)%set_info(name='buoyancy',                         &
                                            long_name='parcel buoyancy',             &
                                            std_name='',                             &
                                            unit='m/s^2',                            &
                                            dtype=NF90_DOUBLE)
 
 #ifndef ENABLE_DRY_MODE
-            nc_dset(NC_HUM) = netcdf_info(name='humidity',                         &
+            call nc_dset(NC_HUM)%set_info(name='humidity',                         &
                                           long_name='parcel humidity',             &
+                                          std_name='',                             &
+                                          unit='1',                                &
+                                          dtype=NF90_DOUBLE)
+#endif
+#ifdef ENABLE_LABELS
+            call nc_dset(NC_LABEL)%set_info(name='label',                          &
+                                          long_name='parcel label',                &
+                                          std_name='',                             &
+                                          unit='1',                                &
+                                          dtype=NF90_INT64)
+
+            call nc_dset(NC_DILUTION)%set_info(name='dilution',                    &
+                                          long_name='parcel log dilution',         &
                                           std_name='',                             &
                                           unit='1',                                &
                                           dtype=NF90_DOUBLE)

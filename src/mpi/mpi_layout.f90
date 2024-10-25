@@ -1,4 +1,5 @@
 module mpi_layout
+    use datatypes, only : int64
     use mpi_f08
     use mpi_environment, only : communicator, world
     use mpi_tags
@@ -57,6 +58,7 @@ module mpi_layout
             integer                      :: coords(2)
             logical                      :: periods(2)
             double precision             :: dx(3)
+            integer(kind=int64)          :: max_size
 
             if (l_mpi_layout_initialised) then
                 return
@@ -123,7 +125,12 @@ module mpi_layout
             layout%l_parallel = (box%hi - box%lo < (/nx-1, ny-1, nz/))
             box%size = box%hi - box%lo + 1
             box%halo_size = box%hhi - box%hlo + 1
-            box%ncell = box%size(1) * box%size(2) * (box%size(3) - 1)
+            max_size = box%size(1) * box%size(2) * (box%size(3) - 1)
+            if (max_size > huge(box%ncell)) then
+                call mpi_exit_on_error(&
+                    "Number of local cells larger than an integer can represent. Overflow!")
+            endif
+            box%ncell = int(max_size)
             box%halo_ncell = box%halo_size(1) * box%halo_size(2) * (box%halo_size(3) - 1)
 
             box%global_size = (/nx, ny, nz/)

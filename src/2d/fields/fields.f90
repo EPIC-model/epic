@@ -80,6 +80,9 @@ module fields
 #endif
             nparg    = zero
             nsparg   = zero
+#ifndef NDEBUG
+            sym_volg = zero
+#endif
         end subroutine
 
         ! Get the lower index of the cell the parcel is in.
