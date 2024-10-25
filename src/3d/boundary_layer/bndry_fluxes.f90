@@ -9,6 +9,7 @@ module bndry_fluxes
     use parcel_container, only : n_parcels, parcels
     use netcdf_reader
     use omp_lib
+    use physics, only : gravity, theta_0
     use options, only : time
     use mpi_utils, only : mpi_stop
     use field_mpi, only : field_mpi_alloc                   &
@@ -27,9 +28,9 @@ module bndry_fluxes
     integer            :: bndry_flux_timer
 
     ! Spatial form of the buoyancy and humidity fluxes through lower surface:
-    double precision, dimension(:, :), allocatable :: binc
+    double precision, dimension(:, :), allocatable :: thetaflux
 #ifndef ENABLE_DRY_MODE
-    double precision, dimension(:, :), allocatable :: hinc
+    double precision, dimension(:, :), allocatable :: qvflux
 #endif
 
     ! Denotes height below which surface fluxes are applied:
@@ -52,9 +53,9 @@ module bndry_fluxes
 
             l_bndry_flux_allocated = .true.
 
-            allocate(binc(box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
+            allocate(thetaflux(box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
 #ifndef ENABLE_DRY_MODE
-            allocate(hinc(box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
+            allocate(qvflux(box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
 #endif
         end subroutine bndry_fluxes_allocate
 
@@ -69,9 +70,9 @@ module bndry_fluxes
 
             l_bndry_flux_allocated = .false.
 
-            deallocate(binc)
+            deallocate(thetaflux)
 #ifndef ENABLE_DRY_MODE
-            deallocate(hinc)
+            deallocate(qvflux)
 #endif
             call stop_timer(bndry_flux_timer)
 
@@ -85,9 +86,9 @@ module bndry_fluxes
 
             call bndry_fluxes_allocate
 
-            binc = zero
+            thetaflux = zero
 #ifndef ENABLE_DRY_MODE
-            hinc = zero
+            qvflux = zero
 #endif
             call stop_timer(bndry_flux_timer)
 
@@ -123,27 +124,27 @@ module bndry_fluxes
 
             call bndry_fluxes_default
 
-            if (has_dataset(ncid, 'bflux')) then
+            if (has_dataset(ncid, 'thetaflux')) then
                 call read_netcdf_dataset(ncid,                  &
-                                         'bflux',               &
-                                         binc(lo(2):hi(2),      &
-                                              lo(1):hi(1)),     &
+                                         'thetaflux',               &
+                                         thetaflux(lo(2):hi(2),     &
+                                               lo(1):hi(1)),    &
                                          start,                 &
                                          cnt)
             else
-                call mpi_stop("No buoyancy flux field 'bflux' found in file.")
+                call mpi_stop("No theta flux field 'thetaflux' found in file.")
             endif
 
 #ifndef ENABLE_DRY_MODE
-            if (has_dataset(ncid, 'hflux')) then
+            if (has_dataset(ncid, 'qvflux')) then
                 call read_netcdf_dataset(ncid,                  &
-                                         'hflux',               &
-                                         hinc(lo(2):hi(2),      &
-                                              lo(1):hi(1)),     &
+                                         'qvflux',               &
+                                         qvflux(lo(2):hi(2),     &
+                                               lo(1):hi(1)),    &
                                          start,                 &
                                          cnt)
             else
-                call mpi_stop("No humidity flux field 'hflux' found in file.")
+                call mpi_stop("No qv flux field 'qvflux' found in file.")
             endif
 #endif
 
@@ -164,9 +165,9 @@ module bndry_fluxes
 
             !$omp parallel
             !$omp workshare
-            binc = two * dxi(3) * binc
+            thetaflux = two * dxi(3) * thetaflux
 #ifndef ENABLE_DRY_MODE
-            hinc = two * dxi(3) * hinc
+            qvflux = two * dxi(3) * qvflux
 #endif
             !$omp end workshare
             !$omp end parallel
@@ -188,7 +189,7 @@ module bndry_fluxes
             endif
 
             ! local maximum of absolute value (units: m/s**3)
-            abs_max = maxval(abs(binc(box%lo(2):box%hi(2), box%lo(1):box%hi(1))))
+            abs_max = (gravity/theta_0)*maxval(abs(thetaflux(box%lo(2):box%hi(2), box%lo(1):box%hi(1))))
 
             ! get global abs_max
             call MPI_Allreduce(MPI_IN_PLACE,            &
@@ -236,11 +237,11 @@ module bndry_fluxes
 
                     ! The multiplication by dt is necessary to provide the amount of b or h
                     ! entering through the bottom surface over a time interval of dt.
-                    parcels%buoyancy(n) = parcels%buoyancy(n) &
-                                        + fac * sum(weights * binc(js:js+1, is:is+1))
+                    parcels%theta(n) = parcels%theta(n) &
+                                        + fac * sum(weights * thetaflux(js:js+1, is:is+1))
 #ifndef ENABLE_DRY_MODE
-                    parcels%humidity(n) = parcels%humidity(n) &
-                                        + fac * sum(weights * hinc(js:js+1, is:is+1))
+                    parcels%qv(n) = parcels%qv(n) &
+                                        + fac * sum(weights * qvflux(js:js+1, is:is+1))
 #endif
                 endif
             enddo
@@ -261,16 +262,16 @@ module bndry_fluxes
 #endif
             call field_mpi_alloc(nfluxes, ndim=2)
 
-            call field_interior_to_buffer(binc, 1)
+            call field_interior_to_buffer(thetaflux, 1)
 #ifndef ENABLE_DRY_MODE
-            call field_interior_to_buffer(hinc, 2)
+            call field_interior_to_buffer(qvflux, 2)
 #endif
 
             call interior_to_halo_communication
 
-            call field_buffer_to_halo(binc, 1, .false.)
+            call field_buffer_to_halo(thetaflux, 1, .false.)
 #ifndef ENABLE_DRY_MODE
-            call field_buffer_to_halo(hinc, 2, .false.)
+            call field_buffer_to_halo(qvflux, 2, .false.)
 #endif
             call field_mpi_dealloc
 

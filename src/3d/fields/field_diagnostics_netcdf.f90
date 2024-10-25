@@ -14,6 +14,7 @@ module field_diagnostics_netcdf
     use mpi_timer, only : start_timer, stop_timer
     use options, only : write_netcdf_options
     use physics, only : write_physical_quantities, ape_calculation
+
     implicit none
 
     private

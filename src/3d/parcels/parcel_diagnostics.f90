@@ -10,7 +10,7 @@ module parcel_diagnostics
     use parcel_split_mod, only : n_parcel_splits
     use parcel_merging, only : n_parcel_merges, n_big_close, n_way_parcel_mergers
     use omp_lib
-    use physics, only : ape_calculation
+    use physics, only : ape_calculation, gravity, theta_0, qv_dens_coeff
     use ape_density, only : ape_den
     use mpi_timer, only : start_timer, stop_timer
     use mpi_environment
@@ -73,7 +73,12 @@ module parcel_diagnostics
                 vel = parcels%delta_pos(:, n)
                 vor = parcels%vorticity(:, n)
                 vol = parcels%volume(n)
-                b   = parcels%buoyancy(n)
+#ifndef ENABLE_DRY_MODE
+                ! total buoyancy (including effects of latent heating)
+                b = gravity*(parcels%theta(n)*(1.0+qv_dens_coeff*parcels%qv(n)-parcels%ql(n))/theta_0-1.0)
+#else
+                b = gravity*(parcels%theta(n)/theta_0-1.0)
+#endif
                 z   = parcels%position(3, n)
 
                 ! kinetic energy

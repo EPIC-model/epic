@@ -8,8 +8,11 @@ module ls_rk
     use parcel_container
     use parcel_bc
     use parcel_mpi, only : parcel_communicate
-    use rk_utils, only: get_dBdt, get_time_step
+    use rk_utils, only: get_dBdt, get_time_step, get_strain_magnitude_field
     use utils, only : write_step
+    use parcel_interpl, only : par2grid, grid2par, saturation_adjustment
+    use parcel_damping, only : parcel_damp
+    use parcel_ls_forcings, only : apply_ls_forcings
     use parcel_interpl, only : par2grid, grid2par
     use parcel_damping, only : parcel_damp
     use fields, only : velgradg, velog, vortg, vtend, tbuoyg
@@ -127,6 +130,7 @@ module ls_rk
             call stop_timer(rk_timer)
 
             call parcel_damp(dt)
+            call apply_ls_forcings(dt)
 
             ! we need to subtract 14 calls since we start and stop
             ! the timer multiple times which increments n_calls
@@ -195,8 +199,10 @@ module ls_rk
             enddo
             !$omp end parallel do
 
-            call stop_timer(rk_timer)
+            ! call saturation adjustment after each integration
+            call saturation_adjustment
 
+            call stop_timer(rk_timer)
             if (step == n_stages) then
                 call parcel_communicate
                return

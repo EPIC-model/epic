@@ -11,9 +11,7 @@ module field_diagnostics
     use mpi_collectives, only : mpi_blocking_reduce
     use physics, only : ape_calculation
     use ape_density, only : ape_den
-#ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
-    use physics, only : bfsq
-#endif
+    use parcel_interpl, only: par2grid_diag
     implicit none
 
     integer :: field_stats_timer
@@ -50,6 +48,7 @@ module field_diagnostics
             !
             ! calculate locally
             !
+            call par2grid_diag
 
             ! do not take halo cells into account
             field_stats(IDX_RMS_V) = sum((volg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)) - vcell) ** 2)

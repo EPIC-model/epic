@@ -38,17 +38,17 @@ module field_netcdf
                         , NC_Z_VTEND = 9        &
                         , NC_NPARG   = 10       &
                         , NC_NSPARG  = 11       &
-                        , NC_TBUOY   = 12       &
-                        , NC_VOL     = 13
+                        , NC_THETA   = 12       &
+                        , NC_TBUOY   = 13       &
+                        , NC_VOL     = 14
 
 #ifndef ENABLE_DRY_MODE
-    integer, parameter :: NC_DBUOY   = 14       &
-                        , NC_HUM     = 15       &
-                        , NC_LBUOY   = 16
+    integer, parameter :: NC_QV      = 15       &
+                        , NC_QL      = 16      
 
     type(netcdf_info) :: nc_dset(16)
 #else
-    type(netcdf_info) :: nc_dset(13)
+    type(netcdf_info) :: nc_dset(14)
 #endif
 
     integer :: n_writes
@@ -237,13 +237,12 @@ module field_netcdf
 #endif
 
             call write_field_double(NC_TBUOY, tbuoyg, start, cnt)
+            call write_field_double(NC_THETA, thetag, start, cnt)
 
 #ifndef ENABLE_DRY_MODE
-            call write_field_double(NC_DBUOY, dbuoyg, start, cnt)
+            call write_field_double(NC_QV, qvg, start, cnt)
 
-            call write_field_double(NC_LBUOY, glati * (tbuoyg - dbuoyg), start, cnt)
-
-            call write_field_double(NC_HUM, humg, start, cnt)
+            call write_field_double(NC_QL, qlg, start, cnt)
 #endif
             call write_field_double(NC_VOL, volg, start, cnt)
 
@@ -370,11 +369,31 @@ module field_netcdf
                                          cnt)
             endif
 
+            if (has_dataset(lid, nc_dset(NC_THETA)%name)) then
+                call read_netcdf_dataset(lid,                         &
+                                         nc_dset(NC_THETA)%name,      &
+                                         thetag(box%lo(3):box%hi(3),  &
+                                                box%lo(2):box%hi(2),  &
+                                                box%lo(1):box%hi(1)), &
+                                         start,                       &
+                                         cnt)
+            endif
+
 #ifndef ENABLE_DRY_MODE
-            if (has_dataset(lid, nc_dset(NC_HUM)%name)) then
+            if (has_dataset(lid, nc_dset(NC_QV)%name)) then
                 call read_netcdf_dataset(lid,                       &
-                                         nc_dset(NC_HUM)%name,      &
-                                         humg(box%lo(3):box%hi(3),  &
+                                         nc_dset(NC_QV)%name,      &
+                                         qvg(box%lo(3):box%hi(3),  &
+                                              box%lo(2):box%hi(2),  &
+                                              box%lo(1):box%hi(1)), &
+                                         start,                     &
+                                         cnt)
+            endif
+
+            if (has_dataset(lid, nc_dset(NC_QL)%name)) then
+                call read_netcdf_dataset(lid,                       &
+                                         nc_dset(NC_QL)%name,      &
+                                         qlg(box%lo(3):box%hi(3),  &
                                               box%lo(2):box%hi(2),  &
                                               box%lo(1):box%hi(1)), &
                                          start,                     &
@@ -402,11 +421,11 @@ module field_netcdf
                 nc_dset(NC_X_VEL)%l_enabled = .true.
                 nc_dset(NC_Y_VEL)%l_enabled = .true.
                 nc_dset(NC_Z_VEL)%l_enabled = .true.
+                nc_dset(NC_THETA)%l_enabled = .true.
                 nc_dset(NC_TBUOY)%l_enabled = .true.
 #ifndef ENABLE_DRY_MODE
-                nc_dset(NC_DBUOY)%l_enabled = .true.
-                nc_dset(NC_HUM)%l_enabled   = .true.
-                nc_dset(NC_LBUOY)%l_enabled = .true.
+                nc_dset(NC_QV)%l_enabled   = .true.
+                nc_dset(NC_QL)%l_enabled = .true.
 #endif
                 nc_dset(NC_VOL)%l_enabled   = .true.
             else
@@ -436,11 +455,11 @@ module field_netcdf
                 nc_dset(NC_X_VEL)%l_enabled = .true.
                 nc_dset(NC_Y_VEL)%l_enabled = .true.
                 nc_dset(NC_Z_VEL)%l_enabled = .true.
+                nc_dset(NC_THETA)%l_enabled = .true.
                 nc_dset(NC_TBUOY)%l_enabled = .true.
 #ifndef ENABLE_DRY_MODE
-                nc_dset(NC_DBUOY)%l_enabled = .true.
-                nc_dset(NC_HUM)%l_enabled   = .true.
-                nc_dset(NC_LBUOY)%l_enabled = .true.
+                nc_dset(NC_QV)%l_enabled = .true.
+                nc_dset(NC_QL)%l_enabled   = .true.
 #endif
                 nc_dset(NC_VOL)%l_enabled   = .true.
             endif
@@ -528,6 +547,12 @@ module field_netcdf
                                             unit='1/s',                           &
                                             dtype=NF90_DOUBLE)
 
+            call nc_dset(NC_THETA)%set_info(name='theta',                         &
+                                            long_name='potential temperature',    &
+                                            std_name='',                          &
+                                            unit='K',                             &
+                                            dtype=NF90_DOUBLE)
+
             call nc_dset(NC_TBUOY)%set_info(name='buoyancy',                      &
                                             long_name='total buoyancy',           &
                                             std_name='',                          &
@@ -535,23 +560,17 @@ module field_netcdf
                                             dtype=NF90_DOUBLE)
 
 #ifndef ENABLE_DRY_MODE
-            call nc_dset(NC_DBUOY)%set_info(name='dry_buoyancy',                  &
-                                            long_name='dry buoyancy',             &
+            call nc_dset(NC_QV)%set_info(name='qv',                               &
+                                            long_name='water vapor mixing ratio', &
                                             std_name='',                          &
-                                            unit='m/s^2',                         &
+                                            unit='kg/kg',                         &
                                             dtype=NF90_DOUBLE)
 
-            call nc_dset(NC_HUM)%set_info(name='humidity',                        &
-                                          long_name='specific humidity',          &
+            call nc_dset(NC_QL)%set_info(name='ql',                               &
+                                          long_name='liquid water mixing ratio',  &
                                           std_name='',                            &
                                           unit='kg/kg',                           &
                                           dtype=NF90_DOUBLE)
-
-            call nc_dset(NC_LBUOY)%set_info(name='liquid_water_content',          &
-                                            long_name='liquid-water content',     &
-                                            std_name='',                          &
-                                            unit='1',                             &
-                                            dtype=NF90_DOUBLE)
 #endif
 
             call nc_dset(NC_VOL)%set_info(name='volume',                          &

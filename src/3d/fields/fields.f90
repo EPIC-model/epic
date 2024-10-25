@@ -36,9 +36,10 @@ module fields
 
     double precision, allocatable, dimension(:, :, :) :: &
 #ifndef ENABLE_DRY_MODE
-        dbuoyg,    &   ! dry buoyancy (or liquid-water buoyancy)
-        humg,      &   ! humidity
+        qvg,        &   ! humidity
+        qlg,        &   ! liquid water
 #endif
+        thetag,     &   ! dry buoyancy (or liquid-water buoyancy)
         tbuoyg,    &   ! buoyancy
 #ifndef NDEBUG
         sym_volg,  &   ! symmetry volume (debug mode only)
@@ -80,8 +81,8 @@ module fields
             allocate(velog(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), n_dim))
             allocate(velgradg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), 8))
 
-            allocate(volg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
             allocate(strain_mag(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
+            allocate(volg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
 
 #ifndef NDEBUG
             allocate(sym_volg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
@@ -92,10 +93,10 @@ module fields
             allocate(vtend(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), n_dim))
 
             allocate(tbuoyg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
-
+            allocate(thetag(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
 #ifndef ENABLE_DRY_MODE
-            allocate(dbuoyg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
-            allocate(humg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
+            allocate(qvg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
+            allocate(qlg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
 #endif
 
             allocate(nparg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
@@ -116,9 +117,10 @@ module fields
             vortg    = zero
             vtend    = zero
             tbuoyg   = zero
+            thetag   = zero
 #ifndef ENABLE_DRY_MODE
-            dbuoyg   = zero
-            humg     = zero
+            qvg     = zero
+            qlg     = zero
 #endif
             nparg    = zero
             nsparg   = zero
@@ -135,14 +137,15 @@ module fields
             if (allocated(velog)) then
                 deallocate(velog)
                 deallocate(velgradg)
-                deallocate(volg)
                 deallocate(strain_mag)
+                deallocate(volg)
                 deallocate(vortg)
                 deallocate(vtend)
                 deallocate(tbuoyg)
+                deallocate(thetag)
 #ifndef ENABLE_DRY_MODE
-                deallocate(dbuoyg)
-                deallocate(humg)
+                deallocate(qvg)
+                deallocate(qlg)
 #endif
                 deallocate(nparg)
                 deallocate(nsparg)

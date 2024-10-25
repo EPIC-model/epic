@@ -47,7 +47,7 @@ module parcel_netcdf
                         , NC_X_POS = 7  &
                         , NC_Y_POS = 8  &
                         , NC_Z_POS = 9  &
-                        , NC_BUOY  = 10 &
+                        , NC_THETA = 10 &
                         , NC_X_VOR = 11 &
                         , NC_Y_VOR = 12 &
                         , NC_Z_VOR = 13 &
@@ -61,15 +61,16 @@ module parcel_netcdf
     logical :: l_unable = .false.
 
 #ifndef ENABLE_DRY_MODE
-    integer, parameter :: NC_HUM   = 19
+    integer, parameter :: NC_QV    = 19 &
+                       ,  NC_QL    = 20
 
 #ifdef ENABLE_LABELS
-    integer, parameter :: NC_LABEL    = 20 &
-                       ,  NC_DILUTION = 21
+    integer, parameter :: NC_LABEL    = 21 &
+                       ,  NC_DILUTION = 22
 
     type(netcdf_info) :: nc_dset(NC_DILUTION)
 #else
-    type(netcdf_info) :: nc_dset(NC_HUM)
+    type(netcdf_info) :: nc_dset(NC_QL)
 #endif
 
 #else
@@ -302,10 +303,11 @@ module parcel_netcdf
             call write_parcel_attribute(NC_Y_VOR, parcels%vorticity(2, :), start, cnt)
             call write_parcel_attribute(NC_Z_VOR, parcels%vorticity(3, :), start, cnt)
 
-            call write_parcel_attribute(NC_BUOY, parcels%buoyancy, start, cnt)
+            call write_parcel_attribute(NC_THETA, parcels%theta, start, cnt)
 
 #ifndef ENABLE_DRY_MODE
-            call write_parcel_attribute(NC_HUM, parcels%humidity, start, cnt)
+            call write_parcel_attribute(NC_QV, parcels%qv, start, cnt)
+            call write_parcel_attribute(NC_QL, parcels%ql, start, cnt)
 #endif
 #ifdef ENABLE_LABELS
             call write_parcel_attribute_int(NC_LABEL, parcels%label, start, cnt)
@@ -656,17 +658,22 @@ module parcel_netcdf
                                          parcels%vorticity(3, pfirst:plast), start, cnt)
             endif
 
-            if (has_dataset(ncid, 'buoyancy')) then
+            if (has_dataset(ncid, 'theta')) then
                 l_valid = .true.
-                call read_netcdf_dataset(ncid, 'buoyancy', &
-                                         parcels%buoyancy(pfirst:plast), start, cnt)
+                call read_netcdf_dataset(ncid, 'theta', &
+                                         parcels%theta(pfirst:plast), start, cnt)
             endif
 
 #ifndef ENABLE_DRY_MODE
-            if (has_dataset(ncid, 'humidity')) then
+            if (has_dataset(ncid, 'qv')) then
                 l_valid = .true.
-                call read_netcdf_dataset(ncid, 'humidity', &
-                                         parcels%humidity(pfirst:plast), start, cnt)
+                call read_netcdf_dataset(ncid, 'qv', &
+                                         parcels%qv(pfirst:plast), start, cnt)
+            endif
+            if (has_dataset(ncid, 'ql')) then
+                l_valid = .true.
+                call read_netcdf_dataset(ncid, 'ql', &
+                                         parcels%ql(pfirst:plast), start, cnt)
             endif
 #endif
 #ifdef ENABLE_LABELS
@@ -681,7 +688,7 @@ module parcel_netcdf
 
             if (.not. l_valid) then
                 call mpi_exit_on_error(&
-                    "Either the parcel buoyancy or vorticity must be present! Exiting.")
+                    "Either the parcel theta or vorticity must be present! Exiting.")
             endif
         end subroutine read_chunk
 
@@ -703,9 +710,10 @@ module parcel_netcdf
                 nc_dset(NC_X_VOR)%l_enabled = .true.
                 nc_dset(NC_Y_VOR)%l_enabled = .true.
                 nc_dset(NC_Z_VOR)%l_enabled = .true.
-                nc_dset(NC_BUOY)%l_enabled  = .true.
+                nc_dset(NC_THETA)%l_enabled  = .true.
 #ifndef ENABLE_DRY_MODE
-                nc_dset(NC_HUM)%l_enabled   = .true.
+                nc_dset(NC_QV)%l_enabled   = .true.
+                nc_dset(NC_QL)%l_enabled   = .true.
 #endif
 #ifdef ENABLE_LABELS
                 nc_dset(NC_LABEL)%l_enabled   = .true.
@@ -754,9 +762,10 @@ module parcel_netcdf
                 nc_dset(NC_X_VOR)%l_enabled = .true.
                 nc_dset(NC_Y_VOR)%l_enabled = .true.
                 nc_dset(NC_Z_VOR)%l_enabled = .true.
-                nc_dset(NC_BUOY)%l_enabled  = .true.
+                nc_dset(NC_THETA)%l_enabled  = .true.
 #ifndef ENABLE_DRY_MODE
-                nc_dset(NC_HUM)%l_enabled   = .true.
+                nc_dset(NC_QV)%l_enabled   = .true.
+                nc_dset(NC_QL)%l_enabled   = .true.
 #endif
 #ifdef ENABLE_LABELS
                 nc_dset(NC_LABEL)%l_enabled   = .true.
@@ -799,13 +808,13 @@ module parcel_netcdf
                                       ((nc_dset(NC_X_VOR)%l_enabled .and.   &
                                         nc_dset(NC_Y_VOR)%l_enabled .and.   &
                                         nc_dset(NC_Z_VOR)%l_enabled) .or.   &
-                                        nc_dset(NC_BUOY)%l_enabled))
+                                        nc_dset(NC_THETA)%l_enabled))
 
 
                 if ((.not. l_enabled_restart) .and. (world%rank == world%root)) then
                     print *, "WARNING: EPIC will not be able to restart from a parcel file."
                     print *, "         You must at least write the B-shape matrix, parcel position"
-                    print *, "         parcel volume and parcel vorticity or buoyancy to enable a"
+                    print *, "         parcel volume and parcel vorticity or theta to enable a"
                     print *, "         restart. If you intend to restart from a parcel file later,"
                     print *, "         you must stop the simulation immediately. Furthermore, you can"
                     print *, "         write the MPI 'start_index' to speed up the restart."
@@ -920,17 +929,22 @@ module parcel_netcdf
                                             unit='1/s',                              &
                                             dtype=NF90_DOUBLE)
 
-            call nc_dset(NC_BUOY)%set_info(name='buoyancy',                         &
-                                           long_name='parcel buoyancy',             &
-                                           std_name='',                             &
-                                           unit='m/s^2',                            &
+            call nc_dset(NC_THETA)%set_info(name='theta'               ,             &
+                                           long_name='parcel potential temperature', &
+                                           std_name='',                              &
+                                           unit='K',                                 &
                                            dtype=NF90_DOUBLE)
 
 #ifndef ENABLE_DRY_MODE
-            call nc_dset(NC_HUM)%set_info(name='humidity',                         &
-                                          long_name='parcel humidity',             &
-                                          std_name='',                             &
-                                          unit='1',                                &
+            call nc_dset(NC_QV)%set_info(name='qv',                                      &
+                                          long_name='parcel water vapour mixing ratio',  &
+                                          std_name='',                                   &
+                                          unit='1',                                      &
+                                          dtype=NF90_DOUBLE)
+            call nc_dset(NC_QL)%set_info(name='ql',                                      &
+                                          long_name='parcel liquid water mixing ratio',  &
+                                          std_name='',                                   &
+                                          unit='1',                                      &
                                           dtype=NF90_DOUBLE)
 #endif
 #ifdef ENABLE_LABELS

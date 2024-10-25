@@ -37,6 +37,7 @@ program epic3d
     use inversion_utils, only : init_inversion, finalise_inversion
     use parcel_interpl, only : grid2par_timer, &
                                par2grid_timer, &
+                               saturation_adjustment, &
                                halo_swap_timer
     use parcel_init, only : init_timer
     use ls_rk, only : ls_rk_step, rk_timer, ls_rk_setup
@@ -133,7 +134,8 @@ program epic3d
 
             do while (t < time%limit)
 
-                call apply_vortcor
+                ! no longer apply vorticity correction for real cases
+                !call apply_vortcor
 
                 call ls_rk_step(t)
 
@@ -149,11 +151,14 @@ program epic3d
                     call apply_gradient(parcel%gradient_pref, parcel%max_compression, .true.)
                 enddo
 
+                ! call saturation adjustment again after all corrections
+                call saturation_adjustment
+
              enddo
 
-            ! write final step (we only write if we really advanced in time)
+             ! write final step (we only write if we really advanced in time)
              if (t > time%initial) then
-                call apply_vortcor
+                !call apply_vortcor
                 call write_last_step(t)
             endif
 
