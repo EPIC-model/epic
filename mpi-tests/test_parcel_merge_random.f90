@@ -89,6 +89,7 @@ program test_parcel_merge_random
             if (rn(3) > 0.5d0) then
                 call random_number(rn(3))
                 j = nint(n_parcels * rn(3)) + 1
+
                 if (.not. picked(j)) then
                     parcels%volume(j) = 0.9d0 * vmin
                     picked(j) = .true.
