@@ -78,39 +78,39 @@ program test_parcel_spli_merge
         endif
 
         ! Move each parcel by random value in x and y
-        do n = 1, n_parcels
+        do n = 1, parcels%local_num
             call random_number(rn)
             parcels%position(1:2, n) = parcels%position(1:2, n) + rn(1:2) * dx(1:2)
         enddo
 
-        call parcel_communicate
+        call parcel_communicate(parcels)
 
-        do n = 1, n_parcels
+        do n = 1, parcels%local_num
             call apply_periodic_bc(parcels%position(:, n))
             call apply_reflective_bc(parcels%position(:, n), parcels%B(:, n))
         enddo
 
-        n_merges = count(parcels%volume(1:n_parcels) < vmin)
+        n_merges = count(parcels%volume(1:parcels%local_num) < vmin)
         call perform_integer_reduction(n_merges)
 
         if (world%rank == world%root) then
-            print *, "Merge", n_merges, "of", n_total_parcels, "parcels."
+            print *, "Merge", n_merges, "of", parcels%total_num, "parcels."
         endif
 
         call parcel_merge
 
-        do n = 1, n_parcels
+        do n = 1, parcels%local_num
             call random_number(rn)
             parcels%B(1, n) = (1.0d0 + rn(1) * 0.3d0) * parcels%B(1, n)
             parcels%B(3, n) = (1.0d0 - rn(2) * 0.3d0) * parcels%B(3, n)
         enddo
 
         ! Split parcels
-        n_orig = n_total_parcels
+        n_orig = parcels%total_num
         call parcel_split
 
         if (world%rank == world%root) then
-            print *, "Split", n_total_parcels - n_orig, "of", n_total_parcels, "parcels."
+            print *, "Split", parcels%total_num - n_orig, "of", parcels%total_num, "parcels."
         endif
 
         ! Interpolate parcel data to grid
@@ -123,7 +123,7 @@ program test_parcel_spli_merge
     !--------------------------------------------------------------------------
     ! Finish: Free memory and finalise MPI
 
-    call parcel_dealloc
+    call parcels%deallocate
 
     call nearest_win_deallocate
 
@@ -146,12 +146,12 @@ program test_parcel_spli_merge
         subroutine check_total_number_of_parcels
             integer :: n_total
 
-            n_total = n_parcels
+            n_total = parcels%local_num
 
             call perform_integer_reduction(n_total)
 
             if (world%rank == world%root) then
-                if (n_total /= n_total_parcels) then
+                if (n_total /= parcels%total_num) then
                     print *, "check_total_number_of_parcels: Total number of parcels disagree!"
                     call MPI_Abort(world%comm, -1, world%err)
                 endif

@@ -3,7 +3,8 @@
 !==============================================================================
 module parcel_nearest_serial
     use constants, only : pi, f12
-    use parcel_container, only : parcels, n_parcels, get_delx_across_periodic, get_dely_across_periodic
+    use parcel_ops, only : get_delx_across_periodic, get_dely_across_periodic
+    use parcels_mod, only : parcels
     use parameters, only : dx, dxi, vcell, hli, lower, extent, ncell, nx, ny, nz, vmin, max_num_parcels
     use options, only : parcel
     use mpi_timer, only : start_timer, stop_timer
@@ -83,7 +84,7 @@ module parcel_nearest_serial
 
             ! Bin parcels in cells:
             ! Form list of small parcels:
-            do n = 1, n_parcels
+            do n = 1, parcels%local_num
                 ix = mod(int(dxi(1) * (parcels%position(1, n) - lower(1))), nx)
                 iy = mod(int(dxi(2) * (parcels%position(2, n) - lower(2))), ny)
                 iz = min(int(dxi(3) * (parcels%position(3, n) - lower(3))), nz-1)
@@ -123,7 +124,7 @@ module parcel_nearest_serial
 
             kc2 = kc1 - 1
             j = 0
-            do n = 1, n_parcels
+            do n = 1, parcels%local_num
                 ijk = loca(n)
                 k = kc2(ijk) + 1
                 node(k) = n
@@ -352,7 +353,7 @@ module parcel_nearest_serial
             end do
 
             ! 2. CHECK MERGING PARCELS
-            do n = 1, n_parcels
+            do n = 1, parcels%local_num
               if (parcels%volume(n) < vmin) then
                 if(.not. l_merged(n)) write(*,*) 'merge_error: parcel n not merged (should be), n=', n
                 if(.not. (l_small(n) .or. l_close(n))) write(*,*) 'merge_error: parcel n not small or close (should be), n=', n

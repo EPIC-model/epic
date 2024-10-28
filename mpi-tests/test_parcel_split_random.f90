@@ -80,12 +80,12 @@ program test_parcel_split_random
             print '(a15, i4)', "Performing step", i
         endif
 
-        do n = 1, n_parcels
+        do n = 1, parcels%local_num
             call random_number(rn)
 
             if (rn(3) > 0.5d0) then
                 call random_number(rn(3))
-                j = nint(n_parcels * rn(3)) + 1
+                j = nint(parcels%local_num * rn(3)) + 1
 
                 if (.not. picked(j)) then
                     parcels%B(1, j) = 5.0d0 * parcels%B(1, j)
@@ -100,10 +100,10 @@ program test_parcel_split_random
         call perform_integer_reduction(n_splits)
 
         if (world%rank == world%root) then
-            print *, "Split", n_splits, "of", n_total_parcels, "parcels."
+            print *, "Split", n_splits, "of", parcels%total_num, "parcels."
         endif
 
-        n_orig = n_parcels
+        n_orig = parcels%local_num
 
         ! Split parcels
         call parcel_split
@@ -115,8 +115,8 @@ program test_parcel_split_random
         call perform_checks
 
         ! Reset:
-        n_parcels = n_orig
-        do n = 1, n_parcels
+        parcels%local_num = n_orig
+        do n = 1, parcels%local_num
             parcels%volume(n) = vol
             parcels%B(:, n) = b
 
@@ -127,13 +127,13 @@ program test_parcel_split_random
         picked = .false.
 
         call perform_integer_reduction(n_orig)
-        n_total_parcels = n_orig
+        parcels%total_num = n_orig
 
         ! Do halo swap
-        call parcel_communicate
+        call parcel_communicate(parcels)
 
         ! Do periodic shift in x and y
-        do n = 1, n_parcels
+        do n = 1, parcels%local_num
             call apply_periodic_bc(parcels%position(:, n))
         enddo
     enddo
@@ -141,7 +141,7 @@ program test_parcel_split_random
     !--------------------------------------------------------------------------
     ! Finish: Free memory and finalise MPI
 
-    call parcel_dealloc
+    call parcels%deallocate
 
     call stop_timer(epic_timer)
 
@@ -164,12 +164,12 @@ program test_parcel_split_random
         subroutine check_total_number_of_parcels
             integer :: n_total
 
-            n_total = n_parcels
+            n_total = parcels%local_num
 
             call perform_integer_reduction(n_total)
 
             if (world%rank == world%root) then
-                if (n_total /= n_total_parcels) then
+                if (n_total /= parcels%total_num) then
                     print *, "check_total_number_of_parcels: Total number of parcels disagree!"
                     call MPI_Abort(world%comm, -1, world%err)
                 endif
