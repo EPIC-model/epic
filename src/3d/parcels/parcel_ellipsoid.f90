@@ -135,9 +135,6 @@ module parcel_ellipsoid
 
             this%attr_num = this%IDX_ELL_VTAU + 2
 
-            ! these parcels are in all vertical grid cells
-            this%nz = nz
-
         end subroutine parcel_ellipsoid_allocate
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
