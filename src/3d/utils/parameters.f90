@@ -20,12 +20,6 @@ module parameters
     ! inverse mesh spacing
     double precision, protected :: dxi(3)
 
-    ! grid cell area
-    double precision, protected :: acell
-
-    ! inverse grid cell area
-    double precision, protected :: acelli
-
     ! grid cell volume
     double precision, protected :: vcell
 
@@ -79,14 +73,11 @@ module parameters
     ! domain upper boundary
     double precision, protected :: upper(3)
 
-    ! minimum area
-    double precision, protected :: amin
-
     ! minimum volume
     double precision, protected :: vmin
 
     ! upper bound for major semi-axis (used for splitting)
-    double precision, protected :: amax, asmax
+    double precision, protected :: amax
 
     ! maximum number of allowed parcels
     integer, protected :: max_num_parcels
@@ -136,10 +127,7 @@ module parameters
         vdomain = product(extent)
         vdomaini = one / vdomain
 
-        acell = dx(1) * dx(2)
-        acelli = one / acell
-
-        vcell = acell * dx(3)
+        vcell = product(dx)
         vcelli = one / vcell
 
         nhcell = nx * ny
@@ -158,8 +146,6 @@ module parameters
         hli = one / hl
 
         vmin = vcell / parcel%min_vratio
-
-        amin = acell / parcel%min_aratio
 
         amax = (f34 * fpi) ** f13 * minval(dx)
 
