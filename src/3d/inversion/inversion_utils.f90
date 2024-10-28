@@ -54,7 +54,6 @@ module inversion_utils
             , diffz                 &
             , central_diffz         &
             , lapinv1               &
-            , lapinv                &
             , dz2                   &
             , filt                  &
             , hdzi                  &
@@ -588,16 +587,5 @@ module inversion_utils
                 fs(:, 0, 0) = zero
             endif
         end subroutine lapinv1
-
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        ! Inverts 2D Laplace's operator on fs in spectral space.
-        !*** Overwrites fs ***
-        pure subroutine lapinv(fs)
-            double precision, intent(inout) :: fs(box%lo(2):box%hi(2), box%lo(1):box%hi(1))
-            fs = green(0, :, :) * fs
-        end subroutine lapinv
 
 end module inversion_utils
