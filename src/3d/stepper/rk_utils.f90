@@ -74,7 +74,7 @@ module rk_utils
             double precision             :: gmax, bmax, strain(n_dim, n_dim), D(n_dim), local_max(2)
             double precision             :: gradb(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))
             double precision             :: db2(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))
-            integer                      :: ix, iy, iz, mix, miy, miz
+            integer                      :: ix, iy, iz
 #if ENABLE_VERBOSE
             logical                      :: exists = .false.
             character(512)               :: fname
@@ -101,19 +101,11 @@ module rk_utils
                         ! requires the upper triangular matrix only.
                         call scherzinger_eigenvalues(strain, D)
 
-                        if (gmax < maxval(abs(D))) then
-                            mix = ix
-                            miy = iy
-                            miz = iz
-                        endif
-
                         ! we must take the largest eigenvalue in magnitude (absolute value)
                         gmax = max(gmax, maxval(abs(D)))
                     enddo
                 enddo
             enddo
-
-            print *, "max strain at", mix, miy, miz
 
             !
             ! buoyancy gradient (central difference)
