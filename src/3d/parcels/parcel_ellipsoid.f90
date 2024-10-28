@@ -60,9 +60,6 @@ module parcel_ellipsoid
             procedure          :: get_aspect_ratio => parcel_ellipsoid_get_aspect_ratio
             procedure, private :: get_angles => parcel_ellipsoid_get_angles
             procedure          :: is_small => parcel_ellipsoid_is_small
-            procedure          :: get_position => parcel_ellipsoid_get_position
-            procedure          :: set_position => parcel_ellipsoid_set_position
-            procedure          :: set_volume => parcel_ellipsoid_set_volume
             procedure          :: get_dBdt => parcel_ellipsoid_get_dBdt
 
     end type ellipsoid_pc_type
@@ -460,39 +457,6 @@ module parcel_ellipsoid
             l_small = (this%volume(n) < vmin)
 
         end function parcel_ellipsoid_is_small
-
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        pure function parcel_ellipsoid_get_position(this, n) result(pos)
-            class(ellipsoid_pc_type), intent(in) :: this
-            integer,                  intent(in) :: n
-            double precision                     :: pos(3)
-
-            pos = this%position(:, n)
-
-        end function parcel_ellipsoid_get_position
-
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        subroutine parcel_ellipsoid_set_position(this, n, pos)
-            class(ellipsoid_pc_type), intent(inout) :: this
-            integer,                  intent(in)    :: n
-            double precision,         intent(in)    :: pos(3)
-
-            this%position(:, n) = pos
-
-        end subroutine parcel_ellipsoid_set_position
-
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        subroutine parcel_ellipsoid_set_volume(this, n, vol)
-            class(ellipsoid_pc_type), intent(inout) :: this
-            integer,                  intent(in)    :: n
-            double precision,         intent(in)    :: vol
-
-            this%volume(n) = vol
-
-        end subroutine parcel_ellipsoid_set_volume
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 

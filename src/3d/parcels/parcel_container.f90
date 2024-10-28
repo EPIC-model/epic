@@ -102,9 +102,6 @@ module parcel_container
             procedure(parcel_replace),        deferred :: replace
             procedure(parcel_resize),         deferred :: resize
             procedure(parcel_is_small),       deferred :: is_small
-            procedure(parcel_get_position),   deferred :: get_position
-            procedure(parcel_set_position),   deferred :: set_position
-            procedure(parcel_set_volume),     deferred :: set_volume
 
     end type pc_type
 
@@ -152,26 +149,6 @@ module parcel_container
                 integer,        intent(in) :: n
             end function parcel_is_small
 
-            pure function parcel_get_position(this, n) result(pos)
-                import :: pc_type
-                class(pc_type), intent(in) :: this
-                integer,        intent(in) :: n
-                double precision           :: pos(3)
-            end function parcel_get_position
-
-            subroutine parcel_set_position(this, n, pos)
-                import :: pc_type
-                class(pc_type),   intent(inout) :: this
-                integer,          intent(in)    :: n
-                double precision, intent(in)    :: pos(3)
-            end subroutine parcel_set_position
-
-            subroutine parcel_set_volume(this, n, vol)
-                import :: pc_type
-                class(pc_type),   intent(inout) :: this
-                integer,          intent(in)    :: n
-                double precision, intent(in)    :: vol
-            end subroutine parcel_set_volume
         end interface
 
     contains

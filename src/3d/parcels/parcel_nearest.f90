@@ -1503,7 +1503,7 @@ module parcel_nearest
                         i = 1 + (l-1) * n_entries
                         pid = send_ptr(2*l-1)
                         m   = send_ptr(2*l)
-                        send_buf(i:i+2) = pcont%get_position(pid)
+                        send_buf(i:i+2) = pcont%position(:, pid)
                         send_buf(i+3) = dble(pid)
                         send_buf(i+4) = dble(m)
                     enddo
@@ -1578,8 +1578,8 @@ module parcel_nearest
                     do l = 1, recv_count
                         i = 1 + (l-1) * n_entries
                         k = sum(n_neighbour_small) + pcont%local_num + l
-                        call pcont%set_position(k, recv_buf(i:i+2))
-                        call pcont%set_volume(k, zero)    ! set volume / area to zero as each parcel is small
+                        pcont%position(:, k) = recv_buf(i:i+2)
+                        pcont%volume(k) = zero    ! set volume / area to zero as each parcel is small
                         pidtmp(k) = nint(recv_buf(i+3))
                         rtmp(k) = neighbours(n)%rank
                         midtmp(k) = nint(recv_buf(i+4))
