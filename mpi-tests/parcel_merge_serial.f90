@@ -5,7 +5,6 @@
 module parcel_merge_serial
     use parcel_nearest_serial
     use constants, only : pi, zero, one, two, five, f13
-    use parcel_container, only : parcel_replace
     use parcel_ops, only : get_delx_across_periodic   &
                          , get_dely_across_periodic
     use parcels_mod, only : parcels
