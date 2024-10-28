@@ -70,7 +70,7 @@ module rk_utils
         function get_time_step(t) result(dt)
             use options, only : time
             double precision, intent(in) :: t
-            double precision             :: dt, dtbot, dttop
+            double precision             :: dt
             double precision             :: gmax, bmax, strain(n_dim, n_dim), D(n_dim), local_max(2)
             double precision             :: gradb(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))
             double precision             :: db2(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))

@@ -170,7 +170,6 @@ module parcel_init
         subroutine init_parcels_from_grids
             integer          :: n, l, is, js, ks
             double precision :: weights(0:1, 0:1, 0:1)
-            double precision :: ws(0:1, 0:1)
 
             call start_timer(init_timer)
 

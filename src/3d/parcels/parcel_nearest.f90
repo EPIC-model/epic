@@ -1801,7 +1801,6 @@ module parcel_nearest
 #ifndef NDEBUG
             if (subcomm%comm == world%comm) then
                 n_total = pcont%local_num - n_invalid
-                n_total = n_parcels - n_invalid
                 call mpi_blocking_reduce(n_total, MPI_SUM, world)
                 if ((world%rank == world%root) .and. (.not. n_total == pcont%total_num)) then
                     call mpi_exit_on_error(&

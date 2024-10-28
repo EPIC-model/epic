@@ -128,7 +128,7 @@ module parcel_merging
             double precision                :: hum(n_merge)
 #endif
 #ifdef ENABLE_LABELS
-            double precision                :: labelm(n_merge)
+            integer(kind=8)                 :: labelm(n_merge)
             double precision                :: dilm(n_merge)
             double precision                :: rn
 #endif

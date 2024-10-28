@@ -24,7 +24,7 @@ module utils
 #ifndef NDEBUG
     use parcel_interpl, only : vol2grid_symmetry_error
 #endif
-    use field_diagnostics_netcdf, only : write_netcdf_field_stats
+    use field_diagnostics_netcdf, only : write_netcdf_field_stats, create_netcdf_field_stats_file
 
     implicit none
 

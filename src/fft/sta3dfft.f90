@@ -70,7 +70,6 @@ module sta3dfft
             call initialise_pencil_fft(nx, ny, nz)
 
             call initialise_mpi_reverse
-            call initialise_mpi_reverse2d
 
             nwx = nx / 2
             nwy = ny / 2
@@ -129,7 +128,6 @@ module sta3dfft
             call finalise_pencil_fft
 
             call finalise_mpi_reverse
-            call finalise_mpi_reverse2d
         end subroutine finalise_fft
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -527,8 +525,6 @@ module sta3dfft
             double precision              :: si
 
 
-            call reverse2d_x(fs, gs)
-
             !Carry out differentiation by wavenumber multiplication:
             if (0 == box%lo(1)) then
                 ds(:, 0) = zero
@@ -563,8 +559,6 @@ module sta3dfft
                                                 box%lo(1):box%hi(1))
             integer                       :: ky, dky
             double precision              :: si
-
-            call reverse2d_y(fs, gs)
 
             !Carry out differentiation by wavenumber multiplication:
             if (0 == box%lo(2)) then
