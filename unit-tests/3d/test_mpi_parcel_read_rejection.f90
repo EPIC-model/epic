@@ -19,7 +19,7 @@ program test_mpi_parcel_read_rejection
     use physics, only : write_physical_quantities
     use config, only : package_version, cf_version
     use iomanip, only : zfill
-    use parameters, only : lower, update_parameters, extent, nx, ny, nz, dx, max_num_parcels
+    use parameters, only : lower, update_parameters, extent, nx, ny, nz
     use mpi_timer
     implicit none
 
@@ -60,7 +60,6 @@ program test_mpi_parcel_read_rejection
     call mpi_layout_init(lower, extent, nx, ny, nz)
 
     parcel%n_per_cell = 8
-    parcel%n_surf_per_cell = 4
 
     call update_parameters
 

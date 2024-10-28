@@ -44,7 +44,6 @@ program test_mpi_parcel_init_3d
     call mpi_layout_init(lower, extent, nx, ny, nz)
 
     parcel%n_per_cell = 8
-    parcel%n_surf_per_cell = 4
 
     call update_parameters
 

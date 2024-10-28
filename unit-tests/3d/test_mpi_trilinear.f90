@@ -10,7 +10,7 @@ program test_mpi_trilinear
     use constants, only : pi, zero, one, f12, f23, f32
     use parcel_init, only : parcel_default, init_timer
     use mpi_layout
-    use parcels_mod, only : parcels, top_parcels, bot_parcels
+    use parcels_mod, only : parcels
     use parcel_interpl, only : par2grid, par2grid_timer, halo_swap_timer
     use parameters, only : lower, update_parameters, nx, ny, nz, ngrid, extent
     use fields, only : vortg, field_alloc
@@ -39,7 +39,6 @@ program test_mpi_trilinear
 
     parcel%min_vratio = 27.0d0
     parcel%n_per_cell = 27
-    parcel%n_surf_per_cell = 9
 
     call update_parameters
 
@@ -48,8 +47,6 @@ program test_mpi_trilinear
     call parcel_default
 
     parcels%vorticity(1, 1:parcels%local_num) = 1.5d0
-    bot_parcels%vorticity(1, 1:bot_parcels%local_num) = 1.5d0
-    top_parcels%vorticity(1, 1:top_parcels%local_num) = 1.5d0
 
     call par2grid
 

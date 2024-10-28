@@ -10,7 +10,7 @@ program test_mpi_grid2par
     use mpi_collectives
     use mpi_layout
     use constants, only : pi, zero, one, two, three, four, five, f12, f23
-    use parcels_mod, only : parcels, bot_parcels, top_parcels
+    use parcels_mod, only : parcels
     use parcel_init, only : parcel_default, init_timer
     use parcel_interpl, only : grid2par, grid2par_timer
     use parameters, only : lower, update_parameters, nx, ny, nz, extent
@@ -39,7 +39,6 @@ program test_mpi_grid2par
 
     parcel%min_vratio = 27.0d0
     parcel%n_per_cell = 27
-    parcel%n_surf_per_cell = 9
 
     call update_parameters
 
@@ -72,27 +71,6 @@ program test_mpi_grid2par
     do l = 1, 5
         error = max(error, maxval(abs(parcels%strain(l, 1:parcels%local_num) - dble(l))))
     enddo
-
-
-    ! surface parcels:
-    do l = 1, 2
-        error = max(error, maxval(dabs(bot_parcels%delta_pos(l, 1:bot_parcels%local_num) - dble(l))))
-        error = max(error, maxval(dabs(top_parcels%delta_pos(l, 1:top_parcels%local_num) - dble(l))))
-    enddo
-
-    ! du/dx = 1 and du/dy = 2
-    do l = 1, 2
-        error = max(error, maxval(dabs(bot_parcels%strain(l, 1:bot_parcels%local_num) - dble(l))))
-        error = max(error, maxval(dabs(top_parcels%strain(l, 1:top_parcels%local_num) - dble(l))))
-    enddo
-
-    ! dv/dx = \zeta + du/dy = 3 + 2 = 5
-    error = max(error, maxval(dabs(bot_parcels%strain(3, 1:bot_parcels%local_num) - 5.0d0)))
-    error = max(error, maxval(dabs(top_parcels%strain(3, 1:top_parcels%local_num) - 5.0d0)))
-
-    ! dv/dy = 3
-    error = max(error, maxval(dabs(bot_parcels%strain(4, 1:bot_parcels%local_num) - 3.0d0)))
-    error = max(error, maxval(dabs(top_parcels%strain(4, 1:top_parcels%local_num) - 3.0d0)))
 
     call mpi_blocking_reduce(error, MPI_MAX, world)
 

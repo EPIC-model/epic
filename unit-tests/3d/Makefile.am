@@ -130,9 +130,9 @@ test_scherzinger_3_LDADD = libcombi.la
 
 test_scherzinger_4_SOURCES = test_scherzinger_4.f90
 test_scherzinger_4_LDADD = libcombi.la
-#
-# # test_ellipsoid_split_SOURCES = test_ellipsoid_split.f90
-# # test_ellipsoid_split_LDADD = libcombi.la
+
+# test_ellipsoid_split_SOURCES = test_ellipsoid_split.f90
+# test_ellipsoid_split_LDADD = libcombi.la
 
 test_mpi_parcel_init_3d_SOURCES = test_mpi_parcel_init_3d.f90
 test_mpi_parcel_init_3d_LDADD = libcombi.la
@@ -149,17 +149,17 @@ test_mpi_gradient_correction_3d_LDADD = libcombi.la
 test_mpi_parcel_correction_3d_SOURCES = test_mpi_parcel_correction_3d.f90
 test_mpi_parcel_correction_3d_LDADD = libcombi.la
 
-# # test_ellipsoid_reflection_SOURCES = test_ellipsoid_reflection.f90
-# # test_ellipsoid_reflection_LDADD = libcombi.la
+# test_ellipsoid_reflection_SOURCES = test_ellipsoid_reflection.f90
+# test_ellipsoid_reflection_LDADD = libcombi.la
 
 test_mpi_grid2par_SOURCES = test_mpi_grid2par.f90
 test_mpi_grid2par_LDADD = libcombi.la
-#
-# # test_par2grid_SOURCES = test_par2grid.f90
-# # test_par2grid_LDADD = libcombi.la
-#
-# # test_free_slip_3d_SOURCES = test_free_slip_3d.f90
-# # test_free_slip_3d_LDADD = libcombi.la
+
+# test_par2grid_SOURCES = test_par2grid.f90
+# test_par2grid_LDADD = libcombi.la
+
+# test_free_slip_3d_SOURCES = test_free_slip_3d.f90
+# test_free_slip_3d_LDADD = libcombi.la
 
 test_mpi_field_halo_fill_SOURCES = test_mpi_field_halo_fill.f90
 test_mpi_field_halo_fill_LDADD = libcombi.la

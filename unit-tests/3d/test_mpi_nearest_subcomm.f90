@@ -53,7 +53,7 @@
 program test_mpi_nearest_subcomm
     use unit_test
     use constants, only : pi, zero, one, two, five, ten
-    use parcel_container
+    use parcels_mod, only : parcels
     use options, only : parcel
     use parameters, only : update_parameters, lower, extent, nx, ny, nz, dx, vmin, max_num_parcels
     use parcel_nearest
@@ -95,14 +95,14 @@ program test_mpi_nearest_subcomm
 
     call nearest_win_allocate
 
-    call parcel_alloc(max_num_parcels)
+    call parcels%allocate(max_num_parcels)
 
     !
     ! Test 1: One patch in the centre (a, b) - c - d = e
     !
     call parcel_setup(2)
 
-    call find_nearest(isma, iclo, inva, n_merge, n_invalid)
+    call find_nearest(parcels, isma, iclo, inva, n_merge, n_invalid)
 
 !     ! To print out the result enable the following lines:
 !     do r = 0, world%size-1
@@ -297,21 +297,21 @@ program test_mpi_nearest_subcomm
 !             call MPI_Barrier(world%comm, world%err)
 !             call mpi_stop
 
-            n_parcels = n - 1
-            n_total_parcels = 0
+            parcels%local_num = n - 1
+            parcels%total_num = 0
 
-            call MPI_Allreduce(n_parcels,       &
-                               n_total_parcels, &
-                               1,               &
-                               MPI_INTEGER,     &
-                               MPI_SUM,         &
-                               world%comm,      &
+            call MPI_Allreduce(parcels%local_num,   &
+                               parcels%total_num,   &
+                               1,                   &
+                               MPI_INTEGER,         &
+                               MPI_SUM,             &
+                               world%comm,          &
                                world%err)
         end subroutine parcel_setup
 
         subroutine check_result(n_true_merges)
             integer, intent(in) :: n_true_merges
-            check_array(1) = n_parcels - n_invalid
+            check_array(1) = parcels%local_num - n_invalid
             check_array(2) = n_merge
 
             if (world%rank == world%root) then
@@ -331,7 +331,7 @@ program test_mpi_nearest_subcomm
             endif
 
             if (world%rank == world%root) then
-                passed = (passed .and. (check_array(1) == n_total_parcels) .and. (check_array(2) == n_true_merges))
+                passed = (passed .and. (check_array(1) == parcels%total_num) .and. (check_array(2) == n_true_merges))
             endif
         end subroutine check_result
 
