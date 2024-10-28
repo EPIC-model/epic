@@ -1,5 +1,7 @@
 :stem: latexmath
 == Model
+EPIC simulates buoyancy-driven flows using the Boussinesq approximation and
+assuming an inviscid and incompressible fluid. The basic equations are given by
 [stem]
 ++++
 \begin{align}
@@ -9,8 +11,19 @@
     \label{eq:progb}
     & \frac{\mathrm{D} b_l}{\mathrm{D} t} = 0 \,, \\
     \label{eq:progq}
-    & \frac{\mathrm{D} q}{\mathrm{D} t} = 0 \,,
+    & \frac{\mathrm{D} q}{\mathrm{D} t} = 0 \,.
 \end{align}
 ++++
+By evolving the vorticity stem:[\boldsymbol{\omega} = \boldsymbol{\nabla}\times\boldsymbol{u}], the pressure term
+in the momentum equation vanishes
+[stem]
+++++
+\begin{equation}
+    \label{eq:progo}
+    \frac{\mathrm{D}\boldsymbol{\omega}}{\mathrm{D} t}
+        = (2\Omega+ \boldsymbol{\omega})\boldsymbol{\cdot}\boldsymbol{\nabla}\boldsymbol{u}
+        + \boldsymbol{\nabla}b\times\hat{\boldsymbol{e}}_z\,.
+\end{equation}
+++++
 
-=== Vorticity inversion
+// === Vorticity inversion

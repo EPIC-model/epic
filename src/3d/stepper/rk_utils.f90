@@ -38,12 +38,7 @@ module rk_utils
             ! S = |v_x v_y v_z|
             !     \w_x w_y w_z/
             ! with u_* = du/d* (also derivatives of v and w).
-            ! The derivatives dv/dx, du/dz, dv/dz and dw/dz are calculated
-            ! with vorticity or the assumption of incompressibility
-            ! (du/dx + dv/dy + dw/dz = 0):
-            !    dv/dx = \zeta + du/dy
-            !    du/dz = \eta + dw/dx
-            !    dv/dz = dw/dy - \xi
+            !    dw/dz is obtained from incompressibility
             !    dw/dz = - (du/dx + dv/dy)
             !
             !                         /  2 * u_x  u_y + v_x u_z + w_x\
@@ -84,6 +79,13 @@ module rk_utils
             logical                      :: exists = .false.
             character(512)               :: fname
 #endif
+
+            if (time%l_use_fixed_dt) then
+                dt = time%fixed_dt
+#ifndef ENABLE_VERBOSE
+                return
+#endif
+            endif
 
             !
             ! velocity strain
@@ -140,7 +142,7 @@ module rk_utils
             gradb = gradb + bfsq
 #endif
 
-            bmax = dsqrt(dsqrt(maxval(db2 + gradb ** 2)))
+            bmax = sqrt(sqrt(maxval(db2 + gradb ** 2)))
             bmax = max(epsilon(bmax), bmax)
 
             local_max(1) = gmax
@@ -157,10 +159,9 @@ module rk_utils
             gmax = local_max(1)
             bmax = local_max(2)
 
-            dtbot = get_surface_time_step(0, t)
-            dttop = get_surface_time_step(nz, t)
-
-            dt = min(time%alpha / gmax, time%alpha / bmax, dtbot, dttop)
+            if (.not. time%l_use_fixed_dt) then
+                dt = min(time%alpha / gmax, time%alpha / bmax)
+            endif
 #ifdef ENABLE_VERBOSE
             if (world%rank == world%root) then
                 fname = trim(output%basename) // '_alpha_time_step.asc'
@@ -219,58 +220,5 @@ module rk_utils
           call field_halo_fill_scalar(strain_mag, l_alloc=.true.)
 
         end subroutine get_strain_magnitude_field
-
-
-        ! Estimate a suitable time step based on the velocity strain
-        ! and buoyancy gradient.
-        ! @param[in] t is the time
-        ! @returns the time step
-        function get_surface_time_step(iz, t) result(dt)
-            use options, only : time
-            integer,          intent(in) ::iz
-            double precision, intent(in) :: t
-            double precision             :: dt
-            double precision             :: gmax, bmax, local_max(2)
-            double precision             :: gradb(box%lo(2):box%hi(2), box%lo(1):box%hi(1))
-            double precision             :: db2(  box%lo(2):box%hi(2), box%lo(1):box%hi(1))
-
-            ! velocity strain
-            gmax = f12 * dsqrt(maxval((velgradg(iz, box%lo(2):box%hi(2), box%lo(1):box%hi(1), I_DUDX) -       &
-                                       velgradg(iz, box%lo(2):box%hi(2), box%lo(1):box%hi(1), I_DVDY)) ** 2 + &
-                                      (velgradg(iz, box%lo(2):box%hi(2), box%lo(1):box%hi(1), I_DUDY) +       &
-                                       velgradg(iz, box%lo(2):box%hi(2), box%lo(1):box%hi(1), I_DVDX)) ** 2))
-            gmax = max(epsilon(gmax), gmax)
-
-            ! buoyancy gradient
-            ! db/dx
-            gradb = f12 * dxi(I_X) * (tbuoyg(iz, box%lo(2):box%hi(2), box%lo(1)+1:box%hi(1)+1) &
-                                    - tbuoyg(iz, box%lo(2):box%hi(2), box%lo(1)-1:box%hi(1)-1))
-
-            db2 = gradb ** 2
-
-            ! db/dy
-            gradb = f12 * dxi(I_Y) * (tbuoyg(iz, box%lo(2)+1:box%hi(2)+1, box%lo(1):box%hi(1)) &
-                                    - tbuoyg(iz, box%lo(2)-1:box%hi(2)-1, box%lo(1):box%hi(1)))
-
-
-            bmax = dsqrt(dsqrt(maxval(db2 + gradb ** 2)))
-            bmax = max(epsilon(bmax), bmax)
-
-            local_max(1) = gmax
-            local_max(2) = bmax
-
-            call MPI_Allreduce(MPI_IN_PLACE,            &
-                               local_max(1:2),          &
-                               2,                       &
-                               MPI_DOUBLE_PRECISION,    &
-                               MPI_MAX,                 &
-                               world%comm,              &
-                               world%err)
-
-            gmax = local_max(1)
-            bmax = local_max(2)
-
-            dt = min(time%alpha / gmax, time%alpha / bmax)
-        end function get_surface_time_step
 
 end module rk_utils

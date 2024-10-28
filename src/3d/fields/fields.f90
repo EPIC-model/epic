@@ -50,7 +50,7 @@ module fields
         nparg,     &   ! number of parcels per grid box
         nsparg         ! number of small parcels per grid box
 
-    ! velocity strain indices (note that dw/dz is found from dw/dz = - (du/dx + dv/dy))
+    ! velocity strain indices (note that dw/dz is found from continuity)
     integer, parameter :: I_DUDX = 1 & ! index for du/dx strain component
                         , I_DUDY = 2 & ! index for du/dy strain component
                         , I_DUDZ = 3 & ! index for du/dz strain component
@@ -59,7 +59,6 @@ module fields
                         , I_DVDZ = 6 & ! index for dv/dz strain component
                         , I_DWDX = 7 & ! index for dw/dx strain component
                         , I_DWDY = 8   ! index for dw/dy strain component
-
 
     contains
 

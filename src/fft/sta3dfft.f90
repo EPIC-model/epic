@@ -4,13 +4,8 @@ module sta3dfft
                           , reverse_y               &
                           , initialise_mpi_reverse  &
                           , finalise_mpi_reverse
-    use mpi_reverse2d, only : reverse2d_x               &
-                            , reverse2d_y               &
-                            , initialise_mpi_reverse2d  &
-                            , finalise_mpi_reverse2d
-    use stafft, only : dct, dst
     use constants, only : zero, one
-    use stafft
+    use stafft, only : dct, dst
     use sta2dfft
     use deriv1d, only : init_deriv
     use fft_pencil

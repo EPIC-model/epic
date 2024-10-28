@@ -26,12 +26,12 @@ module parcel_ellipsoid
     use fields, only : I_DUDX, I_DUDY, I_DUDZ, I_DVDX, I_DVDY, I_DVDZ, I_DWDX, I_DWDY
     implicit none
 
-    double precision, parameter :: rho = dsqrt(two / five)
+    double precision, parameter :: rho = sqrt(two / five)
     double precision, parameter :: f3pi4 = three * fpi4
     double precision, parameter :: f5pi4 = five * fpi4
     double precision, parameter :: f7pi4 = seven * fpi4
-    double precision, parameter :: costheta(4) = dcos((/fpi4, f3pi4, f5pi4, f7pi4/))
-    double precision, parameter :: sintheta(4) = dsin((/fpi4, f3pi4, f5pi4, f7pi4/))
+    double precision, parameter :: costheta(4) = cos((/fpi4, f3pi4, f5pi4, f7pi4/))
+    double precision, parameter :: sintheta(4) = sin((/fpi4, f3pi4, f5pi4, f7pi4/))
 
     type, extends(pc_type) :: ellipsoid_pc_type
 
@@ -112,6 +112,12 @@ module parcel_ellipsoid
 #ifndef ENABLE_DRY_MODE
             this%IDX_HUM  = i
             i = i + 1
+#endif
+
+#ifdef ENABLE_LABELS
+            this%IDX_LABEL  = i
+            this%IDX_DILUTION  = i +1
+            i = i + 2
 #endif
 
             ! LS-RK variables
@@ -229,8 +235,8 @@ module parcel_ellipsoid
                     Vtau = this%Vtaus(:, n)
                 else
                     call this%diagonalise(n, D, V)
-                    Veta = dsqrt(dabs(D(I_X) - D(I_Z))) * rho * V(:, I_X)
-                    Vtau = dsqrt(dabs(D(I_Y) - D(I_Z))) * rho * V(:, I_Y)
+                    Veta = sqrt(abs(D(I_X) - D(I_Z))) * rho * V(:, I_X)
+                    Vtau = sqrt(abs(D(I_Y) - D(I_Z))) * rho * V(:, I_Y)
 
                     this%Vetas(:, n) = Veta
                     this%Vtaus(:, n) = Vtau
@@ -240,8 +246,8 @@ module parcel_ellipsoid
                 ! D = (/a2, b2, c2/)
                 call this%diagonalise(n, D, V)
 
-                Veta = dsqrt(dabs(D(I_X) - D(I_Z))) * rho * V(:, I_X)
-                Vtau = dsqrt(dabs(D(I_Y) - D(I_Z))) * rho * V(:, I_Y)
+                Veta = sqrt(abs(D(I_X) - D(I_Z))) * rho * V(:, I_X)
+                Vtau = sqrt(abs(D(I_Y) - D(I_Z))) * rho * V(:, I_Y)
 
                 this%Vetas(:, n) = Veta
                 this%Vtaus(:, n) = Vtau
@@ -389,7 +395,7 @@ module parcel_ellipsoid
 
             abc = this%get_abc(this%volume(n))
 
-            if (dabs(this%B(I_B11, n) * this%B(I_B22, n) - this%B(I_B12, n) ** 2) <= epsilon(abc)) then
+            if (abs(this%B(I_B11, n) * this%B(I_B22, n) - this%B(I_B12, n) ** 2) <= epsilon(abc)) then
                 call mpi_exit_on_error(&
                     "in parcel_ellipsoid::get_B33: Division by small number!")
             endif
@@ -426,7 +432,7 @@ module parcel_ellipsoid
             double precision,         intent(in) :: D(3)
             double precision                     :: lam
 
-            lam = dsqrt(D(I_X) / D(I_Z))
+            lam = sqrt(D(I_X) / D(I_Z))
         end function parcel_ellipsoid_get_aspect_ratio
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -441,10 +447,10 @@ module parcel_ellipsoid
             evec = this%get_eigenvectors(n)
 
             ! azimuthal angle
-            angles(I_X) = datan2(evec(I_Y, I_X), evec(I_X, I_X))
+            angles(I_X) = atan2(evec(I_Y, I_X), evec(I_X, I_X))
 
             ! polar angle
-            angles(I_Y) = dasin(evec(I_Z, I_Z))
+            angles(I_Y) = asin(evec(I_Z, I_Z))
 
         end function parcel_ellipsoid_get_angles
 

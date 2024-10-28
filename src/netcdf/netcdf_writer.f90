@@ -29,6 +29,7 @@ module netcdf_writer
         module procedure write_netcdf_dataset_1d_integer
         module procedure write_netcdf_dataset_2d_integer
         module procedure write_netcdf_dataset_3d_integer
+        module procedure write_netcdf_dataset_1d_int8
     end interface write_netcdf_dataset
 
     interface write_netcdf_attribute
@@ -287,6 +288,24 @@ module netcdf_writer
             call check_netcdf_error("Failed to write dataset.")
 
         end subroutine write_netcdf_dataset_1d_integer
+
+        subroutine write_netcdf_dataset_1d_int8(ncid, varid, data, start, cnt, l_serial)
+            integer,           intent(in) :: ncid
+            integer,           intent(in) :: varid
+            integer(kind=8),   intent(in) :: data(:)
+            integer, optional, intent(in) :: start(:)
+            integer, optional, intent(in) :: cnt(:)
+            logical, optional, intent(in) :: l_serial
+
+            call set_collective_write(ncid, varid, l_serial)
+
+            ! write data
+            ncerr = nf90_put_var(ncid, varid, data, &
+                                 start=start, count = cnt)
+
+            call check_netcdf_error("Failed to write dataset.")
+
+        end subroutine write_netcdf_dataset_1d_int8
 
         subroutine write_netcdf_dataset_2d_integer(ncid, varid, data, start, cnt, l_serial)
             integer,           intent(in) :: ncid

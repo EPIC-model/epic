@@ -1,4 +1,4 @@
-AC_INIT([epic], [0.14.0], [mf248@st-andrews.ac.uk], [], [https://github.com/matt-frey/epic])
+AC_INIT([epic], [0.14.2], [mf248@st-andrews.ac.uk], [], [https://github.com/matt-frey/epic])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AC_PROG_FC([gfortran])
 AC_LANG(Fortran)
@@ -52,11 +52,13 @@ AX_CHECK_COMPILE_FLAG([-cpp], [FCFLAGS="$FCFLAGS -cpp"])
 AX_CHECK_COMPILE_FLAG([-mcmodel=large], [FCFLAGS="$FCFLAGS -mcmodel=large"])
 
 # gfortran compiler flags
-AX_CHECK_COMPILE_FLAG([-std=f2018], [FCFLAGS="$FCFLAGS -std=f2018"])
-AX_CHECK_COMPILE_FLAG([-fall-intrinsics], [FCFLAGS="$FCFLAGS -fall-intrinsics"])
-AX_CHECK_COMPILE_FLAG([-fdefault-real-8], [FCFLAGS="$FCFLAGS -fdefault-real-8"])
-AX_CHECK_COMPILE_FLAG([-fdefault-double-8], [FCFLAGS="$FCFLAGS -fdefault-double-8"])
-AX_CHECK_COMPILE_FLAG([-Wno-unused-dummy-argument], [FCFLAGS="$FCFLAGS -Wno-unused-dummy-argument"])
+if test "$ax_cv_fc_compiler_vendor" = "gnu"; then
+   AX_CHECK_COMPILE_FLAG([-std=f2018], [FCFLAGS="$FCFLAGS -std=f2018"])
+   AX_CHECK_COMPILE_FLAG([-fall-intrinsics], [FCFLAGS="$FCFLAGS -fall-intrinsics"])
+   AX_CHECK_COMPILE_FLAG([-fdefault-real-8], [FCFLAGS="$FCFLAGS -fdefault-real-8"])
+   AX_CHECK_COMPILE_FLAG([-fdefault-double-8], [FCFLAGS="$FCFLAGS -fdefault-double-8"])
+   AX_CHECK_COMPILE_FLAG([-Wno-unused-dummy-argument], [FCFLAGS="$FCFLAGS -Wno-unused-dummy-argument"])
+fi
 
 # intel compiler flags
 AX_CHECK_COMPILE_FLAG([-std18], [FCFLAGS="$FCFLAGS -std18"])
@@ -89,15 +91,13 @@ else
 fi
 
 AC_LANG_PUSH([C])
-AC_SEARCH_LIBS([nc_open], [netcdf], [], [], [])
+AC_SEARCH_LIBS([nc_create], [netcdf], [], [], [])
 AC_MSG_CHECKING([whether we can compile a NetCDF C program])
 AC_LINK_IFELSE(
-[AC_LANG_PROGRAM([], [
-    #include <netcdf.h>
-    int main() {
-        int ncid;
-        nc_create("dummy.nc", NC_CLOBBER, &ncid);
-    }])],
+[AC_LANG_PROGRAM([#include <netcdf.h>], [
+    int ncid;
+    nc_create("dummy.nc", NC_CLOBBER, &ncid);
+    ])],
 [netcdf_c_found=yes],
 [netcdf_c_found=no])
 AC_MSG_RESULT([$netcdf_c_found])
@@ -421,6 +421,21 @@ else
     AC_MSG_RESULT([no])
 fi
 
+ENABLE_LABELS='no'
+AC_ARG_ENABLE([labels],
+              [AS_HELP_STRING([--enable-labels], [enable labels (default=no)])],
+              [ENABLE_LABELS=$enableval])
+
+AM_CONDITIONAL([ENABLE_LABELS], [test "$ENABLE_LABELS" = "yes"])
+
+AC_MSG_CHECKING([whether we are compiling with labels])
+if test "x$ENABLE_LABELS" = "xyes"; then
+    AC_MSG_RESULT([yes])
+    FCFLAGS="$FCFLAGS -DENABLE_LABELS"
+else
+    AC_MSG_RESULT([no])
+fi
+
 ENABLE_P2G_1POINT='no'
 AC_ARG_ENABLE([p2g-1point],
               [AS_HELP_STRING([--enable-p2g-1point], [enable one-point par2grid (default=no)])],
@@ -521,6 +536,7 @@ else
 
     # intel compiler flags
     AX_CHECK_COMPILE_FLAG([-funroll-loops], [FCFLAGS="$FCFLAGS -funroll-loops"])
+    AX_CHECK_COMPILE_FLAG([-ipo -c], [FCFLAGS="$FCFLAGS -ipo -c"])
     AX_CHECK_COMPILE_FLAG([-ffat-lto-objects], [FCFLAGS="$FCFLAGS -ffat-lto-objects"])
 fi
 

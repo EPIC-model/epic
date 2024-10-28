@@ -9,6 +9,7 @@ program test_mpi_parcel_read
     use parcels_mod, only : parcels
     use parameters, only : set_max_num_parcels
     use parcel_netcdf
+    use netcdf_utils
     use mpi_environment
     use mpi_timer
     use netcdf_utils, only : ncerr, delete_netcdf_file
@@ -34,7 +35,7 @@ program test_mpi_parcel_read
     n_parcels_before = parcels%local_num
     parcels%total_num = 11 * world%size + (world%size * (world%size - 1)) / 2
 
-    call parcels%allocate(parcels%total_num)
+    call parcels%allocate(int(parcels%total_num))
 
     ! fill with 1 to parcels%total_num
     start_index = 0

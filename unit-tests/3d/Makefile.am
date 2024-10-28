@@ -8,6 +8,7 @@ AM_FCFLAGS =				\
 	-I $(top_builddir)/src/netcdf
 
 AM_LDFLAGS =						\
+	$(top_builddir)/src/3d/stepper/rk_utils.o	\
 	$(top_builddir)/src/3d/parcels/*.o 		\
 	$(top_builddir)/src/3d/utils/*.o		\
 	$(top_builddir)/src/3d/fields/*.o		\
@@ -97,9 +98,7 @@ unittests_PROGRAMS = 					\
 	test_mpi_nearest_18				\
 	test_mpi_nearest_19				\
 	test_mpi_nearest_20				\
-	test_mpi_mixing					\
-	test_mpi_nearest_ellipse_1			\
-	test_mpi_nearest_ellipse_2
+	test_mpi_nearest_subcomm
 # 	test_mpi_lapinv1
 
 dataroot_DATA =		\
@@ -315,14 +314,8 @@ test_mpi_nearest_19_LDADD = libcombi.la
 test_mpi_nearest_20_SOURCES = test_mpi_nearest_20.f90
 test_mpi_nearest_20_LDADD = libcombi.la
 
-test_mpi_mixing_SOURCES = test_mpi_mixing.f90
-test_mpi_mixing_LDADD = libcombi.la
-
-test_mpi_nearest_ellipse_1_SOURCES = test_mpi_nearest_ellipse_1.f90
-test_mpi_nearest_ellipse_1_LDADD = libcombi.la
-
-test_mpi_nearest_ellipse_2_SOURCES = test_mpi_nearest_ellipse_2.f90
-test_mpi_nearest_ellipse_2_LDADD = libcombi.la
+test_mpi_nearest_subcomm_SOURCES = test_mpi_nearest_subcomm.f90
+test_mpi_nearest_subcomm_LDADD = libcombi.la
 
 # test_mpi_lapinv1_SOURCES = test_mpi_lapinv1.f90
 # test_mpi_lapinv1_LDADD = libcombi.la

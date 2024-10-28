@@ -3,6 +3,7 @@
 ! =============================================================================
 module parcel_split_mod
     use options, only : parcel
+    use datatypes, only : int64
 #if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
     use options, only : verbose
 #endif
@@ -17,14 +18,14 @@ module parcel_split_mod
     use mpi_collectives, only : mpi_blocking_reduce
     implicit none
 
-    double precision, parameter :: dh = f12 * dsqrt(three / five)
+    double precision, parameter :: dh = f12 * sqrt(three / five)
 
     private :: dh
 
     integer :: split_timer
 
     ! number of parcel splits (is reset in every write step)
-    integer :: n_parcel_splits = 0
+    integer(kind=int64) :: n_parcel_splits = 0
 
 
     contains
@@ -43,7 +44,7 @@ module parcel_split_mod
             integer              :: pid(2 * parcels%local_num)
             integer, allocatable :: invalid(:), indices(:)
 #if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
-            integer              :: orig_num
+            integer(kind=int64)  :: orig_num
 
             orig_num = parcels%total_num
 #endif
@@ -143,7 +144,11 @@ module parcel_split_mod
 #ifndef ENABLE_DRY_MODE
                 parcels%humidity(n_thread_loc) = parcels%humidity(n)
 #endif
-                V(:, 1) = V(:, 1) * dh * dsqrt(D(1))
+#ifdef ENABLE_LABELS
+                parcels%label(n_thread_loc) = parcels%label(n)
+                parcels%dilution(n_thread_loc) = parcels%dilution(n)
+#endif
+                V(:, 1) = V(:, 1) * dh * sqrt(D(1))
                 parcels%position(:, n_thread_loc) = parcels%position(:, n) - V(:, 1)
                 parcels%position(:, n) = parcels%position(:, n) + V(:, 1)
 

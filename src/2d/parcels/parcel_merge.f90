@@ -152,13 +152,10 @@ module parcel_merge
                 ! temporary scalar containing 1 / vm(m)
                 vmerge = one / vm(m)
 
-                ! need to sanitise input and output, but first to determine input
-                posm(1, m) = - vmerge * posm(1, m)
-
-                call apply_periodic_bc(posm(:, m))
-
                 ! x centre of merged parcel, modulo periodicity
-                posm(1, m) = get_delx(x0(m), posm(1, m))
+                posm(1, m) = vmerge * posm(1, m)
+
+                posm(1, m) = x0(m) + posm(1, m)
 
                 ! z centre of merged parcel
                 posm(2, m) = vmerge * posm(2, m)
@@ -262,7 +259,7 @@ module parcel_merge
 
                     ! normalize such that determinant of the merger is (ab)**2
                     ! ab / sqrt(det(B))
-                    factor = get_ab(V(l)) / dsqrt(B11(l) * B22(l) - B12(l) ** 2)
+                    factor = get_ab(V(l)) / sqrt(B11(l) * B22(l) - B12(l) ** 2)
 
                     parcels%B(1, ic) = B11(l) * factor
                     parcels%B(2, ic) = B12(l) * factor

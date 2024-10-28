@@ -10,6 +10,7 @@ module parcel_merging
     use parcel_ops, only : get_delx_across_periodic   &
                          , get_dely_across_periodic
     use options, only : parcel
+    use datatypes, only : int64
 #if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
     use options, only : verbose
 #endif
@@ -24,11 +25,11 @@ module parcel_merging
     integer :: merge_timer
 
     ! number of parcel merges (is reset in every write step)
-    integer :: n_parcel_merges = 0
+    integer(kind=int64) :: n_parcel_merges = 0
 
     ! number of merging parcels (up to 7 supported, all others are put into index 7)
     ! note that array index 1 corresponds to 2-way merging
-    integer :: n_way_parcel_mergers(7) = 0
+    integer(kind=int64) :: n_way_parcel_mergers(7) = 0
 
     ! number of big iclo neighbours (number of small is n_merge - n_big_close)
     integer :: n_big_close = 0
@@ -51,7 +52,7 @@ module parcel_merging
             integer                            :: n_merge ! number of merges
             integer                            :: n_invalid
 #if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
-            integer                            :: orig_num
+            integer(kind=int64)                :: orig_num
 
             orig_num = parcels%total_num
 #endif
@@ -130,6 +131,11 @@ module parcel_merging
 #ifndef ENABLE_DRY_MODE
             double precision                :: hum(n_merge)
 #endif
+#ifdef ENABLE_LABELS
+            double precision                :: labelm(n_merge)
+            double precision                :: dilm(n_merge)
+            double precision                :: rn
+#endif
             double precision, intent(out)   :: Bm(6, n_merge) ! B11, B12, B13, B22, B23, B33
             double precision, intent(out)   :: vm(n_merge)
 
@@ -175,12 +181,30 @@ module parcel_merging
                     vortm(:, l) = parcels%volume(ic) * parcels%vorticity(:, ic)
 
                     Bm(:, l) = zero
+
+#ifdef ENABLE_LABELS
+                    labelm(l) = parcels%label(ic)
+
+                    dilm(l) = parcels%dilution(ic)
+#endif
                 endif
 
                 ! Sum up all the small parcels merging with a common other one:
                 ! "is" refers to the small parcel index
                 is = isma(m) !Small parcel
                 n = loca(ic)  !Index of merged parcel
+
+#ifdef ENABLE_LABELS
+                ! Dilute the parcel when volume is added for now
+                ! This could be optimised moving it to later in code
+                call random_number(rn) 
+                if(rn*(vm(n)+parcels%volume(is))<vm(n)) then
+                   dilm(n)=dilm(n)+log(vm(n)/(vm(n)+parcels%volume(is)))
+                else
+                   labelm(n)=parcels%label(is)
+                   dilm(n)=parcels%dilution(is)+log(parcels%volume(is)/(vm(n)+parcels%volume(is)))
+                endif
+#endif
                 vm(n) = vm(n) + parcels%volume(is) !Accumulate volume of merged parcel
 
                 ! works across periodic edge
@@ -208,14 +232,11 @@ module parcel_merging
                 ! temporary scalar containing 1 / vm(m)
                 vmerge = one / vm(m)
 
-                ! need to sanitise input and output, but first to determine input
-                posm(1, m) = - vmerge * posm(1, m)
-                posm(2, m) = - vmerge * posm(2, m)
+                posm(1, m) = vmerge * posm(1, m)
+                posm(2, m) = vmerge * posm(2, m)
 
-                call apply_periodic_bc(posm(:, m))
-                ! x and y centre of merged parcel, modulo periodicity
-                posm(1, m) = get_delx_across_periodic(x0(m), posm(1, m))
-                posm(2, m) = get_dely_across_periodic(y0(m), posm(2, m))
+                posm(1, m) = x0(m) + posm(1, m)
+                posm(2, m) = y0(m) + posm(2, m)
 
                 ! z centre of merged parcel
                 posm(3, m) = vmerge * posm(3, m)
@@ -267,6 +288,10 @@ module parcel_merging
                     parcels%buoyancy(ic) = buoym(l)
 #ifndef ENABLE_DRY_MODE
                     parcels%humidity(ic) = hum(l)
+#endif
+#ifdef ENABLE_LABELS
+                    parcels%label(ic) = labelm(l)
+                    parcels%dilution(ic) = dilm(l)
 #endif
                     parcels%vorticity(:, ic) = vortm(:, l)
 

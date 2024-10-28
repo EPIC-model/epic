@@ -64,7 +64,7 @@ program test_mpi_vtend
             do im = 1, 3, 2
                 m = dble(im)
 
-                alpha = dsqrt(k ** 2 + l ** 2 + m ** 2)
+                alpha = sqrt(k ** 2 + l ** 2 + m ** 2)
                 fk2l2 = one / dble(k ** 2 + l ** 2)
 
                 do ix = box%lo(1), box%hi(1)
@@ -74,10 +74,10 @@ program test_mpi_vtend
                         do iz = -1, nz+1
                             z = lower(3) + iz * dx(3)
 
-                            cosmz = dcos(m * z)
-                            sinmz = dsin(m * z)
-                            sinkxly = dsin(k * x + l * y)
-                            coskxly = dcos(k * x + l * y)
+                            cosmz = cos(m * z)
+                            sinmz = sin(m * z)
+                            sinkxly = sin(k * x + l * y)
+                            coskxly = cos(k * x + l * y)
 
                             ! velocity
                             velog(iz, iy, ix, 1) = fk2l2 * (k * m * sinmz - l * alpha * cosmz) * sinkxly
@@ -99,7 +99,7 @@ program test_mpi_vtend
 
                 call vorticity_tendency
 
-                error = max(error, maxval(dabs(vtend_ref(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1), :) &
+                error = max(error, maxval(abs(vtend_ref(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1), :) &
                                                  - vtend(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1), :))))
             enddo
         enddo

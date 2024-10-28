@@ -138,6 +138,12 @@ module parcel_init
                                     parcels%position(1, l) = corner(1) + dx(1) * (dble(i) - f12) * im
                                     parcels%position(2, l) = corner(2) + dx(2) * (dble(j) - f12) * im
                                     parcels%position(3, l) = corner(3) + dx(3) * (dble(k) - f12) * im
+#ifdef ENABLE_LABELS
+                                    parcels%label(l)=1 + (ix * n_per_dim + (i - 1)) + &
+                                                     (nx * n_per_dim) * ((iy * n_per_dim + (j - 1)) + &
+                                                     (ny * n_per_dim) * (iz * n_per_dim + (k - 1)))
+                                    parcels%dilution(l)=0.0
+#endif
                                     l = l + 1
                                 enddo
                             enddo
@@ -161,7 +167,7 @@ module parcel_init
             do while (lam >= parcel%lambda_max)
                 call parcel_split
                 evals = parcels%get_eigenvalues(1)
-                lam = dsqrt(evals(1) / evals(3))
+                lam = sqrt(evals(1) / evals(3))
             end do
         end subroutine init_refine
 

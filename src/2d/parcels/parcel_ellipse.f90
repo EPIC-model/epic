@@ -23,7 +23,7 @@ module parcel_ellipse
             double precision, intent(in) :: B22
             double precision             :: a2
 
-            a2 = f12 * (B11 + B22) + dsqrt(f14 * (B11 - B22) ** 2 + B12 ** 2)
+            a2 = f12 * (B11 + B22) + sqrt(f14 * (B11 - B22) ** 2 + B12 ** 2)
         end function get_eigenvalue
 
         ! Obtain the eigenvector of the largest eigenvalue
@@ -42,7 +42,7 @@ module parcel_ellipse
             evec(1) = a2 - B22
             evec(2) = B12
 
-            if (dabs(evec(1)) + dabs(evec(2)) == zero) then
+            if (abs(evec(1)) + abs(evec(2)) == zero) then
                 if (B11 > B22) then
                     evec(1) = evec(1) + epsilon(evec(1))
                 else
@@ -70,7 +70,7 @@ module parcel_ellipse
 
             evec = get_eigenvector(a2, B11, B12, B22)
 
-            angle = datan2(evec(2), evec(1))
+            angle = atan2(evec(2), evec(1))
 
         end function get_angle
 
@@ -134,7 +134,7 @@ module parcel_ellipse
 
             a2 = get_eigenvalue(B(1), B(2), B22)
 
-            c = dsqrt(dabs(two * a2 - B(1) - B22))
+            c = sqrt(abs(two * a2 - B(1) - B22))
 
             evec = get_eigenvector(a2, B(1), B(2), B22)
 

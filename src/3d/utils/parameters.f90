@@ -4,6 +4,7 @@
 ! =============================================================================
 module parameters
     use options, only : allow_larger_anisotropy, parcel, boundary
+    use datatypes, only : int64
     use constants
     use netcdf_reader
     use netcdf_utils
@@ -35,7 +36,7 @@ module parameters
     integer :: nx, ny, nz
 
     ! total number of grid cells
-    integer, protected :: ncell
+    integer(kind=int64), protected :: ncell
 
     ! inverse of total number of grid cells
     double precision, protected :: ncelli
@@ -102,7 +103,8 @@ module parameters
     ! Update all parameters according to the
     ! user-defined global options.
     subroutine update_parameters
-        double precision :: msr
+        double precision    :: msr
+        integer(kind=int64) ::  max_size
 
         if (.not. l_mpi_layout_initialised) then
             call mpi_print("MPI layout is not initialsed!")
@@ -164,11 +166,18 @@ module parameters
 
         amax = (f34 * fpi) ** f13 * minval(dx)
 
-        asmax = dsqrt(fpi) * minval(dx)
+        max_size = int(box%halo_ncell * parcel%min_vratio * parcel%size_factor, kind=int64)
 
-        max_num_parcels = int(box%halo_ncell * parcel%min_vratio * parcel%size_factor)
+        if (max_size > huge(max_num_parcels)) then
+            if (world%rank == world%root) then
+                print *, "Error: Maximum number of parcels larger than integer"
+                print *, "       representation. Overflow! You can circumvent this"
+                print *, "       issue by using more MPI cores."
+            endif
+            call mpi_stop
+        endif
 
-        max_num_surf_parcels = int(box%halo_ncell * parcel%min_aratio * parcel%size_factor)
+        max_num_parcels = int(max_size)
 
     end subroutine update_parameters
 
@@ -203,8 +212,8 @@ module parameters
                                world%comm,              &
                                world%err)
 
-            rms_interior = dsqrt(val(1) * nhcelli / (nz-1))
-            rms_bndry = dsqrt(val(2:3) * nhcelli)
+            rms_interior = sqrt(val(1) * nhcelli / (nz-1))
+            rms_bndry = sqrt(val(2:3) * nhcelli)
 
             thres = boundary%zeta_tol * rms_interior + epsilon(rms_interior)
 

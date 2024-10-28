@@ -2,6 +2,7 @@
 !                               Parcel diagnostics
 ! =============================================================================
 module parcel_diagnostics
+    use datatypes, only : int64
     use constants, only : zero, one, f12, thousand
     use parameters, only : extent, lower, vcell, vmin, nx, nz, vdomaini
     use parcels_mod, only : parcels
@@ -41,8 +42,8 @@ module parcel_diagnostics
                           IDX_MIN_BUOY  = 17, & ! minimum parcel buoyancy
                           IDX_MAX_BUOY  = 18    ! maximum parcel buoyancy
 
-    double precision :: parcel_stats(IDX_MAX_BUOY)
-    integer          :: parcel_merge_stats(size(n_way_parcel_mergers))
+    double precision     :: parcel_stats(IDX_MAX_BUOY)
+    integer(kind=int64)  :: parcel_merge_stats(size(n_way_parcel_mergers))
 
     contains
 
@@ -131,7 +132,7 @@ module parcel_diagnostics
             parcel_merge_stats = n_way_parcel_mergers
             call mpi_blocking_reduce(parcel_merge_stats, MPI_SUM, world)
 
-            parcels%total_num = nint(parcel_stats(IDX_NTOT_PAR))
+            parcels%total_num = nint(parcel_stats(IDX_NTOT_PAR), kind=int64)
             ntoti = one / dble(parcels%total_num)
 
             ! divide by domain volume to get domain-averaged quantities
@@ -142,15 +143,15 @@ module parcel_diagnostics
             parcel_stats(IDX_ENSTROPHY) = f12 * parcel_stats(IDX_ENSTROPHY)* vdomaini
 
             parcel_stats(IDX_AVG_LAM) = parcel_stats(IDX_AVG_LAM) * ntoti
-            parcel_stats(IDX_STD_LAM) = dsqrt(abs(parcel_stats(IDX_STD_LAM) * ntoti &
+            parcel_stats(IDX_STD_LAM) = sqrt(abs(parcel_stats(IDX_STD_LAM) * ntoti &
                                                 - parcel_stats(IDX_AVG_LAM) ** 2))
 
-            parcel_stats(IDX_RMS_XI)   = dsqrt(parcel_stats(IDX_RMS_XI)   / parcel_stats(IDX_SUM_VOL))
-            parcel_stats(IDX_RMS_ETA)  = dsqrt(parcel_stats(IDX_RMS_ETA)  / parcel_stats(IDX_SUM_VOL))
-            parcel_stats(IDX_RMS_ZETA) = dsqrt(parcel_stats(IDX_RMS_ZETA) / parcel_stats(IDX_SUM_VOL))
+            parcel_stats(IDX_RMS_XI)   = sqrt(parcel_stats(IDX_RMS_XI)   / parcel_stats(IDX_SUM_VOL))
+            parcel_stats(IDX_RMS_ETA)  = sqrt(parcel_stats(IDX_RMS_ETA)  / parcel_stats(IDX_SUM_VOL))
+            parcel_stats(IDX_RMS_ZETA) = sqrt(parcel_stats(IDX_RMS_ZETA) / parcel_stats(IDX_SUM_VOL))
 
             parcel_stats(IDX_AVG_VOL) = parcel_stats(IDX_SUM_VOL) * ntoti
-            parcel_stats(IDX_STD_VOL) = dsqrt(abs(parcel_stats(IDX_STD_VOL) * ntoti &
+            parcel_stats(IDX_STD_VOL) = sqrt(abs(parcel_stats(IDX_STD_VOL) * ntoti &
                                                 - parcel_stats(IDX_AVG_VOL) ** 2))
 
             call stop_timer(parcel_stats_timer)

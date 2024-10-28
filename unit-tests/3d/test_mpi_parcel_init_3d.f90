@@ -64,8 +64,8 @@ program test_mpi_parcel_init_3d
             do iz = 0, nz
                 zg = dx(3) * dble(iz)
                 argz = facz * zg
-                tbuoyg(iz, iy, ix) = dexp(argz) * dsin(argx - argy + one) / &
-                                     ((one + f12 * dcos(argx)) * (one + f13 * dcos(argy)))
+                tbuoyg(iz, iy, ix) = exp(argz) * sin(argx - argy + one) / &
+                                     ((one + f12 * cos(argx)) * (one + f13 * cos(argy)))
             enddo
         enddo
     enddo

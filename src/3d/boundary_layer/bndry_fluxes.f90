@@ -102,13 +102,13 @@ module bndry_fluxes
             integer                  :: ncid, start(3), cnt(3)
             integer                  :: lo(3), hi(3)
 
-            call start_timer(bndry_flux_timer)
-
             l_enable_flux = (fname /= '')
 
             if (.not. l_enable_flux) then
                 return
             endif
+
+            call start_timer(bndry_flux_timer)
 
             call open_netcdf_file(fname, NF90_NOWRITE, ncid)
 
@@ -188,7 +188,7 @@ module bndry_fluxes
             endif
 
             ! local maximum of absolute value (units: m/s**3)
-            abs_max = maxval(dabs(binc(box%lo(2):box%hi(2), box%lo(1):box%hi(1))))
+            abs_max = maxval(abs(binc(box%lo(2):box%hi(2), box%lo(1):box%hi(1))))
 
             ! get global abs_max
             call MPI_Allreduce(MPI_IN_PLACE,            &

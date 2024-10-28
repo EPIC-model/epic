@@ -2,6 +2,7 @@
 ! This module provides the base class for parcel containers.
 ! =============================================================================
 module parcel_container
+    use datatypes, only : int64
     use options, only : verbose
     use parameters, only : extent, extenti, center, lower, upper
     use mpi_environment
@@ -18,13 +19,13 @@ module parcel_container
 
             ! number of  parcel attributes
             ! (components are counted individually, e.g. position counts as 3 attributes)
-            integer :: attr_num     ! number of parcel attributes
-            integer :: mix_attr_num ! number of parcel attributes used in mixing
-            integer :: local_num    ! local number of parcels
-            integer :: total_num    ! global number of parcels (over all MPI ranks)
-            integer :: max_num      ! capacity per attribute, i.e. maximum number of parcels
-            integer :: nz           ! number of grid cells this parcel container contributes to
-                                    ! (used for the MPI communication)
+            integer             :: attr_num     ! number of parcel attributes
+            integer             :: mix_attr_num ! number of parcel attributes used in mixing
+            integer             :: local_num    ! local number of parcels
+            integer(kind=int64) :: total_num    ! global number of parcels (over all MPI ranks)
+            integer             :: max_num      ! capacity per attribute, i.e. maximum number of parcels
+            integer             :: nz           ! number of grid cells this parcel container contributes to
+                                                ! (used for the MPI communication)
 
             ! ---------------------------------------------------------------------
             !   Parcel attributes (common to all types):
@@ -40,6 +41,9 @@ module parcel_container
 #ifndef ENABLE_DRY_MODE
                 humidity,   &
 #endif
+#ifdef ENABLE_LABELS
+                dilution,   &
+#endif
                 buoyancy
 
             ! ---------------------------------------------------------------------
@@ -50,6 +54,10 @@ module parcel_container
                 strain,     &
                 delta_b         ! B-matrix tendency
 
+#ifdef ENABLE_LABELS
+            integer(kind=8), allocatable, dimension(:) :: &
+                label
+#endif
             ! -------------------------------------------------------------------------
             ! buffer indices to access parcel attributes for (de-)serialization;
             ! the buffer indices are set in the extendend types
@@ -61,6 +69,10 @@ module parcel_container
                        IDX_SHAPE_END,       & ! shape matrix end
                        IDX_VOL,             & ! volume
                        IDX_BUO,             & ! buoyancy
+#ifdef ENABLE_LABELS
+                       IDX_LABEL,           & ! label
+                       IDX_DILUTION,        & ! dilution
+#endif
 #ifndef ENABLE_DRY_MODE
                        IDX_HUM,             & ! humidity
 #endif
@@ -199,6 +211,12 @@ module parcel_container
 #ifndef ENABLE_DRY_MODE
             allocate(this%humidity(num))
 #endif
+
+#ifdef ENABLE_LABELS
+            allocate(this%label(num))
+            allocate(this%dilution(num))
+#endif
+
             ! LS-RK variables
             allocate(this%delta_pos(n_pos, num))
             allocate(this%delta_vor(n_vec, num))
@@ -213,7 +231,6 @@ module parcel_container
             ! and humidity
             this%mix_attr_num = this%mix_attr_num + 1
 #endif
-
         end subroutine parcel_base_allocate
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -240,6 +257,12 @@ module parcel_container
 #ifndef ENABLE_DRY_MODE
             deallocate(this%humidity)
 #endif
+
+#ifdef ENABLE_LABELS
+            deallocate(this%label)
+            deallocate(this%dilution)
+#endif
+
             ! LS-RK variables
             deallocate(this%delta_pos)
             deallocate(this%delta_vor)
@@ -267,6 +290,10 @@ module parcel_container
             this%buoyancy(n)     = this%buoyancy(m)
 #ifndef ENABLE_DRY_MODE
             this%humidity(n)     = this%humidity(m)
+#endif
+#ifdef ENABLE_LABELS
+            this%label(n)        = this%label(m)
+            this%dilution(n)     = this%dilution(m)
 #endif
             this%B(:, n)         = this%B(:, m)
 
@@ -306,6 +333,10 @@ module parcel_container
 #ifndef ENABLE_DRY_MODE
             call resize_array(this%humidity, new_size, this%local_num)
 #endif
+#ifdef ENABLE_LABELS
+            call resize_array(this%label, new_size, this%local_num)
+            call resize_array(this%dilution, new_size, this%local_num)
+#endif
 
             ! LS-RK variables
             call resize_array(this%delta_pos, new_size, this%local_num)
@@ -333,6 +364,12 @@ module parcel_container
 #ifndef ENABLE_DRY_MODE
             buffer(this%IDX_HUM)                            = this%humidity(n)
 #endif
+
+#ifdef ENABLE_LABELS
+            buffer(this%IDX_LABEL)           = this%label(n)
+            buffer(this%IDX_DILUTION)        = this%dilution(n)
+#endif
+
             ! LS-RK variables:
             buffer(this%IDX_RK_POS_BEG:this%IDX_RK_POS_END)       = this%delta_pos(:, n)
             buffer(this%IDX_RK_VOR_BEG:this%IDX_RK_VOR_END)       = this%delta_vor(:, n)
@@ -357,6 +394,10 @@ module parcel_container
 #ifndef ENABLE_DRY_MODE
             this%humidity(n)     = buffer(this%IDX_HUM)
 #endif
+#ifdef ENABLE_LABELS
+            this%label(n)        = nint(buffer(this%IDX_LABEL))
+            this%dilution(n)     = buffer(this%IDX_DILUTION)
+#endif
             ! LS-RK variables:
             this%delta_pos(:, n) = buffer(this%IDX_RK_POS_BEG:this%IDX_RK_POS_END)
             this%delta_vor(:, n) = buffer(this%IDX_RK_VOR_BEG:this%IDX_RK_VOR_END)
@@ -380,22 +421,6 @@ module parcel_container
             buffer(6)   = this%humidity(n)
 #endif
         end subroutine parcel_mixing_serialize
-
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        ! Deserialize all parcel attributes to mix from a single buffer
-        subroutine parcel_mixing_deserialize(this, n, buffer)
-            class(pc_type),   intent(inout) :: this
-            integer,          intent(in)    :: n
-            double precision, intent(in)    :: buffer(this%mix_attr_num)
-
-            this%vorticity(:, n) = buffer(1:3)
-            this%volume(n)       = buffer(4)
-            this%buoyancy(n)     = buffer(5)
-#ifndef ENABLE_DRY_MODE
-            this%humidity(n)     = buffer(6)
-#endif
-        end subroutine parcel_mixing_deserialize
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 

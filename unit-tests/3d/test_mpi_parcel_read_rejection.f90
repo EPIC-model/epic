@@ -8,18 +8,18 @@
 program test_mpi_parcel_read_rejection
     use unit_test
     use options, only : parcel, write_netcdf_options
-    use constants, only : zero, f12, one
+    use constants, only : one, zero, f12
     use parcels_mod, only : parcels
     use parcel_netcdf
     use parcel_init, only : parcel_default, init_timer
     use mpi_environment
     use mpi_layout
-    use parameters, only : lower, update_parameters, extent, nx, ny, nz
-    use netcdf_utils, only : ncerr, NF90_WRITE, NF90_DOUBLE
+    use netcdf_utils
     use netcdf_writer
-    use config, only : cf_version, package_version
-    use iomanip, only : zfill
     use physics, only : write_physical_quantities
+    use config, only : package_version, cf_version
+    use iomanip, only : zfill
+    use parameters, only : lower, update_parameters, extent, nx, ny, nz, dx, max_num_parcels
     use mpi_timer
     implicit none
 
@@ -190,7 +190,7 @@ program test_mpi_parcel_read_rejection
             ! define dimensions
             call define_netcdf_dimension(ncid=ncid,                         &
                                          name='n_parcels',                  &
-                                         dimsize=parcels%total_num,         &
+                                         dimsize=int(parcels%total_num),    &
                                          dimid=npar_dim_id)
 
             call define_netcdf_dimension(ncid=ncid,                   &
