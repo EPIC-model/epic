@@ -342,30 +342,6 @@ module inversion_mod
 
             call divergence(f, vtend(:, :, :, I_Z))
 
-            !---------------------------------
-            ! Fill boundary values:
-            ! \omegax * du/dx + \omegay * dv/dx (where dv/dx = \omegaz + du/dy)
-            vtend(0, :, :, 1) = (vortg(0, :, :, I_X) + f_cor(I_X)) * velgradg(0, :, :, I_DUDX) &
-                              + (vortg(0, :, :, I_Y) + f_cor(I_Y)) * velgradg(0, :, :, I_DVDX)
-
-            vtend(nz, :, :, 1) = (vortg(nz, :, :, I_X) + f_cor(I_X)) * velgradg(nz, :, :, I_DUDX) &
-                               + (vortg(nz, :, :, I_Y) + f_cor(I_Y)) * velgradg(nz, :, :, I_DVDX)
-
-            ! \omegax * du/dy + \omegay * dv/dy
-            vtend(0, :, :, 2) = (vortg(0, :, :, I_X) + f_cor(I_X)) * velgradg(0, :, :, I_DUDY) &
-                              + (vortg(0, :, :, I_Y) + f_cor(I_Y)) * velgradg(0, :, :, I_DVDY)
-
-            vtend(nz, :, :, 2) = (vortg(nz, :, :, I_X) + f_cor(I_X)) * velgradg(nz, :, :, I_DUDY) &
-                               + (vortg(nz, :, :, I_Y) + f_cor(I_Y)) * velgradg(nz, :, :, I_DVDY)
-
-            ! - \omegaz * (du/dx + dv/dy)
-            vtend(0,  :, :, 3) = - (vortg(0,  :, :, I_Z) + f_cor(I_Z)) * (velgradg(0,  :, :, I_DUDX) &
-                               + velgradg(0,  :, :, I_DVDY))
-            vtend(nz, :, :, 3) = - (vortg(nz, :, :, I_Z) + f_cor(I_Z)) * (velgradg(nz, :, :, I_DUDX) &
-                               + velgradg(nz, :, :, I_DVDY))
-
-            !---------------------------------
-
             !-------------------------------------------------------
             ! Set dzeta/dt = 0 on the boundary if required:
             if (l_bndry_zeta_zero(1)) then
