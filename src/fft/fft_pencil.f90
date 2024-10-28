@@ -41,21 +41,8 @@ module fft_pencil
                          , x_from_z_transposition   &
                          , z_from_x_transposition
 
-    ! Transpositions from one pencil to another for nz = 1 (for 2D FFT)
-    type(pencil_layout) :: y_from_z_trans2d         &
-                         , x_from_y_trans2d         &
-                         , y_from_x_trans2d         &
-                         , z_from_y_trans2d         &
-                         , x_from_z_trans2d         &
-                         , z_from_x_trans2d
-
     ! Temporary buffers used in transposition
     double precision, dimension(:,:,:), contiguous, pointer :: fft_in_y_buffer , fft_in_x_buffer, diff_x_buffer
-
-    ! Temporary buffers used for transposition 2D
-    double precision, dimension(:,:,:), contiguous, pointer :: fft2d_in_y_buffer,   &
-                                                               fft2d_in_x_buffer,   &
-                                                               diff2d_x_buffer
 
     logical :: l_initialised = .false.
 
@@ -158,7 +145,6 @@ contains
         endif
 
         deallocate(fft_in_y_buffer , fft_in_x_buffer, diff_x_buffer)
-        deallocate(fft2d_in_y_buffer , fft2d_in_x_buffer, diff2d_x_buffer)
     end subroutine finalise_pencil_fft
 
     !> Initialises memory for the buffers used in the FFT
@@ -175,18 +161,6 @@ contains
                                x_from_z_transposition%pencil_size(Z_INDEX),    &
                                x_from_z_transposition%pencil_size(Y_INDEX)))
 
-        allocate(fft2d_in_y_buffer(y_from_z_trans2d%pencil_size(Y_INDEX),   &
-                                 y_from_z_trans2d%pencil_size(X_INDEX),     &
-                                 y_from_z_trans2d%pencil_size(Z_INDEX)))
-
-        allocate(fft2d_in_x_buffer(x_from_y_trans2d%pencil_size(X_INDEX),   &
-                                 x_from_y_trans2d%pencil_size(Z_INDEX),     &
-                                 x_from_y_trans2d%pencil_size(Y_INDEX)))
-
-        allocate(diff2d_x_buffer(x_from_z_trans2d%pencil_size(X_INDEX),     &
-                               x_from_z_trans2d%pencil_size(Z_INDEX),       &
-                               x_from_z_trans2d%pencil_size(Y_INDEX)))
-
     end subroutine initialise_buffers
 
     !> Initialises the pencil transpositions, from a pencil in one dimension to that in another
@@ -194,7 +168,7 @@ contains
     !! @param x_distinct_sizes X sizes per process
     subroutine initialise_transpositions(y_distinct_sizes, x_distinct_sizes)
         integer, dimension(:), intent(in) :: y_distinct_sizes, x_distinct_sizes
-        type(pencil_layout)        :: z_pencil, z_pencil_2d
+        type(pencil_layout)        :: z_pencil
 
         z_pencil = create_initial_transposition_description(box%size(I_Z))
 
@@ -210,24 +184,6 @@ contains
 
         z_from_y_transposition=create_transposition(y_from_x_transposition, Z_INDEX, &
                                                     y_distinct_sizes, BACKWARD)
-
-
-        ! Transpositions for 2D FFT
-
-        ngrid(1) = 1 ! only 1 z grid point
-
-        z_pencil_2d = create_initial_transposition_description(1)
-
-        y_from_z_trans2d = create_transposition(z_pencil_2d, Y_INDEX, y_distinct_sizes, FORWARD)
-
-        x_from_y_trans2d = create_transposition(y_from_z_trans2d, X_INDEX, &
-                                                x_distinct_sizes, FORWARD)
-
-        y_from_x_trans2d = create_transposition(x_from_y_trans2d, Y_INDEX, &
-                                                x_distinct_sizes, BACKWARD)
-
-        z_from_y_trans2d = create_transposition(y_from_x_trans2d, Z_INDEX, &
-                                                y_distinct_sizes, BACKWARD)
 
     end subroutine initialise_transpositions
 
