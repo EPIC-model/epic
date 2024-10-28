@@ -152,16 +152,6 @@ module parcel_netcdf
 
             call write_netcdf_options(ncid)
 
-            ! all cores must know the correct number of total parcels
-            parcels%total_num = parcels%local_num
-            call MPI_Allreduce(MPI_IN_PLACE,        &
-                               parcels%total_num,   &
-                               1,                   &
-                               MPI_INTEGER,         &
-                               MPI_SUM,             &
-                               world%comm,          &
-                               world%err)
-
             ! define dimensions
             call define_netcdf_dimension(ncid=ncid,                  &
                                          name='n_parcels',           &
