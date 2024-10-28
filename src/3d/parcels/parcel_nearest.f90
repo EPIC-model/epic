@@ -201,9 +201,9 @@ module parcel_nearest
 
             call handle_periodic_edge_parcels(pcont%position(:, n))
 
-            ix =     int(dxi(1) * (pcont%position(1, n)    - box%halo_lower(1)))
-            iy =     int(dxi(2) * (pcont%position(2, n)    - box%halo_lower(2)))
-            iz = min(int(dxi(3) * (pcont%get_z_position(n) - box%lower(3))), nz-1)
+            ix =     int(dxi(1) * (pcont%position(1, n) - box%halo_lower(1)))
+            iy =     int(dxi(2) * (pcont%position(2, n) - box%halo_lower(2)))
+            iz = min(int(dxi(3) * (pcont%position(3, n) - box%lower(3))), nz-1)
 
             ! Cell index of parcel:
             !   This runs from 1 to halo_ncell where
@@ -689,7 +689,7 @@ module parcel_nearest
 
                 x_small = pcont%position(1, is)
                 y_small = pcont%position(2, is)
-                z_small = pcont%get_z_position(is)
+                z_small = pcont%position(3, is)
                 ! Parcel "is" is small and should be merged; find closest other:
                 ix0 = nint(dxi(1) * (x_small - box%halo_lower(1))) ! ranges from 0 to box%halo_size(1)
                 iy0 = nint(dxi(2) * (y_small - box%halo_lower(2))) ! ranges from 0 to box%halo_size(2)
@@ -713,7 +713,7 @@ module parcel_nearest
                             do k = near%kc1(ijk), near%kc2(ijk)
                                 n = near%node(k)
                                 if (n .ne. is) then
-                                    delz = pcont%get_z_position(n) - z_small
+                                    delz = pcont%position(3, n) - z_small
                                     if (delz * delz < dsqmin) then
                                         delx = get_delx(pcont%position(1, n), x_small)
                                         dely = get_dely(pcont%position(2, n), y_small)

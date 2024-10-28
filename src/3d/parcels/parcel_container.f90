@@ -102,7 +102,6 @@ module parcel_container
             procedure(parcel_replace),        deferred :: replace
             procedure(parcel_resize),         deferred :: resize
             procedure(parcel_is_small),       deferred :: is_small
-            procedure(parcel_get_z_position), deferred :: get_z_position
             procedure(parcel_get_position),   deferred :: get_position
             procedure(parcel_set_position),   deferred :: set_position
             procedure(parcel_set_volume),     deferred :: set_volume
@@ -152,12 +151,6 @@ module parcel_container
                 class(pc_type), intent(in) :: this
                 integer,        intent(in) :: n
             end function parcel_is_small
-
-            double precision pure function parcel_get_z_position(this, n)
-                import :: pc_type
-                class(pc_type),   intent(in)  :: this
-                integer,          intent(in)  :: n
-            end function parcel_get_z_position
 
             pure function parcel_get_position(this, n) result(pos)
                 import :: pc_type

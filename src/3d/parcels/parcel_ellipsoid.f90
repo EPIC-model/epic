@@ -60,7 +60,6 @@ module parcel_ellipsoid
             procedure          :: get_aspect_ratio => parcel_ellipsoid_get_aspect_ratio
             procedure, private :: get_angles => parcel_ellipsoid_get_angles
             procedure          :: is_small => parcel_ellipsoid_is_small
-            procedure          :: get_z_position => parcel_ellipsoid_get_z_position
             procedure          :: get_position => parcel_ellipsoid_get_position
             procedure          :: set_position => parcel_ellipsoid_set_position
             procedure          :: set_volume => parcel_ellipsoid_set_volume
@@ -461,17 +460,6 @@ module parcel_ellipsoid
             l_small = (this%volume(n) < vmin)
 
         end function parcel_ellipsoid_is_small
-
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        pure function parcel_ellipsoid_get_z_position(this, n) result(z_pos)
-            class(ellipsoid_pc_type), intent(in) :: this
-            integer,                  intent(in) :: n
-            double precision                     :: z_pos
-
-            z_pos = this%position(3, n)
-
-        end function parcel_ellipsoid_get_z_position
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
