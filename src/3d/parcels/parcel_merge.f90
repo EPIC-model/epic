@@ -6,7 +6,7 @@ module parcel_merging
     use parcel_nearest
     use parameters, only : vmin
     use constants, only : pi, zero, one, two, five, f13
-    use parcels_mod, only : parcels, bot_parcels, top_parcels
+    use parcels_mod, only : parcels
     use parcel_ops, only : get_delx_across_periodic   &
                          , get_dely_across_periodic
     use options, only : parcel
@@ -19,7 +19,6 @@ module parcel_merging
     use mpi_timer, only : start_timer, stop_timer
     use mpi_environment
     use mpi_collectives, only : mpi_blocking_reduce
-    use parcel_ellipse_merge, only : surface_parcel_merge
     implicit none
 
     integer :: merge_timer
@@ -105,9 +104,6 @@ module parcel_merging
             call parcel_communicate(parcels)
 
             call stop_timer(merge_timer)
-
-            call surface_parcel_merge(bot_parcels)
-            call surface_parcel_merge(top_parcels)
 
         end subroutine parcel_merge
 
@@ -197,7 +193,7 @@ module parcel_merging
 #ifdef ENABLE_LABELS
                 ! Dilute the parcel when volume is added for now
                 ! This could be optimised moving it to later in code
-                call random_number(rn) 
+                call random_number(rn)
                 if(rn*(vm(n)+parcels%volume(is))<vm(n)) then
                    dilm(n)=dilm(n)+log(vm(n)/(vm(n)+parcels%volume(is)))
                 else

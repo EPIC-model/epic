@@ -5,7 +5,7 @@
 module ls_rk
     use options, only : time
     use dimensions, only : I_Z
-    use parcels_mod, only : parcels, bot_parcels, top_parcels
+    use parcels_mod, only : parcels
     use parcel_bc
     use parcel_mpi, only : parcel_communicate
     use rk_utils, only: get_time_step

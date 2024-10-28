@@ -29,7 +29,6 @@ module parcel_interpl
     use omp_lib
     use mpi_utils, only : mpi_exit_on_error
     use interpl, only : trilinear
-    use parcel_ellipse_interpl, only : surf_par2grid, surf_grid2par
     implicit none
 
     private
@@ -122,16 +121,16 @@ module parcel_interpl
             call field_halo_swap_scalar(volg)
             call stop_timer(halo_swap_timer)
 
-!             ! apply free slip boundary condition
-!             !$omp parallel workshare
-!             volg(0,  :, :) = two * volg(0,  :, :)
-!             volg(nz, :, :) = two * volg(nz, :, :)
-!
-!             ! free slip boundary condition is reflective with mirror
-!             ! axis at the physical domain
-!             volg(1,    :, :) = volg(1,    :, :) + volg(-1,   :, :)
-!             volg(nz-1, :, :) = volg(nz-1, :, :) + volg(nz+1, :, :)
-!             !$omp end parallel workshare
+            ! apply free slip boundary condition
+            !$omp parallel workshare
+            volg(0,  :, :) = two * volg(0,  :, :)
+            volg(nz, :, :) = two * volg(nz, :, :)
+
+            ! free slip boundary condition is reflective with mirror
+            ! axis at the physical domain
+            volg(1,    :, :) = volg(1,    :, :) + volg(-1,   :, :)
+            volg(nz-1, :, :) = volg(nz-1, :, :) + volg(nz+1, :, :)
+            !$omp end parallel workshare
 
         end subroutine vol2grid
 
@@ -249,8 +248,6 @@ module parcel_interpl
             if (sum(nparg(0:nz-1, :, :)) /= parcels%local_num) then
                 call mpi_exit_on_error("par2grid: Wrong total number of parcels!")
             endif
-
-            call surf_par2grid
 
             call start_timer(halo_swap_timer)
             call par2grid_halo_swap
@@ -433,8 +430,6 @@ module parcel_interpl
             enddo
             !$omp end do
             !$omp end parallel
-
-            call surf_grid2par(add)
 
             call stop_timer(grid2par_timer)
 

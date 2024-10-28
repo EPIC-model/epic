@@ -91,9 +91,6 @@ module parameters
     ! maximum number of allowed parcels
     integer, protected :: max_num_parcels
 
-    ! maximum number of allowed surface parcels
-    integer, protected :: max_num_surf_parcels
-
     ! specifies if zeta is kept zero on a boundary;
     ! this also makes sure that dzeta/dt = 0 on a boundary
     logical, protected :: l_bndry_zeta_zero(2)

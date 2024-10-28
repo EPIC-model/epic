@@ -17,7 +17,6 @@ module parcel_correction
     use mpi_environment
     use mpi_utils, only : mpi_check_for_error
     use parcel_mpi, only : parcel_communicate
-    use surface_parcel_correction
     implicit none
 
     private
@@ -79,8 +78,6 @@ module parcel_correction
 
             vor_bar = vor_bar / vsum
 
-            call init_surf_parcel_correction
-
             call stop_timer(vort_corr_timer)
 
         end subroutine init_parcel_correction
@@ -137,8 +134,6 @@ module parcel_correction
             !$omp end do
             !$omp end parallel
 
-            call apply_surface_vortcor
-
             call stop_timer(vort_corr_timer)
         end subroutine apply_vortcor
 
@@ -182,8 +177,6 @@ module parcel_correction
             !$omp end parallel
 
             call parcel_communicate(parcels)
-
-            call apply_surf_laplace
 
             call stop_timer(lapl_corr_timer)
 
@@ -264,8 +257,6 @@ module parcel_correction
             !$omp end parallel
 
             call parcel_communicate(parcels)
-
-            call apply_surf_gradient(prefactor, max_compression)
 
             call stop_timer(grad_corr_timer)
 

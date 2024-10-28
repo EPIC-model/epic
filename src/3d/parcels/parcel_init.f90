@@ -4,7 +4,7 @@
 module parcel_init
     use options, only : parcel
     use constants, only : zero, two, one, f12, f13, f23, f14
-    use parcels_mod, only : parcels, top_parcels, bot_parcels
+    use parcels_mod, only : parcels
     use parcel_split_mod, only : parcel_split
     use interpl, only : trilinear, bilinear
     use parameters, only : dx, vcell, ncell,            &
@@ -99,12 +99,6 @@ module parcel_init
             !$omp end parallel
 
             call stop_timer(init_timer)
-
-            call bot_parcels%init
-            call top_parcels%init
-
-            bot_parcels%z_position = box%lower(3)
-            top_parcels%z_position = box%lower(3) + box%extent(3)
 
         end subroutine parcel_default
 
@@ -204,55 +198,6 @@ module parcel_init
             enddo
             !$omp end do
             !$omp end parallel
-
-
-            !------------------------------------------------------------------
-            ! Initialise surface parcels from the grid:
-            !$omp parallel default(shared)
-            !$omp do private(n, l, is, js, ws)
-            do n = 1, bot_parcels%local_num
-
-                ! get interpolation weights and mesh indices
-                call bilinear(bot_parcels%position(:, n), is, js, ws)
-
-                ! loop over grid points which are part of the interpolation
-                do l = 1, 3
-                    bot_parcels%vorticity(l, n) = bot_parcels%vorticity(l, n) &
-                                                + sum(ws * vortg(0, js:js+1, is:is+1, l))
-                enddo
-                bot_parcels%buoyancy(n) = bot_parcels%buoyancy(n) &
-                                         + sum(ws * tbuoyg(0, js:js+1, is:is+1))
-#ifndef ENABLE_DRY_MODE
-                bot_parcels%humidity(n) = bot_parcels%humidity(n) &
-                                        + sum(ws * humg(0, js:js+1, is:is+1))
-#endif
-            enddo
-            !$omp end do
-            !$omp end parallel
-
-
-            !$omp parallel default(shared)
-            !$omp do private(n, l, is, js, ws)
-            do n = 1, top_parcels%local_num
-
-                ! get interpolation weights and mesh indices
-                call bilinear(top_parcels%position(:, n), is, js, ws)
-
-                ! loop over grid points which are part of the interpolation
-                do l = 1, 3
-                    top_parcels%vorticity(l, n) = top_parcels%vorticity(l, n) &
-                                                + sum(ws * vortg(nz, js:js+1, is:is+1, l))
-                enddo
-                top_parcels%buoyancy(n) = top_parcels%buoyancy(n) &
-                                        + sum(ws * tbuoyg(nz, js:js+1, is:is+1))
-#ifndef ENABLE_DRY_MODE
-                top_parcels%humidity(n) = top_parcels%humidity(n) &
-                                        + sum(ws * humg(nz, js:js+1, is:is+1))
-#endif
-            enddo
-            !$omp end do
-            !$omp end parallel
-
 
             call stop_timer(init_timer)
 
