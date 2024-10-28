@@ -253,6 +253,40 @@ module parcel_interpl
             call par2grid_halo_swap
             call stop_timer(halo_swap_timer)
 
+            !$omp parallel workshare
+            ! apply free slip boundary condition
+            volg(0,  :, :) = two * volg(0,  :, :)
+            volg(nz, :, :) = two * volg(nz, :, :)
+
+            ! free slip boundary condition is reflective with mirror
+            ! axis at the physical domain
+            volg(1,    :, :) = volg(1,    :, :) + volg(-1,   :, :)
+            volg(nz-1, :, :) = volg(nz-1, :, :) + volg(nz+1, :, :)
+
+            vortg(0,  :, :, :) = two * vortg(0,  :, :, :)
+            vortg(nz, :, :, :) = two * vortg(nz, :, :, :)
+            vortg(1,    :, :, :) = vortg(1,    :, :, :) + vortg(-1,   :, :, :)
+            vortg(nz-1, :, :, :) = vortg(nz-1, :, :, :) + vortg(nz+1, :, :, :)
+
+            tbuoyg(0,  :, :) = two * tbuoyg(0,  :, :)
+            tbuoyg(nz, :, :) = two * tbuoyg(nz, :, :)
+            tbuoyg(1,    :, :) = tbuoyg(1,    :, :) + tbuoyg(-1,   :, :)
+            tbuoyg(nz-1, :, :) = tbuoyg(nz-1, :, :) + tbuoyg(nz+1, :, :)
+            !$omp end parallel workshare
+
+#ifndef ENABLE_DRY_MODE
+            !$omp parallel workshare
+            dbuoyg(0,  :, :) = two * dbuoyg(0,  :, :)
+            dbuoyg(nz, :, :) = two * dbuoyg(nz, :, :)
+            dbuoyg(1,    :, :) = dbuoyg(1,    :, :) + dbuoyg(-1,   :, :)
+            dbuoyg(nz-1, :, :) = dbuoyg(nz-1, :, :) + dbuoyg(nz+1, :, :)
+            humg(0,  :, :) = two * humg(0,  :, :)
+            humg(nz, :, :) = two * humg(nz, :, :)
+            humg(1,    :, :) = humg(1,    :, :) + humg(-1,   :, :)
+            humg(nz-1, :, :) = humg(nz-1, :, :) + humg(nz+1, :, :)
+            !$omp end parallel workshare
+#endif
+
             ! exclude halo cells to avoid division by zero
             do p = 1, 3
                 vortg(0:nz, :, :, p) = vortg(0:nz, :, :, p) / volg(0:nz, :, :)
