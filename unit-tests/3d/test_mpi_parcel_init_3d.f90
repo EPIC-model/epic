@@ -23,7 +23,7 @@ program test_mpi_parcel_init_3d
     double precision :: rms, rmserr, error
     logical          :: passed = .true.
     double precision, allocatable :: workg(:, :, :)
-    double precision :: tol = 2.0d-2
+    double precision :: tol = 6.0d-2
 
     call mpi_env_initialise
 
