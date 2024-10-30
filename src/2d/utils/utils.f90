@@ -10,6 +10,8 @@ module utils
     use netcdf_utils, only : set_netcdf_dimensions, set_netcdf_axes
     use field_netcdf
     use parcel_netcdf
+    use field_diagnostics_netcdf, only : create_netcdf_field_stats_file, &
+                                         write_netcdf_field_stats
     use parcel_diagnostics_netcdf, only : create_netcdf_parcel_stats_file, &
                                           write_netcdf_parcel_stats
     use parcel_diagnostics, only : calculate_parcel_diagnostics, calculate_peref
@@ -24,7 +26,6 @@ module utils
 #ifndef NDEBUG
     use parcel_interpl, only : vol2grid_symmetry_error
 #endif
-    use field_diagnostics_netcdf, only : write_netcdf_field_stats, create_netcdf_field_stats_file
 
     implicit none
 
