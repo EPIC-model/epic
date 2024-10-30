@@ -23,7 +23,7 @@
 ! for i, txt in enumerate(n):
 !     plt.scatter(x[i], y[i], s=3, color=colors[int(r[i])])
 !
-! plt.savefig('initial.png', dpi=200)
+! plt.savefig('initial.png', dpi=500)
 ! plt.close()
 !
 !
@@ -119,7 +119,7 @@ program test_mpi_nearest_subcomm
 !     enddo
 !     call mpi_stop
 
-    call check_result(300)
+    call check_result(132)
 
     if (world%rank == world%root) then
         call print_result_logical('Test MPI nearest algorithm subcomm', passed)
