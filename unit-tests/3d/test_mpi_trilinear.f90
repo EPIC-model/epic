@@ -12,8 +12,8 @@ program test_mpi_trilinear
     use mpi_layout
     use parcels_mod, only : parcels
     use parcel_interpl, only : par2grid, par2grid_timer, halo_swap_timer
-    use parameters, only : lower, update_parameters, nx, ny, nz, ngrid, extent
-    use fields, only : vortg, field_alloc
+    use parameters, only : lower, update_parameters, nx, ny, nz, ngrid, extent, vcell
+    use fields, only : vortg, field_alloc, volg
     use field_ops, only : get_sum
     use mpi_timer
     implicit none
@@ -53,6 +53,10 @@ program test_mpi_trilinear
     error = abs(get_sum(vortg(:, :, :, 1)) - 1.5d0 * dble(ngrid))
 
     passed = (passed .and. (error < dble(1.0e-15)))
+
+    error = abs(get_sum(volg) - dble(ngrid) * vcell)
+
+    passed = (passed .and. (error < dble(3.0e-14)))
 
     call mpi_env_finalise
 
