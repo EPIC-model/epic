@@ -133,7 +133,7 @@ module parcel_merging
             double precision                :: hum(n_merge)
 #endif
 #ifdef ENABLE_LABELS
-            double precision                :: labelm(n_merge)
+            integer(kind=8)                 :: labelm(n_merge)
             double precision                :: dilm(n_merge)
             double precision                :: rn
 #endif
@@ -198,7 +198,7 @@ module parcel_merging
 #ifdef ENABLE_LABELS
                 ! Dilute the parcel when volume is added for now
                 ! This could be optimised moving it to later in code
-                call random_number(rn) 
+                call random_number(rn)
                 if(rn*(vm(n)+parcels%volume(is))<vm(n)) then
                    dilm(n)=dilm(n)+log(vm(n)/(vm(n)+parcels%volume(is)))
                 else
