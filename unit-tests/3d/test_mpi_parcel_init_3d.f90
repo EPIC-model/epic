@@ -9,31 +9,21 @@ program test_mpi_parcel_init_3d
     use options, only : parcel
     use field_mpi
     use constants, only : pi, zero, one, two, four, five, f12, f13, f23, f32
-    use parcel_container
     use parcel_init, only : init_timer, parcel_default, init_parcels_from_grids
     use parcel_interpl, only : par2grid, par2grid_timer, halo_swap_timer
-    use parcel_ellipsoid, only : get_abc
     use fields, only : tbuoyg, field_default
     use field_ops, only : get_rms, get_abs_max
-    use parameters, only : update_parameters, dx, nx, ny, nz, lower, vcell
+    use parameters, only : update_parameters, dx, nx, ny, nz, lower, extent
     use mpi_layout, only : box, mpi_layout_init
     use mpi_timer
     implicit none
 
-    double precision  :: xg, yg, zg, facx, facy, facz, argx, argy, argz, v0
-    integer :: i, j, k, ix, iy, iz, l
-    double precision :: rms, rmserr, error, corner(3), im(3)
+    double precision :: xg, yg, zg, facx, facy, facz, argx, argy, argz
+    integer          :: ix, iy, iz
+    double precision :: rms, rmserr, error
     logical          :: passed = .true.
     double precision, allocatable :: workg(:, :, :)
     double precision :: tol = 6.0d-2
-
-     !Number of parcels per grid box = nbgx*nbgz
-    integer, parameter :: nbgx = 2, nbgy = nbgx, nbgz = nbgx
-
-    !Fractions of grid cell used for placing parcels:
-    double precision, parameter :: dxf = one / dble(nbgx), &
-                                   dyf = one / dble(nbgy), &
-                                   dzf = one / dble(nbgz)
 
     call mpi_env_initialise
 
@@ -53,11 +43,11 @@ program test_mpi_parcel_init_3d
 
     call mpi_layout_init(lower, extent, nx, ny, nz)
 
+    parcel%n_per_cell = 8
+
     call update_parameters
 
     call field_default
-
-    parcel%n_per_cell = 8
 
     !--------------------------------------------------------
     ! Define a gridded field "tbuoyg" (this can be arbitrary):
@@ -84,37 +74,6 @@ program test_mpi_parcel_init_3d
     !---------------------------
     ! Generate parcel attribute:
     call parcel_default
-
-    !---------------------------------------------------------
-    !Initialise parcel volume positions and volume fractions:
-    v0 = dxf * dyf * dzf * vcell
-    l = 1
-
-    im(1) = one / dble(nbgx)
-    im(2) = one / dble(nbgy)
-    im(3) = one / dble(nbgz)
-
-    do iz = 0, nz-1
-        do iy = box%lo(2), box%hi(2)
-            do ix = box%lo(1), box%hi(1)
-                corner = lower + dble((/ix, iy, iz/)) * dx
-                do k = 1, nbgz
-                    do j = 1, nbgy
-                        do i = 1, nbgx
-                            parcels%position(1, l) = corner(1) + dx(1) * (dble(i) - f12) * im(1)
-                            parcels%position(2, l) = corner(2) + dx(2) * (dble(j) - f12) * im(2)
-                            parcels%position(3, l) = corner(3) + dx(3) * (dble(k) - f12) * im(3)
-                            parcels%volume(l) = v0
-                            parcels%B(:, l) = zero
-                            parcels%B(1, l) = get_abc(v0) ** f23
-                            parcels%B(4, l) = parcels%B(1, l)
-                            l = l + 1
-                        enddo
-                    enddo
-                enddo
-            enddo
-        enddo
-    enddo
 
     call init_parcels_from_grids
 
@@ -148,8 +107,6 @@ program test_mpi_parcel_init_3d
     error = max(error, get_abs_max(workg))
 
     passed = (passed .and. (error < tol))
-
-    call parcel_dealloc
 
     deallocate(workg)
 

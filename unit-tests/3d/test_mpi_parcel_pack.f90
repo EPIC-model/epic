@@ -7,7 +7,7 @@
 program test_mpi_parcel_pack
     use unit_test
     use constants
-    use parcel_container
+    use parcels_mod, only : parcels
     use mpi_environment
     use mpi_timer
     implicit none
@@ -30,11 +30,11 @@ program test_mpi_parcel_pack
     seed(:) = world%rank
     call random_seed(put=seed)
 
-    n_parcels = 1000
-    call parcel_alloc(n_parcels)
+    parcels%local_num = 1000
+    call parcels%allocate(parcels%local_num)
 
     ! initialise parcels
-    do n = 1, n_parcels
+    do n = 1, parcels%local_num
         a = dble(n-1) * 100.0d0
         parcels%position(1, n) = 1.0d0 + a
         parcels%position(2, n) = 2.0d0 + a
@@ -59,43 +59,43 @@ program test_mpi_parcel_pack
         pid = -1
         do k = 1, n_pack
             call random_number(val)
-            l = int(val * dble(n_parcels)) + 1
+            l = int(val * dble(parcels%local_num)) + 1
             i = findloc(pid, l, dim=1)
             do while (.not. i == 0)
                 call random_number(val)
-                l = int(val * dble(n_parcels)) + 1
+                l = int(val * dble(parcels%local_num)) + 1
                 i = findloc(pid, l, dim=1)
             enddo
             pid(k) = l
         enddo
 
-        allocate(buffer(n_par_attrib * n_pack))
+        allocate(buffer(parcels%attr_num * n_pack))
 
         ! pack the parcels
-        call parcel_pack(pid, n_pack, buffer)
+        call parcels%pack(pid, n_pack, buffer)
 
         ! check the buffer of packed parcels
         do n = 1, n_pack
 
             l = pid(n)
 
-            i = (n - 1) * n_par_attrib
+            i = (n - 1) * parcels%attr_num
 
-            passed = (passed .and. (parcels%position(1, l) - buffer(i + IDX_X_POS) == zero))
-            passed = (passed .and. (parcels%position(2, l) - buffer(i + IDX_Y_POS) == zero))
-            passed = (passed .and. (parcels%position(3, l) - buffer(i + IDX_Z_POS) == zero))
-            passed = (passed .and. (parcels%vorticity(1, l) - buffer(i + IDX_X_VOR) == zero))
-            passed = (passed .and. (parcels%vorticity(2, l) - buffer(i + IDX_Y_VOR) == zero))
-            passed = (passed .and. (parcels%vorticity(3, l) - buffer(i + IDX_Z_VOR) == zero))
-            passed = (passed .and. (parcels%B(1, l) - buffer(i + IDX_B11) == zero))
-            passed = (passed .and. (parcels%B(2, l) - buffer(i + IDX_B12) == zero))
-            passed = (passed .and. (parcels%B(3, l) - buffer(i + IDX_B13) == zero))
-            passed = (passed .and. (parcels%B(4, l) - buffer(i + IDX_B22) == zero))
-            passed = (passed .and. (parcels%B(5, l) - buffer(i + IDX_B23) == zero))
-            passed = (passed .and. (parcels%volume(l) - buffer(i + IDX_VOL) == zero))
-            passed = (passed .and. (parcels%buoyancy(l) - buffer(i + IDX_BUO) == zero))
+            passed = (passed .and. (parcels%position(1, l) - buffer(i + parcels%IDX_POS_BEG  ) == zero))
+            passed = (passed .and. (parcels%position(2, l) - buffer(i + parcels%IDX_POS_BEG+1) == zero))
+            passed = (passed .and. (parcels%position(3, l) - buffer(i + parcels%IDX_POS_BEG+2) == zero))
+            passed = (passed .and. (parcels%vorticity(1, l) - buffer(i + parcels%IDX_VOR_BEG  ) == zero))
+            passed = (passed .and. (parcels%vorticity(2, l) - buffer(i + parcels%IDX_VOR_BEG+1) == zero))
+            passed = (passed .and. (parcels%vorticity(3, l) - buffer(i + parcels%IDX_VOR_BEG+2) == zero))
+            passed = (passed .and. (parcels%B(1, l) - buffer(i + parcels%IDX_SHAPE_BEG  ) == zero))
+            passed = (passed .and. (parcels%B(2, l) - buffer(i + parcels%IDX_SHAPE_BEG+1) == zero))
+            passed = (passed .and. (parcels%B(3, l) - buffer(i + parcels%IDX_SHAPE_BEG+2) == zero))
+            passed = (passed .and. (parcels%B(4, l) - buffer(i + parcels%IDX_SHAPE_BEG+3) == zero))
+            passed = (passed .and. (parcels%B(5, l) - buffer(i + parcels%IDX_SHAPE_BEG+4) == zero))
+            passed = (passed .and. (parcels%volume(l) - buffer(i + parcels%IDX_VOL) == zero))
+            passed = (passed .and. (parcels%buoyancy(l) - buffer(i + parcels%IDX_BUO) == zero))
 #ifndef ENABLE_DRY_MODE
-            passed = (passed .and. (parcels%humidity(l) - buffer(i + IDX_HUM) == zero))
+            passed = (passed .and. (parcels%humidity(l) - buffer(i + parcels%IDX_HUM) == zero))
 #endif
         enddo
 

@@ -34,7 +34,7 @@ program test_mpi_vel2vgrad
     use parameters, only : lower, update_parameters, dx, nx, ny, nz, extent
     use fields, only : vortg, velog, velgradg, field_default, I_DUDX, I_DUDY, I_DUDZ, I_DVDX, I_DVDY, I_DVDZ, I_DWDX, I_DWDY
     use dimensions, only : I_X, I_Y, I_Z
-    use parcel_ellipsoid, only : get_B33, I_B11, I_B12, I_B13, I_B22, I_B23
+    use parcel_ellipsoid, only : I_B11, I_B12, I_B13, I_B22, I_B23
     use inversion_utils, only : init_inversion, finalise_inversion
     use inversion_mod, only : vel2vgrad
     use sta3dfft, only : fftxyp2s

@@ -12,7 +12,7 @@ program test_mpi_reverse_x
     use mpi_environment
     use mpi_layout
     use mpi_reverse, only : reverse_x               &
-                          , intialise_mpi_reverse   &
+                          , initialise_mpi_reverse  &
                           , finalise_mpi_reverse
     implicit none
 
@@ -37,7 +37,7 @@ program test_mpi_reverse_x
 
     call update_parameters
 
-    call intialise_mpi_reverse
+    call initialise_mpi_reverse
 
     allocate(fp(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)))
     allocate(gp(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%hlo(1):box%hhi(1)))

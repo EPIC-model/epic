@@ -68,7 +68,7 @@ program benchmark2_parcel_merging
 
     call update_parameters
 
-    call parcel_alloc(max_num_parcels)
+    call parcels%allocate(max_num_parcels)
 
     call nearest_win_allocate
 
@@ -84,11 +84,11 @@ program benchmark2_parcel_merging
         endif
         call read_netcdf_parcels(fname)
 
-        n_total_parcels = 0
+        parcels%total_num = 0
 
         call start_timer(allreduce_timer)
-        call MPI_Allreduce(n_parcels,         &
-                           n_total_parcels,   &
+        call MPI_Allreduce(parcels%local_num, &
+                           parcels%total_num, &
                            1,                 &
                            MPI_INTEGER_64BIT, &
                            MPI_SUM_64BIT,     &
@@ -96,17 +96,17 @@ program benchmark2_parcel_merging
                            world%err)
 
         if (world%rank == world%root) then
-            print *, "Number of parcels before merging:", n_total_parcels
+            print *, "Number of parcels before merging:", parcels%total_num
         endif
 
         call stop_timer(allreduce_timer)
 
         call parcel_merge
 
-        n_total_parcels = 0
+        parcels%total_num = 0
         call start_timer(allreduce_timer)
-        call MPI_Allreduce(n_parcels,         &
-                           n_total_parcels,   &
+        call MPI_Allreduce(parcels%local_num, &
+                           parcels%total_num, &
                            1,                 &
                            MPI_INTEGER_64BIT, &
                            MPI_SUM_64BIT,     &
@@ -115,7 +115,7 @@ program benchmark2_parcel_merging
 
 
         if (world%rank == world%root) then
-            print *, "Number of parcels after merging:", n_total_parcels
+            print *, "Number of parcels after merging:", parcels%total_num
         endif
 
         call stop_timer(allreduce_timer)
@@ -125,7 +125,7 @@ program benchmark2_parcel_merging
 
     call nearest_win_deallocate
 
-    call parcel_dealloc
+    call parcels%deallocate
 
     call print_timer
 

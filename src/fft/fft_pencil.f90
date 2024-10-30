@@ -170,7 +170,7 @@ contains
         integer, dimension(:), intent(in) :: y_distinct_sizes, x_distinct_sizes
         type(pencil_layout)        :: z_pencil
 
-        z_pencil = create_initial_transposition_description()
+        z_pencil = create_initial_transposition_description(box%size(I_Z))
 
 
         ! Transpositions
@@ -180,13 +180,10 @@ contains
                                                       x_distinct_sizes, FORWARD)
 
         y_from_x_transposition=create_transposition(x_from_y_transposition, Y_INDEX, &
-         x_distinct_sizes, BACKWARD)
+                                                    x_distinct_sizes, BACKWARD)
 
         z_from_y_transposition=create_transposition(y_from_x_transposition, Z_INDEX, &
-         y_distinct_sizes, BACKWARD)
-
-!         x_from_z_transposition = create_transposition(z_pencil, X_INDEX, (/33/), BACKWARD)
-!         z_from_x_transposition = create_transposition(x_from_z_transposition, Z_INDEX, x_distinct_sizes, FORWARD)
+                                                    y_distinct_sizes, BACKWARD)
 
     end subroutine initialise_transpositions
 
@@ -530,7 +527,9 @@ contains
     !> Creates an initial transposition representation of the Z pencil
     !! that MONC is normally decomposed in. This is then
     !! fed into the create transposition procedure which will generate transpositions to other pencils
-    type(pencil_layout) function create_initial_transposition_description()
+    type(pencil_layout) function create_initial_transposition_description(nz)
+        integer, intent(in) :: nz
+
         create_initial_transposition_description%dim = Z_INDEX
         create_initial_transposition_description%size(X_INDEX) = layout%size(I_X)
         create_initial_transposition_description%size(Y_INDEX) = layout%size(I_Y)
@@ -540,7 +539,7 @@ contains
         create_initial_transposition_description%coords(Z_INDEX) = layout%coords(I_Z)
         create_initial_transposition_description%pencil_size(X_INDEX) = box%size(I_X)
         create_initial_transposition_description%pencil_size(Y_INDEX) = box%size(I_Y)
-        create_initial_transposition_description%pencil_size(Z_INDEX) = box%size(I_Z)
+        create_initial_transposition_description%pencil_size(Z_INDEX) = nz
     end function create_initial_transposition_description
 
     !> Deduces the size of my (local) pencil based upon the new decomposition. This depends heavily on the current

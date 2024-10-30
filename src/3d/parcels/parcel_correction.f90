@@ -4,12 +4,13 @@
 module parcel_correction
     use inversion_utils, only : init_inversion
     use inversion_mod, only : diverge
-    use parcel_interpl, only : trilinear, vol2grid
+    use parcel_interpl, only : vol2grid
+    use interpl, only : trilinear
     use parcel_bc
     use omp_lib
     use constants
     use parameters, only : vcelli, nx, ny, nz, dx
-    use parcel_container
+    use parcels_mod, only : parcels
     use mpi_timer, only : start_timer, stop_timer
     use fields, only : volg
     use mpi_layout, only : box
@@ -52,7 +53,7 @@ module parcel_correction
 
             !$omp parallel default(shared)
             !$omp do private(n) reduction(+: vor_bar, vsum)
-            do n = 1, n_parcels
+            do n = 1, parcels%local_num
                 vsum = vsum + parcels%volume(n)
                 vor_bar = vor_bar + parcels%vorticity(:, n) * parcels%volume(n)
             enddo
@@ -97,7 +98,7 @@ module parcel_correction
 
             !$omp parallel default(shared)
             !$omp do private(n) reduction(+: dvor, vsum)
-            do n = 1, n_parcels
+            do n = 1, parcels%local_num
                 vsum = vsum + parcels%volume(n)
                 dvor = dvor + parcels%vorticity(:, n) * parcels%volume(n)
             enddo
@@ -127,7 +128,7 @@ module parcel_correction
 
             !$omp parallel default(shared)
             !$omp do private(n)
-            do n = 1, n_parcels
+            do n = 1, parcels%local_num
                 parcels%vorticity(:, n) = parcels%vorticity(:, n) - dvor
             enddo
             !$omp end do
@@ -162,7 +163,7 @@ module parcel_correction
             ! Increment parcel positions usind (ud, vd, wd) field:
             !$omp parallel default(shared)
             !$omp do private(n, l, is, js, ks, weights)
-            do n = 1, n_parcels
+            do n = 1, parcels%local_num
                 call trilinear(parcels%position(:, n), is, js, ks, weights)
 
                 do l = 1, 3
@@ -173,7 +174,7 @@ module parcel_correction
             !$omp end do
             !$omp end parallel
 
-            call parcel_communicate
+            call parcel_communicate(parcels)
 
             call stop_timer(lapl_corr_timer)
 
@@ -197,7 +198,7 @@ module parcel_correction
 
             !$omp parallel default(shared)
             !$omp do private(n, is, js, ks, weights, xf, yf, zf, xfc, yfc, zfc, xs, ys, zs, lim_x, lim_y, lim_z)
-            do n = 1, n_parcels
+            do n = 1, parcels%local_num
 
                 call trilinear(parcels%position(:, n), is, js, ks, weights)
 
@@ -251,7 +252,7 @@ module parcel_correction
             !$omp end do
             !$omp end parallel
 
-            call parcel_communicate
+            call parcel_communicate(parcels)
 
             call stop_timer(grad_corr_timer)
 

@@ -7,7 +7,7 @@
 program test_mpi_nearest_12
     use unit_test
     use constants, only : pi, zero, one, two, five, ten
-    use parcel_container
+    use parcels_mod, only : parcels
     use options, only : parcel
     use parameters, only : update_parameters, lower, extent, nx, ny, nz, dx, vmin, max_num_parcels
     use parcel_nearest
@@ -36,6 +36,7 @@ program test_mpi_nearest_12
     call register_timer('merge tree resolve', merge_tree_resolve_timer)
     call register_timer('nearest MPI barrier', nearest_barrier_timer)
     call register_timer('nearest MPI allreduce', nearest_allreduce_timer)
+    call register_timer('MPI RMA timer (in tree resolve)', nearest_rma_timer)
 
     parcel%lambda_max = five
     ! vmin = vcell / parcel%min_vratio
@@ -47,14 +48,14 @@ program test_mpi_nearest_12
 
     call nearest_win_allocate
 
-    call parcel_alloc(max_num_parcels)
+    call parcels%allocate(max_num_parcels)
 
     !
     ! Test 1: a-b-C where 'a' and 'b' are on the same MPI rank; right diagonal MPI boundary
     !
     call parcel_setup(1)
 
-    call find_nearest(isma, iclo, inva, n_merge, n_invalid)
+    call find_nearest(parcels, isma, iclo, inva, n_merge, n_invalid)
 
     call check_result(100)
 
@@ -67,7 +68,7 @@ program test_mpi_nearest_12
     !
     call parcel_setup(2)
 
-    call find_nearest(isma, iclo, inva, n_merge, n_invalid)
+    call find_nearest(parcels, isma, iclo, inva, n_merge, n_invalid)
 
     call check_result(100)
 
@@ -80,7 +81,7 @@ program test_mpi_nearest_12
     !
     call parcel_setup(3)
 
-    call find_nearest(isma, iclo, inva, n_merge, n_invalid)
+    call find_nearest(parcels, isma, iclo, inva, n_merge, n_invalid)
 
     call check_result(100)
 
@@ -93,7 +94,7 @@ program test_mpi_nearest_12
     !
     call parcel_setup(4)
 
-    call find_nearest(isma, iclo, inva, n_merge, n_invalid)
+    call find_nearest(parcels, isma, iclo, inva, n_merge, n_invalid)
 
     call check_result(100)
 
@@ -106,7 +107,7 @@ program test_mpi_nearest_12
     !
     call parcel_setup(5)
 
-    call find_nearest(isma, iclo, inva, n_merge, n_invalid)
+    call find_nearest(parcels, isma, iclo, inva, n_merge, n_invalid)
 
     call check_result(200)
 
@@ -119,7 +120,7 @@ program test_mpi_nearest_12
     !
     call parcel_setup(6)
 
-    call find_nearest(isma, iclo, inva, n_merge, n_invalid)
+    call find_nearest(parcels, isma, iclo, inva, n_merge, n_invalid)
 
     call check_result(200)
 
@@ -473,21 +474,21 @@ program test_mpi_nearest_12
                 enddo
             enddo
 
-            n_parcels = n - 1
-            n_total_parcels = 0
+            parcels%local_num = n - 1
+            parcels%total_num = 0
 
-            call MPI_Allreduce(n_parcels,       &
-                               n_total_parcels, &
-                               1,               &
-                               MPI_INTEGER,     &
-                               MPI_SUM,         &
-                               world%comm,      &
+            call MPI_Allreduce(parcels%local_num,   &
+                               parcels%total_num,   &
+                               1,                   &
+                               MPI_INTEGER,         &
+                               MPI_SUM,             &
+                               world%comm,          &
                                world%err)
         end subroutine parcel_setup
 
         subroutine check_result(n_true_merges)
             integer, intent(in) :: n_true_merges
-            check_array(1) = n_parcels - n_invalid
+            check_array(1) = parcels%local_num - n_invalid
             check_array(2) = n_merge
 
             if (world%rank == world%root) then
@@ -507,7 +508,7 @@ program test_mpi_nearest_12
             endif
 
             if (world%rank == world%root) then
-                passed = (passed .and. (check_array(1) == n_total_parcels) .and. (check_array(2) == n_true_merges))
+                passed = (passed .and. (check_array(1) == parcels%total_num) .and. (check_array(2) == n_true_merges))
             endif
         end subroutine check_result
 

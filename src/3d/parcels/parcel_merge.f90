@@ -6,14 +6,9 @@ module parcel_merging
     use parcel_nearest
     use parameters, only : vmin
     use constants, only : pi, zero, one, two, five, f13
-    use parcel_container, only : parcels                    &
-                               , n_parcels                  &
-                               , n_total_parcels            &
-                               , parcel_replace             &
-                               , get_delx_across_periodic   &
-                               , get_dely_across_periodic   &
-                               , parcel_delete
-    use parcel_ellipsoid, only : get_B33, get_abc
+    use parcels_mod, only : parcels
+    use parcel_ops, only : get_delx_across_periodic   &
+                         , get_dely_across_periodic
     use options, only : parcel
     use datatypes, only : int64
 #if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
@@ -58,18 +53,18 @@ module parcel_merging
 #if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
             integer(kind=int64)                :: orig_num
 
-            orig_num = n_total_parcels
+            orig_num = parcels%total_num
 #endif
 
             ! find parcels to merge
-            call find_nearest(isma, iclo, inva, n_merge, n_invalid)
+            call find_nearest(parcels, isma, iclo, inva, n_merge, n_invalid)
 
             call start_timer(merge_timer)
 
             n_parcel_merges = n_parcel_merges + n_merge
 
             if (n_merge > 0) then
-                allocate(loca(n_parcels))
+                allocate(loca(parcels%local_num))
                 call collect_merge_stats(iclo, n_merge)
             endif
 
@@ -81,7 +76,7 @@ module parcel_merging
 
             if (n_merge + n_invalid > 0) then
                 ! overwrite all small and invalid parcels -- all small parcels are now invalid too
-                call parcel_delete(inva, n_merge + n_invalid)
+                call parcels%delete(inva, n_merge + n_invalid)
                 deallocate(inva)
             endif
 
@@ -96,17 +91,17 @@ module parcel_merging
 
             ! After this operation the root MPI process knows the new
             ! number of parcels in the simulation
-            n_total_parcels = n_parcels
-            call mpi_blocking_reduce(n_total_parcels, MPI_SUM, world)
+            parcels%total_num = parcels%local_num
+            call mpi_blocking_reduce(parcels%total_num, MPI_SUM, world)
 
 #if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
             if (verbose .and. (world%rank == world%root)) then
                 print "(a36, i0, a3, i0)",                               &
                       "no. parcels before and after merge: ", orig_num,  &
-                      "...", n_total_parcels
+                      "...", parcels%total_num
             endif
 #endif
-            call parcel_communicate
+            call parcel_communicate(parcels)
 
             call stop_timer(merge_timer)
 
@@ -133,7 +128,7 @@ module parcel_merging
             double precision                :: hum(n_merge)
 #endif
 #ifdef ENABLE_LABELS
-            double precision                :: labelm(n_merge)
+            integer(kind=8)                 :: labelm(n_merge)
             double precision                :: dilm(n_merge)
             double precision                :: rn
 #endif
@@ -198,7 +193,7 @@ module parcel_merging
 #ifdef ENABLE_LABELS
                 ! Dilute the parcel when volume is added for now
                 ! This could be optimised moving it to later in code
-                call random_number(rn) 
+                call random_number(rn)
                 if(rn*(vm(n)+parcels%volume(is))<vm(n)) then
                    dilm(n)=dilm(n)+log(vm(n)/(vm(n)+parcels%volume(is)))
                 else
@@ -265,7 +260,7 @@ module parcel_merging
 
                     vmerge = one / vm(l)
 
-                    B33 = get_B33(parcels%B(:, ic), parcels%volume(ic))
+                    B33 = parcels%get_B33(ic)
 
                     delx = get_delx_across_periodic(parcels%position(1, ic), posm(1, l))
                     dely = get_dely_across_periodic(parcels%position(2, ic), posm(2, l))
@@ -307,7 +302,7 @@ module parcel_merging
                 dely = get_dely_across_periodic(parcels%position(2, is), posm(2, n))
                 delz = parcels%position(3, is) - posm(3, n)
 
-                B33 = get_B33(parcels%B(:, is), parcels%volume(is))
+                B33 = parcels%get_B33(is)
 
                 ! volume fraction V_{is} / V
                 mu = vmerge * parcels%volume(is)
@@ -357,7 +352,7 @@ module parcel_merging
                          - B(2, l) * (B(2, l) * B(6, l) - B(3, l) * B(5, l)) &
                          + B(3, l) * (B(2, l) * B(5, l) - B(3, l) * B(4, l))
 
-                    factor = (get_abc(V(l)) ** 2 / detB) ** f13
+                    factor = (parcels%get_abc(V(l)) ** 2 / detB) ** f13
 
                     parcels%B(:, ic) = B(1:5, l) * factor
                 endif

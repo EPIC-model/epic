@@ -1,6 +1,6 @@
 program verify_parcel_merging
     use constants, only : pi, zero, one, f12, f23, twopi
-    use parcel_container
+    use parcels_mod, only : parcels
     use options, only : parcel, output
     use parameters, only : update_parameters, lower, extent, nx, ny, nz, max_num_parcels
     use parcel_init, only : parcel_default
@@ -42,7 +42,7 @@ program verify_parcel_merging
 
     call update_parameters
 
-    call parcel_alloc(max_num_parcels)
+    call parcels%allocate(max_num_parcels)
 
     call init_rng
 
@@ -54,9 +54,9 @@ program verify_parcel_merging
         call setup_parcels(xlen=lx, ylen=ly, zlen=lz, l_shuffle=.false., l_variable_nppc=.true.)
 
         call start_timer(allreduce_timer)
-        n_total_parcels = 0
-        call MPI_Allreduce(n_parcels,         &
-                           n_total_parcels,   &
+        parcels%total_num = 0
+        call MPI_Allreduce(parcels%local_num, &
+                           parcels%total_num, &
                            1,                 &
                            MPI_INTEGER_64BIT, &
                            MPI_SUM_64BIT,     &
@@ -84,11 +84,11 @@ program verify_parcel_merging
     endif
 
 
-    n_total_parcels = 0
+    parcels%total_num = 0
 
     call start_timer(allreduce_timer)
-    call MPI_Allreduce(n_parcels,         &
-                       n_total_parcels,   &
+    call MPI_Allreduce(parcels%local_num, &
+                       parcels%total_num, &
                        1,                 &
                        MPI_INTEGER_64BIT, &
                        MPI_SUM_64BIT,     &
@@ -103,10 +103,10 @@ program verify_parcel_merging
         call parallel_merge
     endif
 
-    n_total_parcels = 0
+    parcels%total_num = 0
     call start_timer(allreduce_timer)
-    call MPI_Allreduce(n_parcels,         &
-                       n_total_parcels,   &
+    call MPI_Allreduce(parcels%local_num, &
+                       parcels%total_num, &
                        1,                 &
                        MPI_INTEGER_64BIT, &
                        MPI_SUM_64BIT,     &
@@ -125,7 +125,7 @@ program verify_parcel_merging
 
     call stop_timer(epic_timer)
 
-    call parcel_dealloc
+    call parcels%deallocate
 
     call print_timer
 
@@ -217,7 +217,7 @@ program verify_parcel_merging
             call register_timer('merge nearest', merge_nearest_timer)
             call register_timer('merge tree resolve', merge_tree_resolve_timer)
 
-            call merge_parcels(parcels)
+            call merge_parcels
 
         end subroutine serial_merge
 

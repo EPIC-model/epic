@@ -5,10 +5,10 @@
 module ls_rk
     use options, only : time
     use dimensions, only : I_Z
-    use parcel_container
+    use parcels_mod, only : parcels
     use parcel_bc
     use parcel_mpi, only : parcel_communicate
-    use rk_utils, only: get_dBdt, get_time_step
+    use rk_utils, only: get_time_step
     use utils, only : write_step
     use parcel_interpl, only : par2grid, grid2par
     use parcel_damping, only : parcel_damp
@@ -102,7 +102,7 @@ module ls_rk
             dt = get_time_step(t)
 
             if(.not. time%l_use_fixed_dt) then
-!            if (dabs(t - time%initial) < 1.0e-13) then
+!            if (abs(t - time%initial) < 1.0e-13) then
                 call bndry_fluxes_time_step(dt)
 !            endif
             endif
@@ -152,10 +152,8 @@ module ls_rk
                 call start_timer(rk_timer)
 
                 !$omp parallel do default(shared) private(n)
-                do n = 1, n_parcels
-                    parcels%delta_b(:, n) = get_dBdt(parcels%B(:, n),           &
-                                                     parcels%strain(:, n),      &
-                                                     parcels%volume(n))
+                do n = 1, parcels%local_num
+                    parcels%delta_b(:, n) = parcels%get_dBdt(n)
                 enddo
                 !$omp end parallel do
 
@@ -170,11 +168,9 @@ module ls_rk
                 call start_timer(rk_timer)
 
                 !$omp parallel do default(shared) private(n)
-                do n = 1, n_parcels
-                    parcels%delta_b(:, n) = parcels%delta_b(:, n)               &
-                                          + get_dBdt(parcels%B(:, n),           &
-                                                     parcels%strain(:, n),      &
-                                                     parcels%volume(n))
+                do n = 1, parcels%local_num
+                    parcels%delta_b(:, n) = parcels%delta_b(:, n) &
+                                          + parcels%get_dBdt(n)
                 enddo
                 !$omp end parallel do
 
@@ -184,7 +180,7 @@ module ls_rk
             call start_timer(rk_timer)
 
             !$omp parallel do default(shared) private(n)
-            do n = 1, n_parcels
+            do n = 1, parcels%local_num
                 parcels%position(:, n) = parcels%position(:, n) &
                                        + cb * dt * parcels%delta_pos(:, n)
 
@@ -198,21 +194,21 @@ module ls_rk
             call stop_timer(rk_timer)
 
             if (step == n_stages) then
-                call parcel_communicate
+                call parcel_communicate(parcels)
                return
             endif
 
             call start_timer(rk_timer)
 
             !$omp parallel do default(shared) private(n)
-            do n = 1, n_parcels
+            do n = 1, parcels%local_num
                 parcels%delta_pos(:, n) = ca * parcels%delta_pos(:, n)
                 parcels%delta_vor(:, n) = ca * parcels%delta_vor(:, n)
                 parcels%delta_b(:, n) = ca * parcels%delta_b(:, n)
             enddo
             !$omp end parallel do
 
-            call parcel_communicate
+            call parcel_communicate(parcels)
 
             call stop_timer(rk_timer)
 

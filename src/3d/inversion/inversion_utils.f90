@@ -586,6 +586,6 @@ module inversion_utils
             if ((box%lo(1) == 0) .and. (box%lo(2) == 0)) then
                 fs(:, 0, 0) = zero
             endif
-        end subroutine
+        end subroutine lapinv1
 
 end module inversion_utils

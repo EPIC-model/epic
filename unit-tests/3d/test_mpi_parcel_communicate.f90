@@ -10,7 +10,7 @@ program test_mpi_parcel_communicate
     use mpi_environment
     use mpi_layout
     use fields, only : field_alloc
-    use parcel_container
+    use parcels_mod, only : parcels
     use parcel_mpi
     use parameters, only : lower, update_parameters, extent, nx, ny, nz, dx
     use mpi_collectives
@@ -38,11 +38,11 @@ program test_mpi_parcel_communicate
     ! calls mpi_layout_init internally
     call field_alloc
 
-    n_parcels = 8 * (cart%rank + 1)
+    parcels%local_num = 8 * (cart%rank + 1)
     n_total = 4 * cart%size * (cart%size + 1)
-    call parcel_alloc(2 * n_total)
+    call parcels%allocate(2 * n_total)
 
-    n_total_parcels = n_total
+    parcels%total_num = n_total
 
     do n = 1, cart%rank + 1
         ! place parcels in southwest halo
@@ -93,14 +93,14 @@ program test_mpi_parcel_communicate
         parcels%position(3, n + j) = f12
     enddo
 
-    parcels%volume(1:n_parcels) = cart%rank + 1
-    parcels%B(:, 1:n_parcels) = cart%rank + 1
-    parcels%vorticity(:, 1:n_parcels) = cart%rank + 1
-    parcels%buoyancy(1:n_parcels) = cart%rank + 1
+    parcels%volume(1:parcels%local_num) = cart%rank + 1
+    parcels%B(:, 1:parcels%local_num) = cart%rank + 1
+    parcels%vorticity(:, 1:parcels%local_num) = cart%rank + 1
+    parcels%buoyancy(1:parcels%local_num) = cart%rank + 1
 
-    call parcel_communicate
+    call parcel_communicate(parcels)
 
-    n_total_verify = n_parcels
+    n_total_verify = parcels%local_num
     call mpi_blocking_reduce(n_total_verify, MPI_SUM, world)
 
     ! this needs to be checked by the MPI root only!
@@ -118,10 +118,10 @@ program test_mpi_parcel_communicate
                    + (neighbours(MPI_SOUTHWEST)%rank+1)
 
 
-    passed = (passed .and. (n_parcels == n_local_verify))
+    passed = (passed .and. (parcels%local_num == n_local_verify))
 
     if (passed) then
-        n_total = int(sum(parcels%volume(1:n_parcels)))
+        n_total = int(sum(parcels%volume(1:parcels%local_num)))
 
         n_expected = (neighbours(MPI_WEST)%rank+1) ** 2      &
                    + (neighbours(MPI_EAST)%rank+1) ** 2      &

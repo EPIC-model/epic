@@ -5,8 +5,7 @@ module parcel_diagnostics
     use datatypes, only : int64
     use constants, only : zero, one, f12, thousand
     use parameters, only : extent, lower, vcell, vmin, nx, nz, vdomaini
-    use parcel_container, only : parcels, n_parcels, n_total_parcels
-    use parcel_ellipsoid
+    use parcels_mod, only : parcels
     use parcel_split_mod, only : n_parcel_splits
     use parcel_merging, only : n_parcel_merges, n_big_close, n_way_parcel_mergers
     use omp_lib
@@ -62,13 +61,13 @@ module parcel_diagnostics
             bmin = zero
             bmax = zero
 
-            parcel_stats(IDX_NTOT_PAR) = dble(n_parcels)
+            parcel_stats(IDX_NTOT_PAR) = dble(parcels%local_num)
 
             !$omp parallel default(shared)
             !$omp do private(n, vel, vol, b, z, evals, lam, vor) &
             !$omp& reduction(+: parcel_stats) &
             !$omp& reduction(max: bmax) reduction(min: bmin)
-            do n = 1, n_parcels
+            do n = 1, parcels%local_num
 
                 vel = parcels%delta_pos(:, n)
                 vor = parcels%vorticity(:, n)
@@ -87,8 +86,8 @@ module parcel_diagnostics
                 parcel_stats(IDX_ENSTROPHY) = parcel_stats(IDX_ENSTROPHY) &
                                             + (vor(1) ** 2 + vor(2) ** 2 + vor(3) ** 2) * vol
 
-                evals = get_eigenvalues(parcels%B(:, n), parcels%volume(n))
-                lam = get_aspect_ratio(evals)
+                evals = parcels%get_eigenvalues(n)
+                lam = parcels%get_aspect_ratio(evals)
 
                 parcel_stats(IDX_AVG_LAM) = parcel_stats(IDX_AVG_LAM) + lam
                 parcel_stats(IDX_STD_LAM) = parcel_stats(IDX_STD_LAM) + lam ** 2
@@ -106,7 +105,7 @@ module parcel_diagnostics
 
 #ifndef NDEBUG
                 !$omp critical
-                if (abs(get_determinant(parcels%B(:, n), vol) / get_abc(vol) ** 2 - one) > thres) then
+                if (abs(parcels%get_determinant(n) / parcels%get_abc(vol) ** 2 - one) > thres) then
                     call mpi_exit_on_error("Parcel determinant not preserved!")
                 endif
                 !$omp end critical
@@ -133,8 +132,8 @@ module parcel_diagnostics
             parcel_merge_stats = n_way_parcel_mergers
             call mpi_blocking_reduce(parcel_merge_stats, MPI_SUM, world)
 
-            n_total_parcels = nint(parcel_stats(IDX_NTOT_PAR), kind=int64)
-            ntoti = one / dble(n_total_parcels)
+            parcels%total_num = nint(parcel_stats(IDX_NTOT_PAR), kind=int64)
+            ntoti = one / dble(parcels%total_num)
 
             ! divide by domain volume to get domain-averaged quantities
             parcel_stats(IDX_KE) = f12 * parcel_stats(IDX_KE) * vdomaini

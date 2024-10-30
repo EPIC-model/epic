@@ -1,7 +1,10 @@
 module rk_utils
     use dimensions, only : n_dim, I_X, I_Y, I_Z
-    use parcel_ellipsoid, only : get_B33, I_B11, I_B12, I_B13, I_B22, I_B23
-    use fields, only : velgradg, tbuoyg, vortg, I_DUDX, I_DUDY, I_DUDZ, I_DVDX, I_DVDY, I_DVDZ, I_DWDX, I_DWDY, strain_mag
+    use parcel_ellipsoid, only : I_B11, I_B12, I_B13, I_B22, I_B23
+    use fields, only : velgradg, tbuoyg, vortg      &
+                     , I_DUDX, I_DUDY, I_DUDZ       &
+                     , I_DVDX, I_DVDY, I_DVDZ       &
+                     , I_DWDX, I_DWDY, strain_mag
     use field_mpi, only : field_halo_fill_scalar
     use constants, only : zero, one, two, f12
     use parameters, only : nx, ny, nz, dxi, vcell
@@ -9,6 +12,7 @@ module rk_utils
     use mpi_layout, only : box
     use mpi_environment
     use mpi_utils, only : mpi_exit_on_error
+    use parcels_mod, only : parcels
 #ifdef ENABLE_VERBOSE
     use options, only : output
 #endif
@@ -20,60 +24,14 @@ module rk_utils
 
     contains
 
-        ! Advance the B matrix.
-        ! @param[in] Bin are the B matrix components of the parcel
-        ! @param[in] S is the local velocity strain
-        ! @param[in] vorticity of parcel
-        ! @param[in] volume is the parcel volume
-        ! @returns dB/dt in Bout
-        function get_dBdt(Bin, S, volume) result(Bout)
-            double precision, intent(in) :: Bin(I_B23)
-            double precision, intent(in) :: S(8)
-            double precision, intent(in) :: volume
-            double precision             :: Bout(5), B33
-            double precision             :: dwdz
-
-            ! dw/dz = - (du/dx + dv/dy)
-            dwdz = - (S(I_DUDX) + S(I_DVDY))
-
-            B33 = get_B33(Bin, volume)
-
-            ! dB11/dt = 2 * (du/dx * B11 + du/dy * B12 + du/dz * B13)
-            Bout(I_B11) = two * (S(I_DUDX) * Bin(I_B11) + S(I_DUDY) * Bin(I_B12) + S(I_DUDZ) * Bin(I_B13))
-
-            ! dB12/dt =
-            Bout(I_B12) = S(I_DVDX) * Bin(I_B11) & !   dv/dx * B11
-                        - dwdz      * Bin(I_B12) & ! - dw/dz * B12
-                        + S(I_DVDZ) * Bin(I_B13) & ! + dv/dz * B13
-                        + S(I_DUDY) * Bin(I_B22) & ! + du/dy * B22
-                        + S(I_DUDZ) * Bin(I_B23)   ! + du/dz * B23
-
-            ! dB13/dt =
-            Bout(I_B13) = S(I_DWDX) * Bin(I_B11) & !   dw/dx * B11
-                        + S(I_DWDY) * Bin(I_B12) & ! + dw/dy * B12
-                        - S(I_DVDY) * Bin(I_B13) & ! - dv/dy * B13
-                        + S(I_DUDY) * Bin(I_B23) & ! + du/dy * B23
-                        + S(I_DUDZ) * B33          ! + du/dz * B33
-
-            ! dB22/dt = 2 * (dv/dx * B12 + dv/dy * B22 + dv/dz * B23)
-            Bout(I_B22) = two * (S(I_DVDX) * Bin(I_B12) + S(I_DVDY) * Bin(I_B22) + S(I_DVDZ) * Bin(I_B23))
-
-            ! dB23/dt =
-            Bout(I_B23) = S(I_DWDX) * Bin(I_B12) & !   dw/dx * B12
-                        + S(I_DVDX) * Bin(I_B13) & ! + dv/dx * B13
-                        + S(I_DWDY) * Bin(I_B22) & ! + dw/dy * B22
-                        - S(I_DUDX) * Bin(I_B23) & ! - du/dx * B23
-                        + S(I_DVDZ) * B33          ! + dv/dz * B33
-        end function get_dBdt
-
         ! Calculate velocity strain
         ! @param[in] velocity gradient tensor at grid point
         ! @param[in] vorticity at grid point
         ! @returns 3x3 strain matrix
         function get_strain(velgradgp) result(strain)
             double precision, intent(in) :: velgradgp(8)
-            double precision             :: strain(3,3)
-       
+            double precision             :: strain(3, 3)
+
             ! get local symmetrised strain matrix, i.e. 1/ 2 * (S + S^T)
             ! where
             !     /u_x u_y u_z\
@@ -128,7 +86,7 @@ module rk_utils
                 return
 #endif
             endif
-    
+
             !
             ! velocity strain
             !
@@ -192,7 +150,7 @@ module rk_utils
 
             gmax = local_max(1)
             bmax = local_max(2)
-            
+
             if (.not. time%l_use_fixed_dt) then
                 dt = min(time%alpha / gmax, time%alpha / bmax)
             endif
@@ -245,12 +203,12 @@ module rk_utils
                    enddo
                    ! Reflect beyond boundaries to ensure damping is conservative
                    ! This is because the points below the surface contribute to the level above
-                   strain_mag(-1, iy, ix) = strain_mag(1, iy, ix) 
+                   strain_mag(-1, iy, ix) = strain_mag(1, iy, ix)
                    strain_mag(nz+1, iy, ix) = strain_mag(nz-1, iy, ix)
                 enddo
             enddo
 
-          ! We need this halo fill to obtain good conservation    
+          ! We need this halo fill to obtain good conservation
           call field_halo_fill_scalar(strain_mag, l_alloc=.true.)
 
         end subroutine get_strain_magnitude_field

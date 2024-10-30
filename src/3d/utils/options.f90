@@ -206,7 +206,7 @@ module options
             call write_netcdf_attribute(ncid, "fixed_dt", time%fixed_dt)
             call write_netcdf_attribute(ncid, "l_use_fixed_dt", time%l_use_fixed_dt)
             call write_netcdf_attribute(ncid, "alpha", time%alpha)
-            
+
             call write_netcdf_attribute(ncid, "damping_vorticity_prefactor", damping%vorticity_prefactor)
             call write_netcdf_attribute(ncid, "damping_scalars_prefactor", damping%scalars_prefactor)
             call write_netcdf_attribute(ncid, "damping_l_vorticity", damping%l_vorticity)

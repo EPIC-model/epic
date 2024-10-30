@@ -8,14 +8,10 @@ module parcel_split_mod
     use options, only : verbose
 #endif
     use constants, only : pi, three, five, f12, f34
-    use parameters, only : amax, max_num_parcels
-    use parcel_container, only : parcels                &
-                               , n_parcels              &
-                               , n_total_parcels        &
-                               , parcel_resize
+    use parameters, only : amax
+    use parcels_mod, only : parcels
     use parcel_bc, only : apply_reflective_bc
     use parcel_mpi, only : parcel_communicate
-    use parcel_ellipsoid, only : diagonalise, get_aspect_ratio, get_eigenvalues
     use mpi_timer, only : start_timer, stop_timer, timings
     use omp_lib
     use mpi_environment, only : world, MPI_SUM
@@ -45,12 +41,12 @@ module parcel_split_mod
             integer              :: last_index, n_indices
             integer              :: grown_size, shrunk_size, n_required
             integer              :: i, n, n_thread_loc
-            integer              :: pid(2 * n_parcels)
+            integer              :: pid(2 * parcels%local_num)
             integer, allocatable :: invalid(:), indices(:)
 #if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
             integer(kind=int64)  :: orig_num
 
-            orig_num = n_total_parcels
+            orig_num = parcels%total_num
 #endif
             call start_timer(split_timer)
 
@@ -58,14 +54,14 @@ module parcel_split_mod
             ! Check which parcels split and store the indices in *pid*:
             !$omp parallel default(shared)
             !$omp do private(n, B, vol, lam, D)
-            do n = 1, n_parcels
+            do n = 1, parcels%local_num
                 B = parcels%B(:, n)
                 vol = parcels%volume(n)
 
-                D = get_eigenvalues(B, vol)
+                D = parcels%get_eigenvalues(n)
 
                 ! evaluate maximum aspect ratio (a2 >= b2 >= c2)
-                lam = get_aspect_ratio(D)
+                lam = parcels%get_aspect_ratio(D)
 
                 pid(n) = 0
 
@@ -80,7 +76,7 @@ module parcel_split_mod
             !$omp end parallel
 
             ! contains all indices of parcels that split
-            indices = pack(pid(1:n_parcels), pid(1:n_parcels) /= 0)
+            indices = pack(pid(1:parcels%local_num), pid(1:parcels%local_num) /= 0)
 
             n_indices = size(indices)
 
@@ -88,17 +84,17 @@ module parcel_split_mod
             ! Adapt container size if needed:
 
             ! we get additional "n_indices" parcels
-            n_required = n_parcels + n_indices
+            n_required = parcels%local_num + n_indices
 
             shrunk_size = nint(parcel%shrink_factor * n_required)
 
             call stop_timer(split_timer)
 
-            if (n_required > max_num_parcels) then
+            if (n_required > parcels%max_num) then
                 grown_size = nint(parcel%grow_factor * n_required)
-                call parcel_resize(grown_size)
+                call parcels%resize(grown_size)
             else if (n_required < nint(f34 * shrunk_size)) then
-                call parcel_resize(shrunk_size)
+                call parcels%resize(shrunk_size)
             endif
 
             call start_timer(split_timer)
@@ -106,7 +102,7 @@ module parcel_split_mod
             !------------------------------------------------------------------
             ! Loop over all parcels that really split:
 
-            last_index = n_parcels
+            last_index = parcels%local_num
 
             !$omp parallel default(shared)
             !$omp do private(i, n, B, vol, lam, D, V, n_thread_loc)
@@ -118,7 +114,7 @@ module parcel_split_mod
                 B = parcels%B(:, n)
                 vol = parcels%volume(n)
 
-                call diagonalise(B, vol, D, V)
+                call parcels%diagonalise(n, D, V)
 
                 pid(n) = 0
 
@@ -134,10 +130,10 @@ module parcel_split_mod
                 parcels%volume(n) = f12 * vol
 
                 !$omp critical
-                n_thread_loc = n_parcels + 1
+                n_thread_loc = parcels%local_num + 1
 
                 ! we only need to add one new parcel
-                n_parcels = n_parcels + 1
+                parcels%local_num = parcels%local_num + 1
                 !$omp end critical
 
                 parcels%B(:, n_thread_loc) = parcels%B(:, n)
@@ -171,27 +167,27 @@ module parcel_split_mod
             !$omp end do
             !$omp end parallel
 
-            n_parcel_splits = n_parcel_splits + n_parcels - last_index
+            n_parcel_splits = n_parcel_splits + parcels%local_num - last_index
 
             ! after this operation the root MPI process knows the new
             ! number of parcels in the simulation
-            n_total_parcels = n_parcels
-            call mpi_blocking_reduce(n_total_parcels, MPI_SUM, world)
+            parcels%total_num = parcels%local_num
+            call mpi_blocking_reduce(parcels%total_num, MPI_SUM, world)
 
             ! all entries in "pid" that are non-zero are indices of
             ! child parcels; remove all zero entries such that
             ! we can do a halo swap
-            invalid = pack(pid(1:n_parcels), pid(1:n_parcels) /= 0)
+            invalid = pack(pid(1:parcels%local_num), pid(1:parcels%local_num) /= 0)
 
             ! send the invalid parcels to the proper MPI process;
             ! delete them on *this* MPI process and
             ! apply periodic boundary condition
-            call parcel_communicate(invalid)
+            call parcel_communicate(parcels, invalid)
 
 #if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
             if (verbose .and. (world%rank == world%root)) then
                 print "(a36, i0, a3, i0)", &
-                      "no. parcels before and after split: ", orig_num, "...", n_total_parcels
+                      "no. parcels before and after split: ", orig_num, "...", parcels%total_num
             endif
 #endif
             call stop_timer(split_timer)
