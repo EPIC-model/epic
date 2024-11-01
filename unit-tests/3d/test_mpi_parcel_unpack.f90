@@ -7,7 +7,7 @@
 program test_mpi_parcel_unpack
     use unit_test
     use constants
-    use parcel_container
+    use parcels_mod, only : parcels
     use mpi_environment
     use mpi_timer
     implicit none
@@ -22,11 +22,11 @@ program test_mpi_parcel_unpack
 
     passed = (passed .and. (world%err == 0))
 
-    n_parcels = 1000 - n_unpack
-    call parcel_alloc(n_parcels + n_unpack)
+    parcels%local_num = 1000 - n_unpack
+    call parcels%allocate(parcels%local_num + n_unpack)
 
     ! initialise parcels
-    do n = 1, n_parcels
+    do n = 1, parcels%local_num
         a = dble(n-1) * 100.0d0
         parcels%position(1, n) = 1.0d0 + a
         parcels%position(2, n) = 2.0d0 + a
@@ -46,38 +46,38 @@ program test_mpi_parcel_unpack
 #endif
     enddo
 
-    allocate(buffer(n_par_attrib * n_unpack))
+    allocate(buffer(parcels%attr_num * n_unpack))
 
     do n = 1, n_unpack
-        a = dble(n+n_parcels-1) * 100.0d0
+        a = dble(n+parcels%local_num-1) * 100.0d0
 
-        i = (n - 1) * n_par_attrib
+        i = (n - 1) * parcels%attr_num
 
-        buffer(i + IDX_X_POS) = 1.0d0 + a
-        buffer(i + IDX_Y_POS) = 2.0d0 + a
-        buffer(i + IDX_Z_POS) = 3.0d0 + a
-        buffer(i + IDX_X_VOR) = 4.0d0 + a
-        buffer(i + IDX_Y_VOR) = 5.0d0 + a
-        buffer(i + IDX_Z_VOR) = 6.0d0 + a
-        buffer(i + IDX_B11) = 7.0d0 + a
-        buffer(i + IDX_B12) = 8.0d0 + a
-        buffer(i + IDX_B13) = 9.0d0 + a
-        buffer(i + IDX_B22) = 10.0d0 + a
-        buffer(i + IDX_B23) = 11.0d0 + a
-        buffer(i + IDX_VOL) = 12.0d0 + a
-        buffer(i + IDX_BUO) = 13.0d0 + a
+        buffer(i + parcels%IDX_POS_BEG  ) = 1.0d0 + a
+        buffer(i + parcels%IDX_POS_BEG+1) = 2.0d0 + a
+        buffer(i + parcels%IDX_POS_BEG+2) = 3.0d0 + a
+        buffer(i + parcels%IDX_VOR_BEG  ) = 4.0d0 + a
+        buffer(i + parcels%IDX_VOR_BEG+1) = 5.0d0 + a
+        buffer(i + parcels%IDX_VOR_BEG+2) = 6.0d0 + a
+        buffer(i + parcels%IDX_SHAPE_BEG  ) = 7.0d0 + a
+        buffer(i + parcels%IDX_SHAPE_BEG+1) = 8.0d0 + a
+        buffer(i + parcels%IDX_SHAPE_BEG+2) = 9.0d0 + a
+        buffer(i + parcels%IDX_SHAPE_BEG+3) = 10.0d0 + a
+        buffer(i + parcels%IDX_SHAPE_BEG+4) = 11.0d0 + a
+        buffer(i + parcels%IDX_VOL) = 12.0d0 + a
+        buffer(i + parcels%IDX_BUO) = 13.0d0 + a
 #ifndef ENABLE_DRY_MODE
-        buffer(i + IDX_HUM) = 14.0d0 + a
+        buffer(i + parcels%IDX_HUM) = 14.0d0 + a
 #endif
     enddo
 
     ! pack the parcels
-    call parcel_unpack(n_unpack, buffer)
+    call parcels%unpack(n_unpack, buffer)
 
-    passed = (passed .and. (n_parcels == 1000))
+    passed = (passed .and. (parcels%local_num == 1000))
 
     ! check the parcel container
-    do n = 1, n_parcels
+    do n = 1, parcels%local_num
         a = dble(n-1) * 100.0d0
 
         passed = (passed .and. (parcels%position(1, n) == 1.0d0 + a))

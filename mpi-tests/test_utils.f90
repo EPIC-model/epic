@@ -2,7 +2,8 @@ module test_utils
     use constants, only : zero, f12, f23, one, two, pi, twopi
     use parameters, only : lower, vmin, dx, nz, center
     use mpi_timer
-    use parcel_container, only : resize_timer, n_parcels, parcels
+    use parcel_container, only : resize_timer
+    use parcels_mod, only : parcels
     use parcel_split_mod, only : split_timer
     use parcel_merging, only : merge_timer
     use parcel_nearest, only : merge_nearest_timer          &
@@ -215,7 +216,7 @@ module test_utils
                     enddo
                 enddo
              enddo
-             n_parcels = l - 1
+             parcels%local_num = l - 1
 
             if (l_shuffle) then
                 call shuffleall
@@ -230,7 +231,7 @@ module test_utils
             double precision :: tmp_vec(3), tmp_B(5)
             double precision :: random_out
 
-            do shuffle_index = n_parcels, 2, -1
+            do shuffle_index = parcels%local_num, 2, -1
                call random_number(random_out)
                rand_target = int(random_out * shuffle_index) + 1
 

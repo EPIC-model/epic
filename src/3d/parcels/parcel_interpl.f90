@@ -7,9 +7,7 @@ module parcel_interpl
     use mpi_timer, only : start_timer, stop_timer
     use parameters, only : nx, nz, vmin, l_bndry_zeta_zero
     use options, only : parcel
-    use parcel_container, only : parcels, n_parcels
-    use parcel_bc, only : apply_periodic_bc
-    use parcel_ellipsoid
+    use parcels_mod, only : parcels
     use fields
     use field_mpi, only : field_mpi_alloc                   &
                         , field_mpi_dealloc                 &
@@ -30,6 +28,7 @@ module parcel_interpl
 #endif
     use omp_lib
     use mpi_utils, only : mpi_exit_on_error
+    use interpl, only : trilinear
     implicit none
 
     private
@@ -83,8 +82,6 @@ module parcel_interpl
             , par2grid_timer    &
             , grid2par_timer    &
             , halo_swap_timer   &
-            , trilinear         &
-            , bilinear          &
             , n_points_p2g      &
             , point_weight_p2g
 
@@ -103,12 +100,10 @@ module parcel_interpl
             !$omp parallel default(shared)
             !$omp do private(n, p, points, pvol, is, js, ks, weights) &
             !$omp& reduction(+: volg)
-            do n = 1, n_parcels
+            do n = 1, parcels%local_num
                 pvol = parcels%volume(n)
 
-                points = get_ellipsoid_points(parcels%position(:, n), &
-                                              pvol, parcels%B(:, n),  &
-                                              n, l_reuse)
+                points = parcels%get_points(n, l_reuse)
 
                 ! we have 4 points per ellipsoid
                 do p = 1, 4
@@ -178,7 +173,7 @@ module parcel_interpl
             !$omp& private( is, js, ks, weights) &
             !$omp& reduction(+:nparg, nsparg, vortg, tbuoyg, volg)
 #endif
-            do n = 1, n_parcels
+            do n = 1, parcels%local_num
                 pvol = parcels%volume(n)
 
 #ifndef ENABLE_DRY_MODE
@@ -199,8 +194,7 @@ module parcel_interpl
 #endif
 
 #ifndef ENABLE_P2G_1POINT
-                points = get_ellipsoid_points(parcels%position(:, n), &
-                                              pvol, parcels%B(:, n), n, l_reuse)
+                points = parcels%get_points(n, l_reuse)
 #else
                 points(:, 1) = parcels%position(:, n)
 #endif
@@ -227,12 +221,12 @@ module parcel_interpl
                     dbuoyg(ks:ks+1, js:js+1, is:is+1) = dbuoyg(ks:ks+1, js:js+1, is:is+1) &
                                                       + weight * parcels%buoyancy(n)
                     humg(ks:ks+1, js:js+1, is:is+1) = humg(ks:ks+1, js:js+1, is:is+1) &
-                                              + weight * parcels%humidity(n)
+                                                    + weight * parcels%humidity(n)
 #endif
                     tbuoyg(ks:ks+1, js:js+1, is:is+1) = tbuoyg(ks:ks+1, js:js+1, is:is+1) &
-                                                + weight * btot
+                                                      + weight * btot
                     volg(ks:ks+1, js:js+1, is:is+1) = volg(ks:ks+1, js:js+1, is:is+1) &
-                                              + weight
+                                                    + weight
                 enddo
             enddo
             !$omp end do
@@ -251,7 +245,7 @@ module parcel_interpl
 
             ! sanity check -- note: this must be checked for calling the halo swap routine
             ! as otherwise we count parcels in the halo region twice.
-            if (sum(nparg(0:nz-1, :, :)) /= n_parcels) then
+            if (sum(nparg(0:nz-1, :, :)) /= parcels%local_num) then
                 call mpi_exit_on_error("par2grid: Wrong total number of parcels!")
             endif
 
@@ -420,7 +414,7 @@ module parcel_interpl
                if (add .eqv. .false.) then
                     !$omp parallel default(shared)
                     !$omp do private(n)
-                    do n = 1, n_parcels
+                    do n = 1, parcels%local_num
                         parcels%delta_pos(:, n) = zero
                         parcels%delta_vor(:, n) = zero
                     enddo
@@ -430,7 +424,7 @@ module parcel_interpl
             else
                 !$omp parallel default(shared)
                 !$omp do private(n)
-                do n = 1, n_parcels
+                do n = 1, parcels%local_num
                     parcels%delta_pos(:, n) = zero
                     parcels%delta_vor(:, n) = zero
                 enddo
@@ -440,13 +434,12 @@ module parcel_interpl
 
             !$omp parallel default(shared)
             !$omp do private(n, l, p, points, is, js, ks, weights)
-            do n = 1, n_parcels
+            do n = 1, parcels%local_num
 
                 parcels%strain(:, n) = zero
 
 #ifndef ENABLE_G2P_1POINT
-                points = get_ellipsoid_points(parcels%position(:, n), &
-                                              parcels%volume(n), parcels%B(:, n), n)
+                points = parcels%get_points(n)
 #else
                 points(:, 1) = parcels%position(:, n)
 #endif
@@ -455,15 +448,15 @@ module parcel_interpl
                     call trilinear(points(:, p), is, js, ks, weights)
 
                     ! loop over grid points which are part of the interpolation
-                    do l = 1,3
+                    do l = 1, 3
                         parcels%delta_pos(l, n) = parcels%delta_pos(l, n) &
                                                 + point_weight_g2p * sum(weights * velog(ks:ks+1, js:js+1, is:is+1, l))
                     enddo
-                    do l = 1,8
+                    do l = 1, 8
                         parcels%strain(l, n) = parcels%strain(l, n) &
                                              + point_weight_g2p * sum(weights * velgradg(ks:ks+1, js:js+1, is:is+1, l))
                     enddo
-                    do l = 1,3
+                    do l = 1, 3
                         parcels%delta_vor(l, n) = parcels%delta_vor(l, n) &
                                                 + point_weight_g2p * sum(weights * vtend(ks:ks+1, js:js+1, is:is+1, l))
                     enddo
@@ -475,87 +468,5 @@ module parcel_interpl
             call stop_timer(grid2par_timer)
 
         end subroutine grid2par
-
-
-        ! Tri-linear interpolation
-        ! @param[in] pos position of the parcel
-        ! @param[out] ii zonal lower grid point for interoplation
-        ! @param[out] jj meridional lower grid point for interpolation
-        ! @param[out] kk vertical lower grid point for interpolation
-        ! @param[out] ww interpolation weights
-        pure subroutine trilinear(pos, ii, jj, kk, ww)
-            double precision, intent(in)  :: pos(3)
-            integer,          intent(out) :: ii, jj, kk
-            double precision, intent(out) :: ww(0:1,0:1,0:1)
-            double precision              :: xyz(3)
-            double precision              :: w00, w10, w01, w11
-            double precision              :: px, py, pz, pxc, pyc, pzc
-
-
-            ! (i, j, k)
-            xyz = (pos - lower) * dxi
-            ii = floor(xyz(1))
-            jj = floor(xyz(2))
-            kk = floor(xyz(3))
-
-            px = xyz(1) - dble(ii)
-            pxc = one - px
-
-            py = xyz(2) - dble(jj)
-            pyc = one - py
-
-            pz = xyz(3) - dble(kk)
-            pzc = one - pz
-
-            w00 = pyc * pxc
-            w10 = pyc * px
-            w01 = py * pxc
-            w11 = py * px
-
-            ! Note order of indices is k,j,i
-            ww(0,0,0) = pzc * w00
-            ww(0,0,1) = pzc * w10
-            ww(0,1,0) = pzc * w01
-            ww(0,1,1) = pzc * w11
-            ww(1,0,0) = pz * w00
-            ww(1,0,1) = pz * w10
-            ww(1,1,0) = pz * w01
-            ww(1,1,1) = pz * w11
-
-        end subroutine trilinear
-
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        ! Bi-linear interpolation
-        ! @param[in] pos position of the parcel
-        ! @param[out] ii horizontal grid points for interoplation
-        ! @param[out] jj meridional grid points for interpolation
-        ! @param[out] ww interpolation weights
-        subroutine bilinear(pos, ii, jj, ww)
-            double precision, intent(in)  :: pos(2)
-            integer,          intent(out) :: ii, jj
-            double precision, intent(out) :: ww(0:1, 0:1)
-            double precision              :: xy(2)
-            double precision              :: px, py, pxc, pyc
-
-
-            ! (i, j)
-            xy = (pos - lower(1:2)) * dxi(1:2)
-            ii = floor(xy(1))
-            jj = floor(xy(2))
-
-            px = xy(1) - dble(ii)
-            pxc = one - px
-
-            py = xy(2) - dble(jj)
-            pyc = one - py
-
-            ! Note order of indices is j,i
-            ww(0, 0) = pyc * pxc
-            ww(0, 1) = pyc * px
-            ww(1, 0) = py  * pxc
-            ww(1, 1) = py  * px
-
-        end subroutine bilinear
 
 end module parcel_interpl

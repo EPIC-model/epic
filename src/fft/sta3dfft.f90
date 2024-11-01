@@ -2,10 +2,10 @@ module sta3dfft
     use mpi_layout
     use mpi_reverse, only : reverse_x               &
                           , reverse_y               &
-                          , intialise_mpi_reverse   &
+                          , initialise_mpi_reverse  &
                           , finalise_mpi_reverse
     use constants, only : zero, one
-    use stafft
+    use stafft, only : dct, dst
     use sta2dfft
     use deriv1d, only : init_deriv
     use fft_pencil
@@ -65,7 +65,7 @@ module sta3dfft
 
             call initialise_pencil_fft(nx, ny, nz)
 
-            call intialise_mpi_reverse
+            call initialise_mpi_reverse
 
             nwx = nx / 2
             nwy = ny / 2
@@ -131,7 +131,6 @@ module sta3dfft
         ! Computes a 2D FFT (in x & y) of a 3D array fp in physical space
         ! and returns the result as fs in spectral space (in x & y).
         ! Only FFTs over the x and y directions are performed.
-        ! *** fp is destroyed upon exit ***
         subroutine fftxyp2s(fp, fs)
             double precision, intent(in)  :: fp(box%hlo(3):box%hhi(3), & !Physical
                                                 box%hlo(2):box%hhi(2), &
@@ -197,7 +196,6 @@ module sta3dfft
         ! Computes an *inverse* 2D FFT (in x & y) of a 3D array fs in spectral
         ! space and returns the result as fp in physical space (in x & y).
         ! Only inverse FFTs over the x and y directions are performed.
-        ! *** fs is destroyed upon exit ***
         subroutine fftxys2p(fs, fp)
             double precision, intent(in)  :: fs(box%lo(3):box%hi(3),   & !Spectral
                                                 box%lo(2):box%hi(2),   &

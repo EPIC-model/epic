@@ -58,6 +58,7 @@ if test "$ax_cv_fc_compiler_vendor" = "gnu"; then
    AX_CHECK_COMPILE_FLAG([-fall-intrinsics], [FCFLAGS="$FCFLAGS -fall-intrinsics"])
    AX_CHECK_COMPILE_FLAG([-fdefault-real-8], [FCFLAGS="$FCFLAGS -fdefault-real-8"])
    AX_CHECK_COMPILE_FLAG([-fdefault-double-8], [FCFLAGS="$FCFLAGS -fdefault-double-8"])
+   AX_CHECK_COMPILE_FLAG([-Wno-unused-dummy-argument], [FCFLAGS="$FCFLAGS -Wno-unused-dummy-argument"])
 fi
 
 # intel compiler flags

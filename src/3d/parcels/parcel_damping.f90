@@ -9,7 +9,7 @@ module parcel_damping
     use constants, only :  f14, zero, one
     use mpi_timer, only : start_timer, stop_timer
     use parameters, only : nx, nz, vmin
-    use parcel_container, only : parcels, n_parcels
+    use parcels_mod, only : parcels
     use parcel_ellipsoid
     use parcel_interpl
     use fields
@@ -18,6 +18,7 @@ module parcel_damping
     use mpi_layout, only : box
     use mpi_utils, only : mpi_exit_on_error
     use options, only : damping
+    use interpl, only : trilinear
     use inversion_mod, only : vor2vel
     use rk_utils, only : get_strain_magnitude_field
     implicit none
@@ -111,21 +112,20 @@ module parcel_damping
 #else
             !$omp& private(is, js, ks, weights, vortend, tbuoytend, time_fact)
 #endif
-            do n = 1, n_parcels
+            do n = 1, parcels%local_num
                 ! check if only surface damping applies and we are far from surfaces
                 ! put in a buffer here as parcels can get stretched in integration
                 if(.not.(damping%l_vorticity .or. damping%l_scalars)) then
                     if(parcels%position(3, n) > lower(3) + 2 * dx(3)) then
                     if(parcels%position(3, n) < upper(3) - 2 * dx(3)) then
-                        cycle 
+                        cycle
                     end if
                     end if
                 endif
 
                 pvol = parcels%volume(n)
 #ifndef ENABLE_P2G_1POINT
-                points = get_ellipsoid_points(parcels%position(:, n), &
-                                              pvol, parcels%B(:, n), n, l_reuse)
+                points = parcels%get_points(n, l_reuse)
 #else
                 points(:, 1) = parcels%position(:, n)
 #endif
@@ -160,7 +160,7 @@ module parcel_damping
                         tbuoytend = tbuoytend + sum(weight * time_fact * (tbuoyg(ks:ks+1, js:js+1, is:is+1) - parcels%buoyancy(n)))
 #endif
                     endif
-                    
+
                     if (damping%l_surface_vorticity .or. damping%l_surface_scalars) then
                         ! Index to keep track of grid cells right above/below boundary
                         ! This is because the damping only happens at the boundary level
@@ -174,7 +174,7 @@ module parcel_damping
                         endif
                     else
                         cycle ! continue loop if no surface damping
-                    endif    
+                    endif
 
                     if (damping%l_surface_vorticity) then
                         ! Note this exponential factor can be different for vorticity/scalars

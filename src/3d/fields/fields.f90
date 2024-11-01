@@ -23,16 +23,16 @@ module fields
         vortg,     &   ! vorticity vector field (\xi, \eta, \zeta)
         vtend,     &   ! vorticity tendency
         velgradg       ! velocity gradient tensor
-                       ! ordering: du/dx, du/dy,
-                       !                  dv/dy,
+                       ! ordering: du/dx, du/dy, du/dz
+                       !           dv/dx, dv/dy, dv/dz
                        !           dw/dx, dw/dy
-                       ! the derivatives dv/dx, du/dz, dv/dz and dw/dz
-                       ! are calculated on the fly with vorticity
-                       ! or the assumption of incompressibility (du/dx + dv/dy + dw/dz = 0):
-                       !    dv/dx = \zeta + du/dy
-                       !    du/dz = \eta + dw/dx
-                       !    dv/dz = dw/dy - \xi
+                       ! the derivative dw/dz
+                       ! is calculated with
+                       ! the assumption of incompressibility (du/dx + dv/dy + dw/dz = 0):
                        !    dw/dz = - (du/dx + dv/dy)
+!                        !    dv/dx = \zeta + du/dy
+!                        !    du/dz = \eta + dw/dx
+!                        !    dv/dz = dw/dy - \xi
 
     double precision, allocatable, dimension(:, :, :) :: &
 #ifndef ENABLE_DRY_MODE

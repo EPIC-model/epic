@@ -4,10 +4,9 @@
 module parcel_init
     use options, only : parcel
     use constants, only : zero, two, one, f12, f13, f23, f14
-    use parcel_container, only : parcels, n_parcels, n_total_parcels, parcel_alloc
-    use parcel_ellipsoid, only : get_abc, get_eigenvalues
+    use parcels_mod, only : parcels
     use parcel_split_mod, only : parcel_split
-    use parcel_interpl, only : trilinear
+    use interpl, only : trilinear, bilinear
     use parameters, only : dx, vcell, ncell,            &
                            extent, lower, nx, ny, nz,   &
                            max_num_parcels
@@ -23,13 +22,6 @@ module parcel_init
 
     integer :: init_timer
 
-    integer :: is, js, ks
-
-    ! interpolation weights
-    double precision :: weights(0:1,0:1,0:1)
-
-    private :: weights, is, js, ks
-
     private :: init_refine, init_fill_halo
 
     contains
@@ -42,21 +34,21 @@ module parcel_init
 
             call start_timer(init_timer)
 
-            call parcel_alloc(max_num_parcels)
+            call parcels%allocate(max_num_parcels)
 
             ! set the number of parcels (see parcels.f90)
             ! we use "n_per_cell" parcels per grid cell
-            n_parcels = parcel%n_per_cell * box%ncell
+            parcels%local_num = parcel%n_per_cell * box%ncell
 
-            if (n_parcels > max_num_parcels) then
+            if (parcels%local_num > max_num_parcels) then
                 print *, "Number of parcels exceeds limit of", &
                           max_num_parcels, ". Exiting."
                 call mpi_exit_on_error
             endif
 
-            n_total_parcels = n_parcels
+            parcels%total_num = parcels%local_num
             if (world%size > 1) then
-                call mpi_blocking_reduce(n_total_parcels, MPI_SUM, world)
+                call mpi_blocking_reduce(parcels%total_num, MPI_SUM, world)
             endif
 
             call init_regular_positions
@@ -64,7 +56,7 @@ module parcel_init
             ! initialize the volume of each parcel
             !$omp parallel default(shared)
             !$omp do private(n)
-            do n = 1, n_parcels
+            do n = 1, parcels%local_num
                 parcels%volume(n) = vcell / dble(parcel%n_per_cell)
             enddo
             !$omp end do
@@ -77,11 +69,11 @@ module parcel_init
 
             !$omp parallel default(shared)
             !$omp do private(n, l23)
-            do n = 1, n_parcels
+            do n = 1, parcels%local_num
                 ! set all to zero
                 parcels%B(:, n) = zero
 
-                l23 = (lam * get_abc(parcels%volume(n))) ** f23
+                l23 = (lam * parcels%get_abc(parcels%volume(n))) ** f23
 
                 ! B11
                 parcels%B(1, n) = l23
@@ -96,7 +88,7 @@ module parcel_init
 
             !$omp parallel default(shared)
             !$omp do private(n)
-            do n = 1, n_parcels
+            do n = 1, parcels%local_num
                 parcels%vorticity(:, n) = zero
                 parcels%buoyancy(n) = zero
 #ifndef ENABLE_DRY_MODE
@@ -154,7 +146,7 @@ module parcel_init
                 enddo
             enddo
 
-            if (.not. n_parcels == l - 1) then
+            if (.not. parcels%local_num == l - 1) then
                 call mpi_exit_on_error("Number of parcels disagree!")
             endif
         end subroutine init_regular_positions
@@ -168,7 +160,7 @@ module parcel_init
             ! do refining by splitting
             do while (lam >= parcel%lambda_max)
                 call parcel_split
-                evals = get_eigenvalues(parcels%B(1, :), parcels%volume(1))
+                evals = parcels%get_eigenvalues(1)
                 lam = sqrt(evals(1) / evals(3))
             end do
         end subroutine init_refine
@@ -176,7 +168,8 @@ module parcel_init
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine init_parcels_from_grids
-            integer:: n, l
+            integer          :: n, l, is, js, ks
+            double precision :: weights(0:1, 0:1, 0:1)
 
             call start_timer(init_timer)
 
@@ -185,7 +178,7 @@ module parcel_init
 
             !$omp parallel default(shared)
             !$omp do private(n, l, is, js, ks, weights)
-            do n = 1, n_parcels
+            do n = 1, parcels%local_num
 
                 ! get interpolation weights and mesh indices
                 call trilinear(parcels%position(:, n), is, js, ks, weights)

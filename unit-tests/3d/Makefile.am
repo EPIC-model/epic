@@ -33,10 +33,10 @@ unittestsdir = $(prefix)/unit-tests
 # 	test_ellipsoid_reflection
 # 	test_free_slip_3d
 unittests_PROGRAMS = 					\
-	test_jacobi_1					\
-	test_jacobi_2					\
-	test_jacobi_3					\
-	test_jacobi_4					\
+ 	test_jacobi_1					\
+ 	test_jacobi_2					\
+ 	test_jacobi_3					\
+ 	test_jacobi_4					\
 	test_scherzinger_1				\
 	test_scherzinger_2				\
 	test_scherzinger_3				\
@@ -71,12 +71,12 @@ unittests_PROGRAMS = 					\
 	test_mpi_diffz1					\
 	test_mpi_diffz2					\
 	test_mpi_diffz3					\
- 	test_mpi_diffz4					\
- 	test_mpi_diffz5					\
- 	test_mpi_fft0					\
- 	test_mpi_fft1					\
- 	test_mpi_vor2vel				\
- 	test_mpi_vel2vgrad				\
+	test_mpi_diffz4					\
+	test_mpi_diffz5					\
+	test_mpi_fft0					\
+	test_mpi_fft1					\
+	test_mpi_vor2vel				\
+	test_mpi_vel2vgrad				\
 	test_mpi_vtend					\
 	test_mpi_nearest_1				\
 	test_mpi_nearest_2				\

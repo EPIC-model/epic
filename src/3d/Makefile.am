@@ -10,14 +10,17 @@ epic3d_SOURCES = 				\
 	utils/dimensions.f90			\
 	utils/options.f90			\
 	utils/parameters.f90			\
+	utils/interpl.f90			\
 	fields/field_mpi.f90			\
 	fields/fields.f90			\
 	fields/field_ops.f90			\
 	fields/field_diagnostics.f90		\
 	fields/field_netcdf.f90			\
 	fields/field_diagnostics_netcdf.f90	\
-	parcels/parcel_ellipsoid.f90		\
+	parcels/parcel_ops.f90			\
 	parcels/parcel_container.f90 		\
+	parcels/parcel_ellipsoid.f90		\
+	parcels/parcels.f90			\
 	parcels/parcel_bc.f90                   \
 	parcels/parcel_mpi.f90			\
 	parcels/parcel_nearest.f90		\
@@ -45,5 +48,5 @@ epic3d_LDADD = 						\
 	$(top_builddir)/src/netcdf/libepic_netcdf.la
 
 clean-local:
-	rm -f *.mod
+	rm -f *.mod *.smod
 endif

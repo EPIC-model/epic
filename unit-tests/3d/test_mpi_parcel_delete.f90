@@ -6,7 +6,7 @@
 program test_mpi_parcel_delete
     use unit_test
     use constants
-    use parcel_container
+    use parcels_mod, only : parcels
     use mpi_environment
     use mpi_timer
     use merge_sort
@@ -32,11 +32,11 @@ program test_mpi_parcel_delete
     call random_seed(put=seed)
 
     do m = 1, 100
-        n_parcels = 1000
-        call parcel_alloc(n_parcels)
+        parcels%local_num = 1000
+        call parcels%allocate(parcels%local_num)
 
         ! initialise parcels
-        do n = 1, n_parcels
+        do n = 1, parcels%local_num
             a = dble(n-1) * 100.0d0
             parcels%position(1, n) = 1.0d0 + a
             parcels%position(2, n) = 2.0d0 + a
@@ -60,11 +60,11 @@ program test_mpi_parcel_delete
         invalid = -1
         do k = 1, n_del
             call random_number(val)
-            l = int(val * dble(n_parcels)) + 1
+            l = int(val * dble(parcels%local_num)) + 1
             i = findloc(invalid, l, dim=1)
             do while (.not. i == 0)
                 call random_number(val)
-                l = int(val * dble(n_parcels)) + 1
+                l = int(val * dble(parcels%local_num)) + 1
                 i = findloc(invalid, l, dim=1)
             enddo
             invalid(k) = l
@@ -73,15 +73,15 @@ program test_mpi_parcel_delete
         call msort(invalid(1:n_del), ii(1:n_del))
 
         ! delete the parcels
-        call parcel_delete(invalid, n_del)
+        call parcels%delete(invalid, n_del)
 
         ! sort as the delete algorithm fills gaps with parcels from the back
-        call msort(parcels%position(1, 1:n_parcels), ii)
+        call msort(parcels%position(1, 1:parcels%local_num), ii)
 
         ! check remaining parcels
         k = 1
         i = 1
-        do n = 1, n_parcels
+        do n = 1, parcels%local_num
             do while (i == invalid(k))
                 i = i + 1
                 k = k + 1
@@ -115,7 +115,7 @@ program test_mpi_parcel_delete
             endif
         enddo
 
-        call parcel_dealloc
+        call parcels%deallocate
     enddo
 
     if (world%rank == world%root) then

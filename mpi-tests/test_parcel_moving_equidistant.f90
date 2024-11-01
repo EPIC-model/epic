@@ -3,7 +3,7 @@ program test_parcel_moving_equidistant
     use options, only : parcel
     use constants, only : zero, one, two
     use parameters, only : update_parameters, nx, ny, nz, lower, extent, dx
-    use parcel_container
+    use parcels_mod, only : parcels
     use parcel_init, only : parcel_default
     use parcel_mpi, only : parcel_communicate
     use fields, only : field_default, nparg, vortg
@@ -56,7 +56,7 @@ program test_parcel_moving_equidistant
     call parcel_default
 
     do i = 1, 3
-        parcels%vorticity(i, 1:n_parcels) = VOR(i)
+        parcels%vorticity(i, 1:parcels%local_num) = VOR(i)
     enddo
 
     !--------------------------------------------------------------------------
@@ -79,16 +79,16 @@ program test_parcel_moving_equidistant
         VOR = 1.00d0 * VOR
 
         ! Move each parcel by dx and dy
-        do n = 1, n_parcels
+        do n = 1, parcels%local_num
             parcels%position(1:2, n) = parcels%position(1:2, n) + dx(1:2)
             parcels%vorticity(:, n) = VOR
         enddo
 
         ! Do halo swap
-        call parcel_communicate
+        call parcel_communicate(parcels)
 
         ! Do periodic shift in x and y
-        do n = 1, n_parcels
+        do n = 1, parcels%local_num
             call apply_periodic_bc(parcels%position(:, n))
         enddo
 
@@ -102,7 +102,7 @@ program test_parcel_moving_equidistant
     !--------------------------------------------------------------------------
     ! Finish: Free memory and finalise MPI
 
-    call parcel_dealloc
+    call parcels%deallocate
 
     call stop_timer(epic_timer)
 
@@ -127,12 +127,12 @@ program test_parcel_moving_equidistant
         subroutine check_total_number_of_parcels
             integer :: n_total
 
-            n_total = n_parcels
+            n_total = parcels%local_num
 
             call perform_integer_reduction(n_total)
 
             if (world%rank == world%root) then
-                if (n_total /= n_total_parcels) then
+                if (n_total /= parcels%total_num) then
                     print *, "check_total_number_of_parcels: Total number of parcels disagree!"
                     call MPI_Abort(world%comm, -1, world%err)
                 endif
@@ -150,7 +150,7 @@ program test_parcel_moving_equidistant
             call perform_integer_reduction(n_total)
 
             if (world%rank == world%root) then
-                if (n_total /= n_total_parcels) then
+                if (n_total /= parcels%total_num) then
                     print *, "check_number_of_parcels_per_cell: Total number of parcel disagrees with grid!"
                     call MPI_Abort(world%comm, -1, world%err)
                 endif
