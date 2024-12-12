@@ -87,12 +87,7 @@ module parcel_nearest
 
     type(nearest_type) :: near
 
-    ! Logicals used to determine which mergers are executed
-    ! Integers above could be reused for this, but this would
-    ! make the algorithm less readable
-    logical, allocatable, asynchronous :: l_leaf(:)
-    logical, allocatable, asynchronous :: l_available(:)
-    logical, allocatable, asynchronous :: l_merged(:)    ! indicates parcels merged in first stage
+    type(tree_t) :: tree
 
     integer              :: n_neighbour_small(8)  ! number of small parcels received
 
@@ -298,9 +293,9 @@ module parcel_nearest
             n_global_small = 0
             n_neighbour_small = 0
             n_remote_small = 0
-            l_merged = .false.
-            l_leaf = .false.
-            l_available = .false.
+            tree%l_merged = .false.
+            tree%l_leaf = .false.
+            tree%l_available = .false.
             near%nppc = 0 !nppc(ijk) will contain the number of parcels in grid cell ijk
 
             ! Bin parcels in cells:
@@ -830,7 +825,7 @@ module parcel_nearest
             integer, intent(inout)         :: iclo(:)
             integer, intent(inout)         :: rclo(:)
             integer, intent(inout)         :: n_local_small
-            integer                        :: ic, rc, is, m, j
+            integer                        :: ic, rc, is, m, j, n
             logical                        :: l_helper
             integer(KIND=MPI_ADDRESS_KIND) :: offset
             logical                        :: l_continue_iteration, l_do_merge(n_local_small)
@@ -859,13 +854,14 @@ module parcel_nearest
                     ! reset relevant properties
                     if (.not. l_merged(is)) then
                         ic = iclo(m)
+                        rc = rclo(m)
                         l_leaf(is) = .true.
-                        l_available(ic) = .true.
+                        call tree%put_avail(rc, ic, .true.)
                     endif
                 enddo
 
                 ! Exchange information:
-                call exchange_tree_data(l_available, n_sends, n_recvs)
+                call tree%sync_avail
 
                 ! determine leaf parcels
                 do m = 1, n_local_small
@@ -873,12 +869,13 @@ module parcel_nearest
 
                     if (.not. l_merged(is)) then
                         ic = iclo(m)
-                        l_leaf(ic) = .false.
+                        rc = rclo(m)
+                        call tree%put_leaf(rc, ic, .false.)
                     endif
                 enddo
 
                 ! Exchange information:
-                call exchange_tree_data(l_leaf, n_sends, n_recvs)
+                call tree%sync_leaf
 
                 ! filter out parcels that are "unavailable" for merging
                 do m = 1, n_local_small
@@ -887,13 +884,14 @@ module parcel_nearest
                     if (.not. l_merged(is)) then
                         if (.not. l_leaf(is)) then
                             ic = iclo(m)
-                            l_available(ic) = .false.
+                            rc = rclo(m)
+                            call tree%put_avail(rc, ic, .false.)
                         endif
                     endif
                 enddo
 
                 ! Exchange information:
-                call exchange_tree_data(l_available, n_sends, n_recvs)
+                call tree%sync_avail
 
                 ! identify mergers in this iteration
                 do m = 1, n_local_small
@@ -901,16 +899,20 @@ module parcel_nearest
 
                     if (.not. l_merged(is)) then
                         ic = iclo(m)
-                        if (l_leaf(is) .and. l_available(ic)) then
+                        rc = rclo(m)
+
+                        l_helper = tree%get_avail(rc, ic)
+
+                        if (l_leaf(is) .and. l_helper) then
                             l_continue_iteration = .true. ! merger means continue iteration
                             l_merged(is) = .true.
-                            l_merged(ic) = .true.
+                            call tree%put_merged(rc, ic, .true.)
                         endif
                     endif
                 enddo
 
                 ! Exchange information:
-                call exchange_tree_data(l_merged, n_sends, n_recvs)
+                call tree%sync_merged
 
                 call start_timer(nearest_allreduce_timer)
                 ! Performance improvement: We actually only need to synchronize with neighbours
@@ -936,13 +938,14 @@ module parcel_nearest
                 if (.not. l_merged(is)) then
                     if (l_leaf(is)) then ! set in last iteration of stage 1
                         ic = iclo(m)
-                        l_available(ic) = .true.
+                        rc = rclo(m)
+                        call tree%put_avail(rc, ic, .true.)
                     endif
                 endif
             enddo
 
             ! Exchange information:
-            call exchange_tree_data(l_available, n_sends, n_recvs)
+            call tree%sync_avail
 
             ! Second stage
             do m = 1, n_local_small
@@ -959,7 +962,9 @@ module parcel_nearest
                     ! begin of sanity check
                     ! After first stage mergers parcel cannot be both initiator
                     ! and receiver in stage 1
-                    if (l_leaf(ic)) then
+                    l_helper = tree%get_leaf(rc, ic)
+
+                    if (l_helper) then
                         call mpi_exit_on_error(&
                             'in parcel_nearest::resolve_tree: First stage error')
                     endif
@@ -973,7 +978,10 @@ module parcel_nearest
                         l_do_merge(m) = .true.
                     elseif (.not. l_available(is)) then
                         ! Above means parcels that have been made 'available' do not keep outgoing links
-                        if (l_available(ic)) then
+
+                        l_helper = tree%get_avail(rc, ic)
+
+                        if (l_helper) then
                             ! merge this parcel into ic along with the leaf parcels
                             l_do_merge(m) = .true.
 
@@ -995,6 +1003,9 @@ module parcel_nearest
                 endif
             enddo
 
+            ! Exchange information:
+            call tree%sync_avail
+
             !------------------------------------------------------
             do m = 1, n_local_small
                 is = isma(m)
@@ -1003,7 +1014,10 @@ module parcel_nearest
 
                 if ((l_do_merge(m) .eqv. .false.) .and. l_isolated_dual_link(m)) then
                     ! isolated dual link
-                    if (l_available(ic)) then
+
+                    l_helper = tree%get_avail(rc, ic)
+
+                    if (l_helper) then
                         ! merge this parcel into ic along with the leaf parcels
                         l_do_merge(m) = .true.
                     !else
@@ -1029,170 +1043,6 @@ module parcel_nearest
 
             call stop_timer(merge_tree_resolve_timer)
         end subroutine resolve_tree
-
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        subroutine exchange_tree_info(n_sends, n_recvs)
-            integer, intent(in)  :: n_local_small
-            integer, intent(out) :: n_sends(8)
-            integer, intent(out) :: n_recvs(8)
-            type(MPI_Request)    :: requests(8)
-            type(MPI_Status)     :: recv_status, send_statuses(8)
-            integer              :: n, m
-
-            call start_timer(nearest_exchange_timer)
-
-            n_recvs = 0
-            n_sends = 0
-
-            ! Figure out how many *this* MPI rank sends to each neighbour
-            do m = 1, n_local_small
-                rc = rclo(m)
-                do n = 1, 8
-                    if (rc == neighbours(n)%rank) then
-                        n_sends(n) = n_sends(n) + 1
-                        exit
-                    endif
-                enddo
-            enddo
-
-            ! Send information to neighbouring ranks
-            do n = 1, 8
-                call MPI_Isend(n_sends(n),              &
-                               1,                       &
-                               MPI_INTEGER,             &
-                               neighbours(n)%rank,      &
-                               SEND_NEIGHBOUR_TAG(n),   &
-                               cart%comm,               &
-                               requests(n),             &
-                               cart%err)
-
-                call mpi_check_for_error(cart, &
-                    "in MPI_Isend of parcel_nearest::resolve_tree.")
-            enddo
-
-            ! Receive information from neighbouring ranks
-            do n = 1, 8
-                call MPI_Recv(n_recvs(n),               &
-                              1,                        &
-                              MPI_INTEGER,              &
-                              neighbours(n)%rank,       &
-                              RECV_NEIGHBOUR_TAG(n),    &
-                              cart%comm,                &
-                              recv_status,              &
-                              cart%err)
-
-                call mpi_check_for_error(cart, &
-                    "in MPI_Recv of parcel_nearest::resolve_tree.")
-            enddo
-
-            call MPI_Waitall(8,                 &
-                             requests,          &
-                             send_statuses,     &
-                             cart%err)
-
-            call mpi_check_for_error(cart, &
-                "in MPI_Waitall of parcel_nearest::resolve_tree.")
-
-            call stop_timer(nearest_exchange_timer)
-        end subroutine exchange_tree_info
-
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        subroutine exchange_tree_data(l_data, iclo, rclo, n_local_small, n_sends, n_recvs)
-            logical, intent(inout)                  :: l_data(:)
-            integer, intent(in)                     :: n_local_small
-            integer, intent(in)                     :: n_sends(8)
-            integer, intent(in)                     :: n_recvs(8)
-            integer,          dimension(:), pointer :: send_ptr
-            double precision, dimension(:), pointer :: send_buf
-            double precision, allocatable           :: recv_buf(:)
-            type(MPI_Request)                       :: requests(8)
-            type(MPI_Status)                        :: recv_status, send_statuses(8)
-            integer                                 :: n, send_size, n_entries, m, l, i
-
-            ! we only send logical + index
-            n_entries = 2
-            call allocate_parcel_buffers(n_entries)
-
-            do n = 1, 8
-
-                call get_parcel_buffer_ptr(n, send_ptr, send_buf)
-
-                send_size = n_sends(n) * n_entries
-
-                if (n_sends(n) > 0) then
-                    ! pack ic index and logical to send buffer
-                    do l = 1, n_sends(n)
-                        i = 1 + (l-1) * n_entries
-                        m = icindex(l)
-                        ic = iclo(m)
-
-                        send_buf(i) = dble(ic)
-                        if (l_data(ic)) then
-                            send_buf(i+1) = 1.0d0
-                        else
-                            send_buf(i+1) = 0.0d0
-                        endif
-                    enddo
-                endif
-
-                call MPI_Isend(send_buf(1:send_size),   &
-                               send_size,               &
-                               MPI_DOUBLE_PRECISION,    &
-                               neighbours(n)%rank,      &
-                               SEND_NEIGHBOUR_TAG(n),   &
-                               cart%comm,               &
-                               requests(n),             &
-                               cart%err)
-
-                call mpi_check_for_error(cart, &
-                    "in MPI_Isend of parcel_nearest::exchange_tree_data.")
-            enddo
-
-
-            do n = 1, 8
-
-                ! check for incoming messages
-                call mpi_check_for_message(neighbours(n)%rank,      &
-                                           RECV_NEIGHBOUR_TAG(n),   &
-                                           recv_size,               &
-                                           cart)
-
-                allocate(recv_buf(recv_size))
-
-                call MPI_Recv(recv_buf(1:recv_size),    &
-                              recv_size,                &
-                              MPI_DOUBLE_PRECISION,     &
-                              neighbours(n)%rank,       &
-                              RECV_NEIGHBOUR_TAG(n),    &
-                              cart%comm,                &
-                              recv_status,              &
-                              cart%err)
-
-                call mpi_check_for_error(cart, &
-                    "in MPI_Recv of parcel_nearest::exchange_tree_data.")
-
-                if (mod(recv_size, n_entries) /= 0) then
-                    call mpi_exit_on_error(&
-                        "parcel_nearest::exchange_tree_data: Receiving wrong count.")
-                endif
-
-                recv_count = recv_size / n_entries
-
-                if (recv_count > 0) then
-                    ! unpack ic index and logical to recv buffer
-                    do l = 1, recv_count
-                        i = 1 + (l-1) * n_entries
-                        ic = recv_buf(i)
-                        l_data(ic) = (recv_buf(i+1) > 0.0d0)
-                    enddo
-                endif
-
-                deallocate(recv_buf)
-            enddo
-
-        end subroutine exchange_tree_data
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
