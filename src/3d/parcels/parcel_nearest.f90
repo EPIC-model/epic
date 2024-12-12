@@ -284,7 +284,7 @@ module parcel_nearest
             ! We must store the parcel index and the merge index *m*
             ! of each small parcel. We do not need to allocate the
             ! invalid buffer, therefore the second argument is .false.
-            call allocate_parcel_id_buffers(pcont, 2, .false.)
+            call allocate_parcel_id_buffers(2, .false.)
 
             !---------------------------------------------------------------------
             ! Initialise search:
@@ -830,13 +830,13 @@ module parcel_nearest
             integer(KIND=MPI_ADDRESS_KIND) :: offset
             logical                        :: l_continue_iteration, l_do_merge(n_local_small)
             logical                        :: l_isolated_dual_link(n_local_small)
-            intent                         :: n_recvs(8), n_sends(8)
 
             call start_timer(merge_tree_resolve_timer)
 
             !------------------------------------------------------------------
-            ! Exchange number of neighbouring iclo:
-            call exchange_tree_info(n_local_small, n_sends, n_recvs)
+            ! Exchange information:
+
+            call tree%setup(iclo, rclo, n_local_small)
 
             !------------------------------------------------------------------
             ! Resolve tree now:

@@ -51,7 +51,8 @@ module parcel_mpi
               deallocate_parcel_buffers,    &
               allocate_parcel_id_buffers,   &
               deallocate_parcel_id_buffers, &
-              get_parcel_buffer_ptr
+              get_parcel_buffer_ptr,        &
+              get_parcel_id_buffer_ptr
 
     contains
 
@@ -97,6 +98,38 @@ module parcel_mpi
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+    subroutine get_parcel_id_buffer_ptr(dir, pid_ptr)
+        integer,                        intent(in)  :: dir
+        integer, dimension(:), pointer, intent(out) :: pid_ptr
+
+        select case (dir)
+            case (MPI_NORTH)
+                pid_ptr => north_pid
+            case (MPI_SOUTH)
+                pid_ptr => south_pid
+            case (MPI_WEST)
+                pid_ptr => west_pid
+            case (MPI_EAST)
+                pid_ptr => east_pid
+            case (MPI_NORTHWEST)
+                pid_ptr => northwest_pid
+            case (MPI_NORTHEAST)
+                pid_ptr => northeast_pid
+            case (MPI_SOUTHWEST)
+                pid_ptr => southwest_pid
+            case (MPI_SOUTHEAST)
+                pid_ptr => southeast_pid
+            case default
+                call mpi_exit_on_error(&
+                    "in parcel_mpi::get_parcel_id_buffer_ptr: No valid direction.")
+        end select
+
+    end subroutine get_parcel_id_buffer_ptr
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
         ! @param[in] pcont is a parcel container
         subroutine parcel_communicate(pcont, pindex)
             class(pc_type),    intent(inout) :: pcont
@@ -104,7 +137,7 @@ module parcel_mpi
 
             ! We only must store the parcel indices (therefore 1) and
             ! also allocate the buffer for invalid parcels. (therefore .true.)
-            call allocate_parcel_id_buffers(pcont, 1, .true.)
+            call allocate_parcel_id_buffers(1, .true.)
 
             ! figure out where parcels go
             call locate_parcels(pcont, pindex)
@@ -348,8 +381,7 @@ module parcel_mpi
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine allocate_parcel_id_buffers(pcont, n_ids, l_invalid)
-            class(pc_type), intent(in) :: pcont
+        subroutine allocate_parcel_id_buffers(n_ids, l_invalid)
             integer,        intent(in) :: n_ids
             logical,        intent(in) :: l_invalid
             integer                    :: nc, ub, n_max
