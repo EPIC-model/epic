@@ -98,35 +98,33 @@ module parcel_mpi
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        subroutine get_parcel_id_buffer_ptr(dir, pid_ptr)
+            integer,                        intent(in)  :: dir
+            integer, dimension(:), pointer, intent(out) :: pid_ptr
 
-    subroutine get_parcel_id_buffer_ptr(dir, pid_ptr)
-        integer,                        intent(in)  :: dir
-        integer, dimension(:), pointer, intent(out) :: pid_ptr
+            select case (dir)
+                case (MPI_NORTH)
+                    pid_ptr => north_pid
+                case (MPI_SOUTH)
+                    pid_ptr => south_pid
+                case (MPI_WEST)
+                    pid_ptr => west_pid
+                case (MPI_EAST)
+                    pid_ptr => east_pid
+                case (MPI_NORTHWEST)
+                    pid_ptr => northwest_pid
+                case (MPI_NORTHEAST)
+                    pid_ptr => northeast_pid
+                case (MPI_SOUTHWEST)
+                    pid_ptr => southwest_pid
+                case (MPI_SOUTHEAST)
+                    pid_ptr => southeast_pid
+                case default
+                    call mpi_exit_on_error(&
+                        "in parcel_mpi::get_parcel_id_buffer_ptr: No valid direction.")
+            end select
 
-        select case (dir)
-            case (MPI_NORTH)
-                pid_ptr => north_pid
-            case (MPI_SOUTH)
-                pid_ptr => south_pid
-            case (MPI_WEST)
-                pid_ptr => west_pid
-            case (MPI_EAST)
-                pid_ptr => east_pid
-            case (MPI_NORTHWEST)
-                pid_ptr => northwest_pid
-            case (MPI_NORTHEAST)
-                pid_ptr => northeast_pid
-            case (MPI_SOUTHWEST)
-                pid_ptr => southwest_pid
-            case (MPI_SOUTHEAST)
-                pid_ptr => southeast_pid
-            case default
-                call mpi_exit_on_error(&
-                    "in parcel_mpi::get_parcel_id_buffer_ptr: No valid direction.")
-        end select
-
-    end subroutine get_parcel_id_buffer_ptr
+        end subroutine get_parcel_id_buffer_ptr
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 

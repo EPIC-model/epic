@@ -55,8 +55,6 @@ program test_parcel_merge_random
 
     picked = .false.
 
-    call nearest_win_allocate
-
     !--------------------------------------------------------------------------
     ! Setup fields: All fields are zero
 
@@ -144,8 +142,6 @@ program test_parcel_merge_random
     ! Finish: Free memory and finalise MPI
 
     call parcels%deallocate
-
-    call nearest_win_deallocate
 
     call stop_timer(epic_timer)
 

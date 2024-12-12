@@ -23,6 +23,7 @@ epic3d_SOURCES = 				\
 	parcels/parcels.f90			\
 	parcels/parcel_bc.f90                   \
 	parcels/parcel_mpi.f90			\
+	parcels/parcel_nearest_mpi.f90		\
 	parcels/parcel_nearest.f90		\
 	parcels/parcel_merge.f90		\
 	parcels/parcel_split.f90		\

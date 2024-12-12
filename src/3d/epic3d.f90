@@ -11,14 +11,10 @@ program epic3d
     use parcel_merging, only : parcel_merge, merge_timer
     use parcel_nearest, only : merge_nearest_timer      &
                              , merge_tree_resolve_timer &
-                             , nearest_allreduce_timer  &
-                             , nearest_barrier_timer    &
-                             , nearest_rma_timer        &
-                             , nearest_win_allocate     &
 #ifdef ENABLE_VERBOSE
                              , simtime                  &
 #endif
-                             , nearest_win_deallocate
+                             , nearest_allreduce_timer
     use parcel_correction, only : apply_laplace,          &
                                   apply_gradient,         &
                                   apply_vortcor,          &
@@ -96,8 +92,6 @@ program epic3d
             call register_timer('merge nearest', merge_nearest_timer)
             call register_timer('merge tree resolve', merge_tree_resolve_timer)
             call register_timer('MPI allreduce timer (in tree resolve)', nearest_allreduce_timer)
-            call register_timer('MPI barrier timer (in tree resolve)', nearest_barrier_timer)
-            call register_timer('MPI RMA timer (in tree resolve)', nearest_rma_timer)
             call register_timer('p2g/v2g halo (non-excl.)', halo_swap_timer)
             call register_timer('boundary fluxes', bndry_flux_timer)
             call register_timer('damping', damping_timer)
@@ -119,8 +113,6 @@ program epic3d
             call init_parcel_correction
 
             call setup_output_files
-
-            call nearest_win_allocate
 
         end subroutine
 
@@ -164,7 +156,6 @@ program epic3d
             use options, only : output
             call parcels%deallocate
             call field_dealloc
-            call nearest_win_deallocate
             call bndry_fluxes_deallocate
             call finalise_inversion
             call stop_timer(epic_timer)

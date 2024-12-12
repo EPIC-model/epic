@@ -225,9 +225,7 @@ program verify_parcel_merging
 
         subroutine parallel_merge
             use parcel_merging
-            use parcel_nearest, only : nearest_allreduce_timer  &
-                                     , nearest_barrier_timer    &
-                                     , nearest_rma_timer
+            use parcel_nearest, only : nearest_allreduce_timer
             use test_utils, only : merge_nearest_timer      &
                                  , merge_tree_resolve_timer
 
@@ -235,14 +233,8 @@ program verify_parcel_merging
             call register_timer('merge nearest', merge_nearest_timer)
             call register_timer('merge tree resolve', merge_tree_resolve_timer)
             call register_timer('nearest MPI allreduce', nearest_allreduce_timer)
-            call register_timer('nearest MPI barrier', nearest_barrier_timer)
-            call register_timer('nearest MPI RMA', nearest_rma_timer)
-
-            call nearest_win_allocate
 
             call parcel_merge
-
-            call nearest_win_deallocate
 
         end subroutine parallel_merge
 

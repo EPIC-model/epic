@@ -19,9 +19,7 @@ program benchmark2_parcel_merging
                          , setup_parcels            &
                          , init_rng
     use parcel_merging
-    use parcel_nearest, only : nearest_allreduce_timer  &
-                             , nearest_barrier_timer    &
-                             , nearest_rma_timer
+    use parcel_nearest, only : nearest_allreduce_timer
     use test_utils, only : merge_nearest_timer      &
                          , merge_tree_resolve_timer
     use parcel_netcdf
@@ -45,8 +43,6 @@ program benchmark2_parcel_merging
     call register_timer('merge nearest', merge_nearest_timer)
     call register_timer('merge tree resolve', merge_tree_resolve_timer)
     call register_timer('nearest MPI allreduce', nearest_allreduce_timer)
-    call register_timer('nearest MPI barrier', nearest_barrier_timer)
-    call register_timer('nearest MPI RMA', nearest_rma_timer)
 
     parcel%lambda_max = 4.0d0
     parcel%min_vratio = 20.0d0
@@ -69,8 +65,6 @@ program benchmark2_parcel_merging
     call update_parameters
 
     call parcels%allocate(max_num_parcels)
-
-    call nearest_win_allocate
 
     call start_timer(epic_timer)
 
@@ -122,8 +116,6 @@ program benchmark2_parcel_merging
     enddo
 
     call stop_timer(epic_timer)
-
-    call nearest_win_deallocate
 
     call parcels%deallocate
 

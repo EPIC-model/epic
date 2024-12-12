@@ -33,6 +33,7 @@ module parcel_nearest
                         , mpi_stop                   &
                         , mpi_check_rma_window_model
     use iso_c_binding, only : c_ptr, c_f_pointer
+    use parcel_nearest_mpi, only : tree_t
     use parcel_mpi, only : n_parcel_sends               &
                          , north_pid                    &
                          , south_pid                    &
@@ -621,9 +622,9 @@ module parcel_nearest
                 iclo(m) = ic
                 rclo(m) = cart%rank
                 dclo(m) = dsqmin
-                l_merged(is) = .false.
+                tree%l_merged(is) = .false.
                 if (ic > 0) then
-                    l_merged(ic) = .false.
+                    tree%l_merged(ic) = .false.
                 endif
             enddo
 
@@ -821,15 +822,14 @@ module parcel_nearest
         ! https://www.mpi-forum.org/docs/mpi-3.1/mpi31-report/node294.htm
         ! https://www.mpi-forum.org/docs/mpi-3.1/mpi31-report/node279.htm
         subroutine resolve_tree(isma, iclo, rclo, n_local_small)
-            integer, intent(inout)         :: isma(0:)
-            integer, intent(inout)         :: iclo(:)
-            integer, intent(inout)         :: rclo(:)
-            integer, intent(inout)         :: n_local_small
-            integer                        :: ic, rc, is, m, j, n
-            logical                        :: l_helper
-            integer(KIND=MPI_ADDRESS_KIND) :: offset
-            logical                        :: l_continue_iteration, l_do_merge(n_local_small)
-            logical                        :: l_isolated_dual_link(n_local_small)
+            integer, intent(inout) :: isma(0:)
+            integer, intent(inout) :: iclo(:)
+            integer, intent(inout) :: rclo(:)
+            integer, intent(inout) :: n_local_small
+            integer                :: ic, rc, is, m, j
+            logical                :: l_helper
+            logical                :: l_continue_iteration, l_do_merge(n_local_small)
+            logical                :: l_isolated_dual_link(n_local_small)
 
             call start_timer(merge_tree_resolve_timer)
 
@@ -852,10 +852,10 @@ module parcel_nearest
                     is = isma(m)
                     ! only consider links that still may be merging
                     ! reset relevant properties
-                    if (.not. l_merged(is)) then
+                    if (.not. tree%l_merged(is)) then
                         ic = iclo(m)
                         rc = rclo(m)
-                        l_leaf(is) = .true.
+                        tree%l_leaf(is) = .true.
                         call tree%put_avail(rc, ic, .true.)
                     endif
                 enddo
@@ -867,7 +867,7 @@ module parcel_nearest
                 do m = 1, n_local_small
                     is = isma(m)
 
-                    if (.not. l_merged(is)) then
+                    if (.not. tree%l_merged(is)) then
                         ic = iclo(m)
                         rc = rclo(m)
                         call tree%put_leaf(rc, ic, .false.)
@@ -881,8 +881,8 @@ module parcel_nearest
                 do m = 1, n_local_small
                     is = isma(m)
 
-                    if (.not. l_merged(is)) then
-                        if (.not. l_leaf(is)) then
+                    if (.not. tree%l_merged(is)) then
+                        if (.not. tree%l_leaf(is)) then
                             ic = iclo(m)
                             rc = rclo(m)
                             call tree%put_avail(rc, ic, .false.)
@@ -897,15 +897,15 @@ module parcel_nearest
                 do m = 1, n_local_small
                     is = isma(m)
 
-                    if (.not. l_merged(is)) then
+                    if (.not. tree%l_merged(is)) then
                         ic = iclo(m)
                         rc = rclo(m)
 
                         l_helper = tree%get_avail(rc, ic)
 
-                        if (l_leaf(is) .and. l_helper) then
+                        if (tree%l_leaf(is) .and. l_helper) then
                             l_continue_iteration = .true. ! merger means continue iteration
-                            l_merged(is) = .true.
+                            tree%l_merged(is) = .true.
                             call tree%put_merged(rc, ic, .true.)
                         endif
                     endif
@@ -935,8 +935,8 @@ module parcel_nearest
             do m = 1, n_local_small
                 is = isma(m)
 
-                if (.not. l_merged(is)) then
-                    if (l_leaf(is)) then ! set in last iteration of stage 1
+                if (.not. tree%l_merged(is)) then
+                    if (tree%l_leaf(is)) then ! set in last iteration of stage 1
                         ic = iclo(m)
                         rc = rclo(m)
                         call tree%put_avail(rc, ic, .true.)
@@ -955,7 +955,7 @@ module parcel_nearest
                 l_do_merge(m) = .false.
                 l_isolated_dual_link(m) = .false.
 
-                if (l_merged(is) .and. l_leaf(is)) then
+                if (tree%l_merged(is) .and. tree%l_leaf(is)) then
                     ! previously identified mergers: keep
                     l_do_merge(m) = .true.
                     !----------------------------------------------------------
@@ -972,11 +972,11 @@ module parcel_nearest
                     ! end of sanity check
                     !----------------------------------------------------------
 
-                elseif (.not. l_merged(is)) then
-                    if (l_leaf(is)) then
+                elseif (.not. tree%l_merged(is)) then
+                    if (tree%l_leaf(is)) then
                         ! links from leafs
                         l_do_merge(m) = .true.
-                    elseif (.not. l_available(is)) then
+                    elseif (.not. tree%l_available(is)) then
                         ! Above means parcels that have been made 'available' do not keep outgoing links
 
                         l_helper = tree%get_avail(rc, ic)
@@ -996,7 +996,7 @@ module parcel_nearest
                             if (cart%rank <= rc) then
                                 ! The MPI rank with lower number makes its parcel
                                 ! available.
-                                l_available(is) = .true.
+                                tree%l_available(is) = .true.
                             endif
                         endif
                     endif

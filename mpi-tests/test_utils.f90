@@ -8,9 +8,7 @@ module test_utils
     use parcel_merging, only : merge_timer
     use parcel_nearest, only : merge_nearest_timer          &
                              , merge_tree_resolve_timer     &
-                             , nearest_allreduce_timer      &
-                             , nearest_barrier_timer        &
-                             , nearest_rma_timer
+                             , nearest_allreduce_timer
     use parcel_correction, only : lapl_corr_timer,        &
                                   grad_corr_timer,        &
                                   vort_corr_timer
@@ -61,8 +59,6 @@ module test_utils
             call register_timer('merge nearest', merge_nearest_timer)
             call register_timer('merge tree resolve', merge_tree_resolve_timer)
             call register_timer('MPI allreduce timer (in tree resolve)', nearest_allreduce_timer)
-            call register_timer('MPI barrier timer (in tree resolve)', nearest_barrier_timer)
-            call register_timer('MPI RMA timer (in tree resolve)', nearest_rma_timer)
             call register_timer('p2g/v2g halo (non-excl.)', halo_swap_timer)
             call register_timer('boundary fluxes', bndry_flux_timer)
             call register_timer('damping', damping_timer)

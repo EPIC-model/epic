@@ -1,19 +1,32 @@
 module parcel_nearest_mpi
     use mpi_layout
+    use mpi_utils
+    use parcel_mpi, only : get_parcel_id_buffer_ptr     &
+                         , deallocate_parcel_id_buffers
     implicit none
 
     private
 
+    logical, allocatable, dimension(:), target :: l_north_buf           &
+                                                , l_south_buf           &
+                                                , l_west_buf            &
+                                                , l_east_buf            &
+                                                , l_northwest_buf       &
+                                                , l_northeast_buf       &
+                                                , l_southwest_buf       &
+                                                , l_southeast_buf
+
     type :: neighbour_info_t
         integer              :: rank
         integer, allocatable :: iclo(:)       ! store parcel incdex of remote *ic*
+        integer, allocatable :: local_index(:)
         logical, allocatable :: l_merged(:)
         logical, allocatable :: l_available(:)
         logical, allocatable :: l_leaf(:)
 
     contains
         procedure :: alloc
-        procedure :: free
+        procedure :: dealloc
 
         procedure, private :: realloc
 
@@ -34,10 +47,29 @@ module parcel_nearest_mpi
         logical, allocatable :: l_merged(:)    ! indicates parcels merged in first stage
         integer, allocatable :: index_to_remote(:)  ! entries that must be sent to neighbours
 
+    contains
+        procedure, private :: send_from_remote
+        procedure, private :: recv_from_remote
+        procedure, private :: send_to_remote
+        procedure, private :: recv_to_remote
+
+        procedure :: setup
+
+        procedure :: put_avail
+        procedure :: put_leaf
+        procedure :: put_merged
+
+        procedure :: get_avail
+        procedure :: get_leaf
+        procedure :: get_merged
+
+        procedure :: sync_avail
+        procedure :: sync_leaf
+        procedure :: sync_merged
+
     end type
 
-    type(tree_t) :: tree
-
+    public :: tree_t
 
 contains
 
@@ -47,9 +79,9 @@ contains
         integer                                :: m
 
         if (.not. allocated(this%l_merged)) then
-            allocate(this%l_merged)
-            allocate(this%l_available)
-            allocate(this%l_leaf)
+            allocate(this%l_merged(n))
+            allocate(this%l_available(n))
+            allocate(this%l_leaf(n))
         else
             m = size(this%l_merged)
             if (n > m) then
@@ -67,7 +99,7 @@ contains
         class(neighbour_info_t), intent(inout) :: this
         integer,                 intent(in)    :: n
         integer,                 intent(in)    :: m
-        logical,                 intent(inout) :: l_data(:)
+        logical, allocatable,    intent(inout) :: l_data(:)
         logical, allocatable                   :: tmp(:)
 
         allocate(tmp(n))
@@ -78,18 +110,18 @@ contains
 
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-    subroutine free(this)
+    subroutine dealloc(this)
         class(neighbour_info_t), intent(inout) :: this
         if (allocated(this%l_merged)) then
             deallocate(this%l_merged)
             deallocate(this%l_available)
             deallocate(this%l_leaf)
         endif
-    end subroutine free
+    end subroutine dealloc
 
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-    subroutine put_available(this, rank, ic, val)
+    subroutine put_avail(this, rank, ic, val)
         class(tree_t), intent(inout) :: this
         integer,       intent(in)    :: rank
         integer,       intent(in)    :: ic
@@ -97,7 +129,7 @@ contains
         integer                      :: n, m
 
         if (rank == cart%rank) then
-            this%available(ic) = val
+            this%l_available(ic) = val
         else
             n = get_neighbour_from_rank(rank)
 
@@ -105,7 +137,7 @@ contains
             this%neighbour_info(n)%l_available(m) = val
         endif
 
-    end subroutine put_available
+    end subroutine put_avail
 
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -135,8 +167,8 @@ contains
         logical,       intent(in)    :: val
         integer                      :: n, m
 
-        if (rc == cart%rank) then
-            this%l_merged(ic) = vals
+        if (rank == cart%rank) then
+            this%l_merged(ic) = val
         else
             n = get_neighbour_from_rank(rank)
 
@@ -148,14 +180,14 @@ contains
 
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-    function get_available(this, rank, ic) result(val)
+    function get_avail(this, rank, ic) result(val)
         class(tree_t), intent(inout) :: this
         integer,       intent(in)    :: rank
         integer,       intent(in)    :: ic
         logical                      :: val
         integer                      :: n, m
 
-        if (rc == cart%rank) then
+        if (rank == cart%rank) then
             val = this%l_available(ic)
         else
             n = get_neighbour_from_rank(rank)
@@ -164,7 +196,7 @@ contains
             val = this%neighbour_info(n)%l_available(m)
         endif
 
-    end function get_available
+    end function get_avail
 
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -172,10 +204,10 @@ contains
         class(tree_t), intent(inout) :: this
         integer,       intent(in)    :: rank
         integer,       intent(in)    :: ic
-        logical,       intent(in)    :: val
+        logical                      :: val
         integer                      :: n, m
 
-        if (rc == cart%rank) then
+        if (rank == cart%rank) then
             val = this%l_leaf(ic)
         else
             n = get_neighbour_from_rank(rank)
@@ -188,14 +220,14 @@ contains
 
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-    function get_merged(rank, ic) result(val)
+    function get_merged(this, rank, ic) result(val)
         class(tree_t), intent(inout) :: this
         integer,       intent(in)    :: rank
         integer,       intent(in)    :: ic
         logical                      :: val
         integer                      :: n, m
 
-        if (rc == cart%rank) then
+        if (rank == cart%rank) then
             val = this%l_merged(ic)
         else
             n = get_neighbour_from_rank(rank)
@@ -206,34 +238,6 @@ contains
 
     end function get_merged
 
-    !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-    subroutine sync_avail(this)
-        class(tree_t), intent(inout) :: this
-
-        call this%sync(this%l_available)
-
-    end subroutine sync_avail
-
-    !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-    subroutine sync_leaf(this)
-        class(tree_t), intent(inout) :: this
-
-        call this%sync(this%l_leaf)
-
-    end subroutine sync_leaf
-
-    !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-    subroutine sync_merged(this)
-        class(tree_t), intent(inout) :: this
-
-        call this%sync(this%l_merged)
-
-    end subroutine sync_merged
-
-
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     subroutine setup(this, iclo, rclo, n_local_small)
@@ -242,11 +246,12 @@ contains
         integer,       intent(in)      :: rclo(:)
         integer,       intent(in)      :: n_local_small
         integer, dimension(:), pointer :: send_buf
+        integer, allocatable           :: recv_buf(:)
         type(MPI_Request)              :: requests(8)
         type(MPI_Status)               :: recv_status, send_statuses(8)
-        integer                        :: n, m, send_size, recv_size
+        integer                        :: n, m, send_size, recv_size, rc
 
-        call start_timer(nearest_exchange_timer)
+!         call start_timer(nearest_exchange_timer)
 
         this%n_recvs = 0
         this%n_sends = 0
@@ -312,7 +317,7 @@ contains
 
             send_size = this%n_sends(n)
 
-            call get_parcel_id_ptr(n, send_buf)
+            call get_parcel_id_buffer_ptr(n, send_buf)
 
             allocate(send_buf(send_size))
 
@@ -338,7 +343,7 @@ contains
 
             recv_size = this%n_recvs(n)
 
-            this%neighbour_info(n)%alloc(recv_size)
+            call this%neighbour_info(n)%alloc(recv_size)
 
             allocate(recv_buf(recv_size))
 
@@ -374,121 +379,368 @@ contains
         ! Free all send buffers
         call deallocate_parcel_id_buffers
 
-        call stop_timer(nearest_exchange_timer)
+!         call stop_timer(nearest_exchange_timer)
     end subroutine setup
 
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-    subroutine sync(this, l_remote, l_owner)
+    subroutine sync_avail(this)
         class(tree_t), intent(inout) :: this
-        logical,       intent(in)    :: l_remote(:)
-        logical,       intent(inout) :: l_owner(:)
-        integer                      :: n, n_entries
+        type(MPI_Request)            :: requests(8)
+        type(MPI_Status)             :: statuses(8)
+        integer                      :: n
 
-        ! 1. send from remote to owning rank
-        ! 2. sync data at owning rank
-        ! 3. send result from owning rank to remote
-
-        ! we only send logical + index
-        n_entries = 2
-        call allocate_parcel_buffers(n_entries)
-
-
-        call this%send_from_remote_to_owner(l_remote, l_owner)
-
-        call this%send_from_owner_to_remote(l_remote, l_owner)
-
-    end subroutine sync
-
-
-    subroutine send_from_remote_to_owner(this, l_remote, l_owner)
-        class(tree_t), intent(inout)            :: this
-        logical,       intent(in)               :: l_remote(:)
-        logical,       intent(inout)            :: l_owner(:)
-        integer,          dimension(:), pointer :: send_ptr
-        double precision, dimension(:), pointer :: send_buf
-        double precision, allocatable           :: recv_buf(:)
-        type(MPI_Request)                       :: requests(8)
-        type(MPI_Status)                        :: recv_status, send_statuses(8)
-        integer                                 :: n, send_size, n_entries, m, i
-
-
+        !----------------------------------------------------------------------
+        ! Send from remote to owning rank and sync data at owning rank
         do n = 1, 8
-
-            call get_parcel_buffer_ptr(n, send_ptr, send_buf)
-
-            send_size = n_sends(n) * n_entries
-
-            if (n_sends(n) > 0) then
-                ! pack ic index and logical to send buffer
-                do m = 1, n_sends(n)
-                    i = 1 + (m-1) * n_entries
-                    ic = this%neighbour_info(n)%iclo(m)
-
-                    send_buf(i) = dble(ic)
-                    if (l_data(m)) then
-                        send_buf(i+1) = 1.0d0
-                    else
-                        send_buf(i+1) = 0.0d0
-                    endif
-                enddo
-            endif
-
-            call MPI_Isend(send_buf(1:send_size),   &
-                           send_size,               &
-                           MPI_DOUBLE_PRECISION,    &
-                           neighbours(n)%rank,      &
-                           SEND_NEIGHBOUR_TAG(n),   &
-                           cart%comm,               &
-                           requests(n),             &
-                           cart%err)
-
-            call mpi_check_for_error(cart, &
-                "in MPI_Isend of parcel_nearest::exchange_tree_data.")
+            call this%send_from_remote(n, this%neighbour_info(n)%l_available, requests(n))
         enddo
 
+        do n = 1, 8
+            call this%recv_from_remote(n, this%l_available)
+        enddo
+
+        call MPI_Waitall(8,                 &
+                        requests,           &
+                        statuses,           &
+                        cart%err)
+
+        call mpi_check_for_error(cart, &
+                                "in MPI_Waitall of parcel_mpi::sync_avail.")
+
+        call free_buffers
+
+        !----------------------------------------------------------------------
+        ! Send result from owning rank to remote
+        do n = 1, 8
+            call this%send_to_remote(n, this%l_available, requests(n))
+        enddo
 
         do n = 1, 8
+            call this%recv_to_remote(n, this%neighbour_info(n)%l_available)
+        enddo
 
-            ! check for incoming messages
-            call mpi_check_for_message(neighbours(n)%rank,      &
-                                       RECV_NEIGHBOUR_TAG(n),   &
-                                       recv_size,               &
-                                       cart)
+        call MPI_Waitall(8,                 &
+                        requests,           &
+                        statuses,           &
+                        cart%err)
 
-            allocate(recv_buf(recv_size))
+        call mpi_check_for_error(cart, &
+                                "in MPI_Waitall of parcel_mpi::sync_avail.")
 
-            call MPI_Recv(recv_buf(1:recv_size),    &
-                          recv_size,                &
-                          MPI_DOUBLE_PRECISION,     &
-                          neighbours(n)%rank,       &
-                          RECV_NEIGHBOUR_TAG(n),    &
-                          cart%comm,                &
-                          recv_status,              &
-                          cart%err)
+        call free_buffers
 
-            call mpi_check_for_error(cart, &
-                "in MPI_Recv of parcel_nearest::exchange_tree_data.")
+    end subroutine sync_avail
 
-            if (mod(recv_size, n_entries) /= 0) then
+    !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+    subroutine sync_leaf(this)
+        class(tree_t), intent(inout) :: this
+        type(MPI_Request)            :: requests(8)
+        type(MPI_Status)             :: statuses(8)
+        integer                      :: n
+
+        !----------------------------------------------------------------------
+        ! Send from remote to owning rank and sync data at owning rank
+        do n = 1, 8
+            call this%send_from_remote(n, this%neighbour_info(n)%l_leaf, requests(n))
+        enddo
+
+        do n = 1, 8
+            call this%recv_from_remote(n, this%l_leaf)
+        enddo
+
+        call MPI_Waitall(8,                 &
+                        requests,           &
+                        statuses,           &
+                        cart%err)
+
+        call mpi_check_for_error(cart, &
+                                "in MPI_Waitall of parcel_mpi::sync_leaf.")
+
+        call free_buffers
+
+        !----------------------------------------------------------------------
+        ! Send result from owning rank to remote
+        do n = 1, 8
+            call this%send_to_remote(n, this%l_leaf, requests(n))
+        enddo
+
+        do n = 1, 8
+            call this%recv_to_remote(n, this%neighbour_info(n)%l_leaf)
+        enddo
+
+        call MPI_Waitall(8,                 &
+                        requests,           &
+                        statuses,           &
+                        cart%err)
+
+        call mpi_check_for_error(cart, &
+                                "in MPI_Waitall of parcel_mpi::sync_leaf.")
+
+        call free_buffers
+
+    end subroutine sync_leaf
+
+    !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+    subroutine sync_merged(this)
+        class(tree_t), intent(inout) :: this
+        type(MPI_Request)            :: requests(8)
+        type(MPI_Status)             :: statuses(8)
+        integer                      :: n
+
+        !----------------------------------------------------------------------
+        ! Send from remote to owning rank and sync data at owning rank
+        do n = 1, 8
+            call this%send_from_remote(n, this%neighbour_info(n)%l_merged, requests(n))
+        enddo
+
+        do n = 1, 8
+            call this%recv_from_remote(n, this%l_merged)
+        enddo
+
+        call MPI_Waitall(8,                 &
+                        requests,           &
+                        statuses,           &
+                        cart%err)
+
+        call mpi_check_for_error(cart, &
+                                "in MPI_Waitall of parcel_mpi::sync_merged.")
+
+        call free_buffers
+
+        !----------------------------------------------------------------------
+        ! Send result from owning rank to remote
+        do n = 1, 8
+            call this%send_to_remote(n, this%l_merged, requests(n))
+        enddo
+
+        do n = 1, 8
+            call this%recv_to_remote(n, this%neighbour_info(n)%l_merged)
+        enddo
+
+        call MPI_Waitall(8,                 &
+                        requests,           &
+                        statuses,           &
+                        cart%err)
+
+        call mpi_check_for_error(cart, &
+                                "in MPI_Waitall of parcel_mpi::sync_merged.")
+
+        call free_buffers
+
+    end subroutine sync_merged
+
+    !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+    subroutine send_from_remote(this, n, l_data, request)
+        class(tree_t),     intent(inout) :: this
+        integer,           intent(in)    :: n
+        logical,           intent(in)    :: l_data(:)
+        type(MPI_Request), intent(inout) :: request
+        logical, dimension(:), pointer   :: send_buf
+        integer                          :: send_size, m, i
+
+
+        call get_logical_buffer(n, send_buf)
+
+        send_size = this%n_sends(n)
+
+        allocate(send_buf(send_size))
+
+        if (send_size > 0) then
+            ! pack ic index and logical to send buffer
+            do m = 1, send_size
+                i = 1 + (m-1)
+                send_buf(i) = l_data(m)
+            enddo
+        endif
+
+        call MPI_Isend(send_buf(1:send_size),   &
+                       send_size,               &
+                       MPI_LOGICAL,             &
+                       neighbours(n)%rank,      &
+                       SEND_NEIGHBOUR_TAG(n),   &
+                       cart%comm,               &
+                       request,                 &
+                       cart%err)
+
+        call mpi_check_for_error(cart, &
+            "in MPI_Isend of parcel_nearest::exchange_tree_data.")
+
+    end subroutine send_from_remote
+
+    !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+    subroutine recv_from_remote(this, n, l_data)
+        class(tree_t),     intent(inout) :: this
+        integer,           intent(in)    :: n
+        logical,           intent(inout) :: l_data(:)
+        logical, allocatable             :: recv_buf(:)
+        type(MPI_Status)                 :: recv_status
+        integer                          :: recv_size, m, i, ic
+
+
+        ! check for incoming messages
+        call mpi_check_for_message(neighbours(n)%rank,      &
+                                   RECV_NEIGHBOUR_TAG(n),   &
+                                   recv_size,               &
+                                   cart)
+
+        allocate(recv_buf(recv_size))
+
+        call MPI_Recv(recv_buf(1:recv_size),    &
+                      recv_size,                &
+                      MPI_LOGICAL,              &
+                      neighbours(n)%rank,       &
+                      RECV_NEIGHBOUR_TAG(n),    &
+                      cart%comm,                &
+                      recv_status,              &
+                      cart%err)
+
+        call mpi_check_for_error(cart, &
+            "in MPI_Recv of parcel_nearest::exchange_tree_data.")
+
+        if (recv_size > 0) then
+            ! unpack ic index and logical to recv buffer
+            do m = 1, recv_size
+                i = 1 + (m-1)
+                ic = this%neighbour_info(n)%iclo(m)
+                l_data(ic) = recv_buf(i)
+            enddo
+        endif
+
+        deallocate(recv_buf)
+
+    end subroutine recv_from_remote
+
+    !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+    subroutine send_to_remote(this, n, l_data, request)
+        class(tree_t),     intent(inout) :: this
+        integer,           intent(in)    :: n
+        logical,           intent(in)    :: l_data(:)
+        type(MPI_Request), intent(inout) :: request
+        logical, dimension(:), pointer   :: send_buf
+        integer                          :: send_size, m, i, ic
+
+
+        call get_logical_buffer(n, send_buf)
+
+        send_size = this%n_sends(n)
+
+        allocate(send_buf(send_size))
+
+        if (send_size > 0) then
+            ! pack ic index and logical to send buffer
+            do m = 1, send_size
+                i = 1 + (m-1)
+                ic = this%neighbour_info(n)%iclo(m)
+                send_buf(i) = l_data(ic)
+            enddo
+        endif
+
+        call MPI_Isend(send_buf(1:send_size),   &
+                       send_size,               &
+                       MPI_LOGICAL,             &
+                       neighbours(n)%rank,      &
+                       SEND_NEIGHBOUR_TAG(n),   &
+                       cart%comm,               &
+                       request,                 &
+                       cart%err)
+
+        call mpi_check_for_error(cart, &
+            "in MPI_Isend of parcel_nearest::exchange_tree_data.")
+
+    end subroutine send_to_remote
+
+    !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+    subroutine recv_to_remote(this, n, l_data)
+        class(tree_t),     intent(inout) :: this
+        integer,           intent(in)    :: n
+        logical,           intent(inout) :: l_data(:)
+        logical, allocatable             :: recv_buf(:)
+        type(MPI_Status)                 :: recv_status
+        integer                          :: recv_size, m, i
+
+
+        ! check for incoming messages
+        call mpi_check_for_message(neighbours(n)%rank,      &
+                                   RECV_NEIGHBOUR_TAG(n),   &
+                                   recv_size,               &
+                                   cart)
+
+        allocate(recv_buf(recv_size))
+
+        call MPI_Recv(recv_buf(1:recv_size),    &
+                      recv_size,                &
+                      MPI_LOGICAL,              &
+                      neighbours(n)%rank,       &
+                      RECV_NEIGHBOUR_TAG(n),    &
+                      cart%comm,                &
+                      recv_status,              &
+                      cart%err)
+
+        call mpi_check_for_error(cart, &
+            "in MPI_Recv of parcel_nearest::exchange_tree_data.")
+
+        if (recv_size > 0) then
+            ! unpack ic index and logical to recv buffer
+            do m = 1, recv_size
+                i = 1 + (m-1)
+                l_data(m) = recv_buf(i)
+            enddo
+        endif
+
+        deallocate(recv_buf)
+
+    end subroutine recv_to_remote
+
+    !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+    subroutine free_buffers
+
+        deallocate(l_north_buf)
+        deallocate(l_south_buf)
+        deallocate(l_west_buf)
+        deallocate(l_east_buf)
+        deallocate(l_northwest_buf)
+        deallocate(l_northeast_buf)
+        deallocate(l_southwest_buf)
+        deallocate(l_southeast_buf)
+
+    end subroutine free_buffers
+
+    !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+    subroutine get_logical_buffer(dir, buf_ptr)
+        integer,                        intent(in)  :: dir
+        logical, dimension(:), pointer, intent(out) :: buf_ptr
+
+        select case (dir)
+            case (MPI_NORTH)
+                buf_ptr => l_north_buf
+            case (MPI_SOUTH)
+                buf_ptr => l_south_buf
+            case (MPI_WEST)
+                buf_ptr => l_west_buf
+            case (MPI_EAST)
+                buf_ptr => l_east_buf
+            case (MPI_NORTHWEST)
+                buf_ptr => l_northwest_buf
+            case (MPI_NORTHEAST)
+                buf_ptr => l_northeast_buf
+            case (MPI_SOUTHWEST)
+                buf_ptr => l_southwest_buf
+            case (MPI_SOUTHEAST)
+                buf_ptr => l_southeast_buf
+            case default
                 call mpi_exit_on_error(&
-                    "parcel_nearest::exchange_tree_data: Receiving wrong count.")
-            endif
+                    "in parcel_nearest_mpi::get_logical_buffer: No valid direction.")
+        end select
 
-            recv_count = recv_size / n_entries
-
-            if (recv_count > 0) then
-                ! unpack ic index and logical to recv buffer
-                do m = 1, recv_count
-                    i = 1 + (m-1) * n_entries
-                    ic = recv_buf(i)
-                    l_owner(ic) = (recv_buf(i+1) > 0.0d0)
-                enddo
-            endif
-
-            deallocate(recv_buf)
-        enddo
-
-    end subroutine send_from_remote_to_owner
+    end subroutine get_logical_buffer
 
 end module parcel_nearest_mpi

@@ -53,8 +53,6 @@ program test_parcel_spli_merge
     parcel%n_per_cell = 8
     parcel%lambda_max = 4.0d0
 
-    call nearest_win_allocate
-
     !--------------------------------------------------------------------------
     ! Setup fields: All fields are zero
 
@@ -124,8 +122,6 @@ program test_parcel_spli_merge
     ! Finish: Free memory and finalise MPI
 
     call parcels%deallocate
-
-    call nearest_win_deallocate
 
     call stop_timer(epic_timer)
 
