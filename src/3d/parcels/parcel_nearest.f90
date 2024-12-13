@@ -294,6 +294,10 @@ module parcel_nearest
             n_global_small = 0
             n_neighbour_small = 0
             n_remote_small = 0
+
+            allocate(tree%l_merged(max_num_parcels))
+            allocate(tree%l_leaf(max_num_parcels))
+            allocate(tree%l_available(max_num_parcels))
             tree%l_merged = .false.
             tree%l_leaf = .false.
             tree%l_available = .false.
@@ -332,6 +336,9 @@ module parcel_nearest
                 call near%dealloc
                 call deallocate_parcel_id_buffers
                 call stop_timer(merge_nearest_timer)
+                deallocate(tree%l_merged)
+                deallocate(tree%l_leaf)
+                deallocate(tree%l_available)
                 return
             endif
 
@@ -505,6 +512,10 @@ module parcel_nearest
             endif
 
             call near%dealloc
+
+            deallocate(tree%l_merged)
+            deallocate(tree%l_leaf)
+            deallocate(tree%l_available)
 
             call stop_timer(merge_nearest_timer)
 
