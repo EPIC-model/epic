@@ -295,7 +295,7 @@ contains
         integer, allocatable           :: recv_buf(:)
         type(MPI_Request)              :: requests(8)
         type(MPI_Status)               :: recv_status, send_statuses(8)
-        integer                        :: n, m, send_size, recv_size, rc
+        integer                        :: n, m, send_size, recv_size, rc, l
 
 !         call start_timer(nearest_exchange_timer)
 
@@ -310,7 +310,7 @@ contains
             do n = 1, 8
                 if (rc == neighbours(n)%rank) then
                     this%n_sends(n) = this%n_sends(n) + 1
-                    exit
+!                     exit
                 endif
             enddo
         enddo
@@ -367,8 +367,13 @@ contains
 
             allocate(send_buf(send_size))
 
-            do m = 1, send_size
-                send_buf(m) = this%neighbour_info(n)%iclo(m)
+            l = 1
+            do m = 1, n_local_small
+                rc = rclo(m)
+                if (rc == neighbours(n)%rank) then
+                    send_buf(l) = iclo(m)
+                    l = l + 1
+                endif
             enddo
 
             call MPI_Isend(send_buf(1:send_size),   &
@@ -412,6 +417,7 @@ contains
                 enddo
             endif
 
+            deallocate(recv_buf)
         enddo
 
         call MPI_Waitall(8,                 &
@@ -422,8 +428,10 @@ contains
         call mpi_check_for_error(cart, &
             "in MPI_Waitall of parcel_nearest::setup.")
 
-        ! Free all send buffers
-        call deallocate_parcel_id_buffers
+!         ! Free all send buffers
+!         call deallocate_parcel_id_buffers
+
+        print *, "setup done"
 
 !         call stop_timer(nearest_exchange_timer)
     end subroutine setup
@@ -565,6 +573,8 @@ contains
 
         call free_buffers
 
+        print *, "next step"
+
         !----------------------------------------------------------------------
         ! Send result from owning rank to remote
         do n = 1, 8
@@ -603,6 +613,8 @@ contains
 
         ! find chagnged (i.e. 'dirty') values
         send_size = count(dirty > 0)
+
+        print *, "send size:", send_size
 
         allocate(send_buf(send_size))
 
@@ -648,7 +660,11 @@ contains
         call mpi_check_for_message(neighbours(n)%rank,      &
                                    RECV_NEIGHBOUR_TAG(n),   &
                                    recv_size,               &
-                                   cart)
+                                   cart,                    &
+                                   MPI_INTEGER_LOGICAL_ARRAY)
+
+
+        print *, "recv size:", recv_size
 
         allocate(recv_buf(recv_size))
 
@@ -685,21 +701,22 @@ contains
         logical,           intent(in)    :: l_data(:)
         type(MPI_Request), intent(inout) :: request
         logical, dimension(:), pointer   :: send_buf
-        integer                          :: send_size, m, i, ic
+        integer                          :: send_size, m, ic
 
 
         call get_logical_buffer(n, send_buf)
 
         send_size = this%n_sends(n)
 
+        print *, "send size all", send_size, n, SEND_NEIGHBOUR_TAG(n)
+
         allocate(send_buf(send_size))
 
         if (send_size > 0) then
             ! pack ic index and logical to send buffer
             do m = 1, send_size
-                i = 1 + (m-1)
                 ic = this%neighbour_info(n)%iclo(m)
-                send_buf(i) = l_data(ic)
+                send_buf(m) = l_data(ic)
             enddo
         endif
 
@@ -725,14 +742,17 @@ contains
         logical,           intent(inout) :: l_data(:)
         logical, allocatable             :: recv_buf(:)
         type(MPI_Status)                 :: recv_status
-        integer                          :: recv_size, m, i
+        integer                          :: recv_size, m
 
 
         ! check for incoming messages
         call mpi_check_for_message(neighbours(n)%rank,      &
                                    RECV_NEIGHBOUR_TAG(n),   &
                                    recv_size,               &
-                                   cart)
+                                   cart,                    &
+                                   MPI_LOGICAL)
+
+        print *, "recv size all", recv_size, n, RECV_NEIGHBOUR_TAG(n)
 
         allocate(recv_buf(recv_size))
 
@@ -751,8 +771,7 @@ contains
         if (recv_size > 0) then
             ! unpack ic index and logical to recv buffer
             do m = 1, recv_size
-                i = 1 + (m-1)
-                l_data(m) = recv_buf(i)
+                l_data(m) = recv_buf(m)
             enddo
         endif
 

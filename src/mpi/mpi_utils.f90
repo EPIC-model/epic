@@ -43,11 +43,12 @@ module mpi_utils
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine mpi_check_for_message(source, tag, recv_size, comm)
-            integer,            intent(in)    :: source, tag
-            integer,            intent(out)   :: recv_size
-            type(communicator), intent(inout) :: comm
-            type(MPI_Status)                  :: status
+        subroutine mpi_check_for_message(source, tag, recv_size, comm, dtype)
+            integer,                      intent(in)    :: source, tag
+            integer,                      intent(out)   :: recv_size
+            type(communicator),           intent(inout) :: comm
+            type(MPI_Datatype), optional, intent(in)    :: dtype
+            type(MPI_Status)                            :: status
 
             status%MPI_SOURCE = -1
             status%MPI_TAG = -1
@@ -67,7 +68,12 @@ module mpi_utils
                 "in MPI_Status of mpi_utils::mpi_check_for_message.")
 
             recv_size = 0
-            call MPI_get_count(status, MPI_DOUBLE_PRECISION, recv_size, comm%err)
+
+            if (present(dtype)) then
+                call MPI_get_count(status, dtype, recv_size, comm%err)
+            else
+                call MPI_get_count(status, MPI_DOUBLE_PRECISION, recv_size, comm%err)
+            endif
 
             call mpi_check_for_error(comm, &
                 "in MPI_get_count of mpi_utils::mpi_check_for_message.")
