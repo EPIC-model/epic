@@ -9,15 +9,6 @@ module parcel_nearest_mpi
 
     private
 
-    logical, allocatable, dimension(:), target :: l_north_buf           &
-                                                , l_south_buf           &
-                                                , l_west_buf            &
-                                                , l_east_buf            &
-                                                , l_northwest_buf       &
-                                                , l_northeast_buf       &
-                                                , l_southwest_buf       &
-                                                , l_southeast_buf
-
     type(intlog_pair_t), allocatable, dimension(:), target :: il_north_buf      &
                                                             , il_south_buf      &
                                                             , il_west_buf       &
@@ -27,17 +18,18 @@ module parcel_nearest_mpi
                                                             , il_southwest_buf  &
                                                             , il_southeast_buf
 
-    type :: neighbour_info_t
+    type :: remote_t
         integer              :: rank
-        integer, allocatable :: iclo(:)       ! store parcel index of remote *ic*
+        integer, allocatable :: put_iclo(:)    ! ic which *this* MPI rank sends to iclo-owning MPI rank
+        integer, allocatable :: get_iclo(:)    ! ic which *this* iclo-owning MPI rank sends to remote MPI rank
         logical, allocatable :: l_merged(:)
         logical, allocatable :: l_available(:)
         logical, allocatable :: l_leaf(:)
 
         ! mark all indices that were changed with a *put* operation
-        integer, allocatable :: dirty_avail(:)
-        integer, allocatable :: dirty_leaf(:)
-        integer, allocatable :: dirty_merged(:)
+        logical, allocatable :: dirty_avail(:)
+        logical, allocatable :: dirty_leaf(:)
+        logical, allocatable :: dirty_merged(:)
 
     contains
         procedure :: alloc
@@ -50,10 +42,7 @@ module parcel_nearest_mpi
 
     type :: tree_t
 
-        integer :: n_sends(8)
-        integer :: n_recvs(8)
-
-        type(neighbour_info_t) :: neighbour_info(8)
+        type(remote_t) :: remote(8)
 
         ! Logicals used to determine which mergers are executed
         ! Integers above could be reused for this, but this would
@@ -90,15 +79,14 @@ module parcel_nearest_mpi
 contains
 
     subroutine alloc(this, n)
-        class(neighbour_info_t), intent(inout) :: this
-        integer,                 intent(in)    :: n
-        integer                                :: m
+        class(remote_t), intent(inout) :: this
+        integer,         intent(in)    :: n
+        integer                        :: m
 
         if (.not. allocated(this%l_merged)) then
             allocate(this%l_merged(n))
             allocate(this%l_available(n))
             allocate(this%l_leaf(n))
-            allocate(this%iclo(n))
             allocate(this%dirty_avail(n))
             allocate(this%dirty_leaf(n))
             allocate(this%dirty_merged(n))
@@ -108,10 +96,9 @@ contains
                 call this%lrealloc(n, m, this%l_merged)
                 call this%lrealloc(n, m, this%l_available)
                 call this%lrealloc(n, m, this%l_leaf)
-                call this%irealloc(n, m, this%iclo)
-                call this%irealloc(n, m, this%dirty_avail)
-                call this%irealloc(n, m, this%dirty_leaf)
-                call this%irealloc(n, m, this%dirty_merged)
+                call this%lrealloc(n, m, this%dirty_avail)
+                call this%lrealloc(n, m, this%dirty_leaf)
+                call this%lrealloc(n, m, this%dirty_merged)
             endif
         endif
 
@@ -120,11 +107,11 @@ contains
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     subroutine lrealloc(this, n, m, l_data)
-        class(neighbour_info_t), intent(inout) :: this
-        integer,                 intent(in)    :: n
-        integer,                 intent(in)    :: m
-        logical, allocatable,    intent(inout) :: l_data(:)
-        logical, allocatable                   :: tmp(:)
+        class(remote_t),      intent(inout) :: this
+        integer,              intent(in)    :: n
+        integer,              intent(in)    :: m
+        logical, allocatable, intent(inout) :: l_data(:)
+        logical, allocatable                :: tmp(:)
 
         allocate(tmp(n))
         tmp(1:m) = l_data(1:m)
@@ -135,11 +122,11 @@ contains
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     subroutine irealloc(this, n, m, l_data)
-        class(neighbour_info_t), intent(inout) :: this
-        integer,                 intent(in)    :: n
-        integer,                 intent(in)    :: m
-        integer, allocatable,    intent(inout) :: l_data(:)
-        integer, allocatable                   :: tmp(:)
+        class(remote_t),      intent(inout) :: this
+        integer,              intent(in)    :: n
+        integer,              intent(in)    :: m
+        integer, allocatable, intent(inout) :: l_data(:)
+        integer, allocatable                :: tmp(:)
 
         allocate(tmp(n))
         tmp(1:m) = l_data(1:m)
@@ -150,12 +137,11 @@ contains
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     subroutine dealloc(this)
-        class(neighbour_info_t), intent(inout) :: this
+        class(remote_t), intent(inout) :: this
         if (allocated(this%l_merged)) then
             deallocate(this%l_merged)
             deallocate(this%l_available)
             deallocate(this%l_leaf)
-            deallocate(this%iclo)
             deallocate(this%dirty_avail)
             deallocate(this%dirty_leaf)
             deallocate(this%dirty_merged)
@@ -176,9 +162,19 @@ contains
         else
             n = get_neighbour_from_rank(rank)
 
-            m = findloc(array=this%neighbour_info(n)%iclo, value=ic, dim=1)
-            this%neighbour_info(n)%l_available(m) = val
-            this%neighbour_info(n)%dirty_avail(m) = ic
+            m = findloc(array=this%remote(n)%put_iclo, value=ic, dim=1)
+
+            if (m == 0) then
+                call mpi_check_for_error(cart, &
+                    "in parcel_nearest_mpi::put_avail: Close parcel index not found.")
+            else if (m > size(this%remote(n)%l_available)) then
+                print *, m, size(this%remote(n)%l_available)
+                call mpi_check_for_error(cart, &
+                    "in parcel_nearest_mpi::put_avail: Index larger than array size.")
+            endif
+
+            this%remote(n)%l_available(m) = val
+            this%remote(n)%dirty_avail(m) = .true.
         endif
 
     end subroutine put_avail
@@ -196,9 +192,19 @@ contains
             this%l_leaf(ic) = val
         else
             n = get_neighbour_from_rank(rank)
-            m = findloc(array=this%neighbour_info(n)%iclo, value=ic, dim=1)
-            this%neighbour_info(n)%l_leaf(m) = val
-            this%neighbour_info(n)%dirty_leaf(m) = ic
+
+            m = findloc(array=this%remote(n)%put_iclo, value=ic, dim=1)
+
+            if (m == 0) then
+                call mpi_check_for_error(cart, &
+                    "in parcel_nearest_mpi::put_leaf: Close parcel index not found.")
+            else if (m > size(this%remote(n)%l_leaf)) then
+                call mpi_check_for_error(cart, &
+                    "in parcel_nearest_mpi::put_leaf: Index larger than array size.")
+            endif
+
+            this%remote(n)%l_leaf(m) = val
+            this%remote(n)%dirty_leaf(m) = .true.
         endif
 
     end subroutine put_leaf
@@ -217,9 +223,18 @@ contains
         else
             n = get_neighbour_from_rank(rank)
 
-            m = findloc(array=this%neighbour_info(n)%iclo, value=ic, dim=1)
-            this%neighbour_info(n)%l_merged(m) = val
-            this%neighbour_info(n)%dirty_merged(m) = ic
+            m = findloc(array=this%remote(n)%put_iclo, value=ic, dim=1)
+
+            if (m == 0) then
+                call mpi_check_for_error(cart, &
+                    "in parcel_nearest_mpi::put_merged: Close parcel index not found.")
+            else if (m > size(this%remote(n)%l_merged)) then
+                call mpi_check_for_error(cart, &
+                    "in parcel_nearest_mpi::put_merged: Index larger than array size.")
+            endif
+
+            this%remote(n)%l_merged(m) = val
+            this%remote(n)%dirty_merged(m) = .true.
         endif
 
     end subroutine put_merged
@@ -238,8 +253,14 @@ contains
         else
             n = get_neighbour_from_rank(rank)
 
-            m = findloc(array=this%neighbour_info(n)%iclo, value=ic, dim=1)
-            val = this%neighbour_info(n)%l_available(m)
+            m = findloc(array=this%remote(n)%put_iclo, value=ic, dim=1)
+
+            if (m == 0) then
+                call mpi_check_for_error(cart, &
+                    "in parcel_nearest_mpi::get_avail: Close parcel index not found.")
+            endif
+
+            val = this%remote(n)%l_available(m)
         endif
 
     end function get_avail
@@ -258,8 +279,14 @@ contains
         else
             n = get_neighbour_from_rank(rank)
 
-            m = findloc(array=this%neighbour_info(n)%iclo, value=ic, dim=1)
-            val = this%neighbour_info(n)%l_leaf(m)
+            m = findloc(array=this%remote(n)%put_iclo, value=ic, dim=1)
+
+            if (m == 0) then
+                call mpi_check_for_error(cart, &
+                    "in parcel_nearest_mpi::get_leaf: Close parcel index not found.")
+            endif
+
+            val = this%remote(n)%l_leaf(m)
         endif
 
     end function get_leaf
@@ -278,29 +305,34 @@ contains
         else
             n = get_neighbour_from_rank(rank)
 
-            m = findloc(array=this%neighbour_info(n)%iclo, value=ic, dim=1)
-            val = this%neighbour_info(n)%l_merged(m)
+            m = findloc(array=this%remote(n)%put_iclo, value=ic, dim=1)
+
+            if (m == 0) then
+                call mpi_check_for_error(cart, &
+                    "in parcel_nearest_mpi::get_merged: Close parcel index not found.")
+            endif
+
+            val = this%remote(n)%l_merged(m)
         endif
 
     end function get_merged
 
-    !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     subroutine setup(this, iclo, rclo, n_local_small)
         class(tree_t), intent(inout)   :: this
         integer,       intent(in)      :: iclo(:)
         integer,       intent(in)      :: rclo(:)
         integer,       intent(in)      :: n_local_small
-        integer, dimension(:), pointer :: send_buf
-        integer, allocatable           :: recv_buf(:)
         type(MPI_Request)              :: requests(8)
         type(MPI_Status)               :: recv_status, send_statuses(8)
+        integer                        :: n_sends(8), n_recvs(8)
         integer                        :: n, m, send_size, recv_size, rc, l
 
 !         call start_timer(nearest_exchange_timer)
 
-        this%n_recvs = 0
-        this%n_sends = 0
+        n_recvs = 0
+        n_sends = 0
 
         !--------------------------------------------------
         ! Figure out how many *this* MPI rank sends to
@@ -309,15 +341,14 @@ contains
             rc = rclo(m)
             do n = 1, 8
                 if (rc == neighbours(n)%rank) then
-                    this%n_sends(n) = this%n_sends(n) + 1
-!                     exit
+                    n_sends(n) = n_sends(n) + 1
                 endif
             enddo
         enddo
 
         ! Send information to neighbouring ranks
         do n = 1, 8
-            call MPI_Isend(this%n_sends(n),         &
+            call MPI_Isend(n_sends(n),              &
                            1,                       &
                            MPI_INTEGER,             &
                            neighbours(n)%rank,      &
@@ -332,7 +363,7 @@ contains
 
         ! Receive information from neighbouring ranks
         do n = 1, 8
-            call MPI_Recv(this%n_recvs(n),          &
+            call MPI_Recv(n_recvs(n),               &
                           1,                        &
                           MPI_INTEGER,              &
                           neighbours(n)%rank,       &
@@ -361,28 +392,28 @@ contains
         ! Send information to neighbouring ranks
         do n = 1, 8
 
-            send_size = this%n_sends(n)
+            send_size = n_sends(n)
 
-            call get_parcel_id_buffer_ptr(n, send_buf)
+            allocate(this%remote(n)%put_iclo(send_size))
 
-            allocate(send_buf(send_size))
+            call this%remote(n)%alloc(send_size)
 
             l = 1
             do m = 1, n_local_small
                 rc = rclo(m)
                 if (rc == neighbours(n)%rank) then
-                    send_buf(l) = iclo(m)
+                    this%remote(n)%put_iclo(l) = iclo(m)
                     l = l + 1
                 endif
             enddo
 
-            call MPI_Isend(send_buf(1:send_size),   &
-                           send_size,               &
-                           MPI_INTEGER,             &
-                           neighbours(n)%rank,      &
-                           SEND_NEIGHBOUR_TAG(n),   &
-                           cart%comm,               &
-                           requests(n),             &
+            call MPI_Isend(this%remote(n)%put_iclo(1:send_size),    &
+                           send_size,                               &
+                           MPI_INTEGER,                             &
+                           neighbours(n)%rank,                      &
+                           SEND_NEIGHBOUR_TAG(n),                   &
+                           cart%comm,                               &
+                           requests(n),                             &
                            cart%err)
 
             call mpi_check_for_error(cart, &
@@ -392,32 +423,22 @@ contains
         ! Receive information from neighbouring ranks
         do n = 1, 8
 
-            recv_size = this%n_recvs(n)
+            recv_size = n_recvs(n)
 
-            call this%neighbour_info(n)%alloc(recv_size)
+            allocate(this%remote(n)%get_iclo(recv_size))
 
-            allocate(recv_buf(recv_size))
-
-            call MPI_Recv(recv_buf(1:recv_size),    &
-                          recv_size,                &
-                          MPI_INTEGER,              &
-                          neighbours(n)%rank,       &
-                          RECV_NEIGHBOUR_TAG(n),    &
-                          cart%comm,                &
-                          recv_status,              &
+            call MPI_Recv(this%remote(n)%get_iclo(1:recv_size), &
+                          recv_size,                            &
+                          MPI_INTEGER,                          &
+                          neighbours(n)%rank,                   &
+                          RECV_NEIGHBOUR_TAG(n),                &
+                          cart%comm,                            &
+                          recv_status,                          &
                           cart%err)
 
             call mpi_check_for_error(cart, &
                 "in MPI_Recv of parcel_nearest::resolve_tree.")
 
-
-            if (recv_size > 0) then
-                do m = 1, recv_size
-                    this%neighbour_info(n)%iclo(m) = recv_buf(m)
-                enddo
-            endif
-
-            deallocate(recv_buf)
         enddo
 
         call MPI_Waitall(8,                 &
@@ -427,11 +448,6 @@ contains
 
         call mpi_check_for_error(cart, &
             "in MPI_Waitall of parcel_nearest::setup.")
-
-!         ! Free all send buffers
-!         call deallocate_parcel_id_buffers
-
-        print *, "setup done"
 
 !         call stop_timer(nearest_exchange_timer)
     end subroutine setup
@@ -447,9 +463,9 @@ contains
         !----------------------------------------------------------------------
         ! Send from remote to owning rank and sync data at owning rank
         do n = 1, 8
-            call this%send_from_remote(n,                                   &
-                                       this%neighbour_info(n)%l_available,  &
-                                       this%neighbour_info(n)%dirty_avail,  &
+            call this%send_from_remote(n,                           &
+                                       this%remote(n)%l_available,  &
+                                       this%remote(n)%dirty_avail,  &
                                        requests(n))
         enddo
 
@@ -474,7 +490,10 @@ contains
         enddo
 
         do n = 1, 8
-            call this%recv_all(n, this%neighbour_info(n)%l_available)
+            call this%recv_all(n, this%remote(n)%l_available)
+
+            ! Reset:
+            this%remote(n)%dirty_avail = .false.
         enddo
 
         call MPI_Waitall(8,                 &
@@ -486,6 +505,7 @@ contains
                                 "in MPI_Waitall of parcel_mpi::sync_avail.")
 
         call free_buffers
+
 
     end subroutine sync_avail
 
@@ -501,8 +521,8 @@ contains
         ! Send from remote to owning rank and sync data at owning rank
         do n = 1, 8
             call this%send_from_remote(n,                                   &
-                                       this%neighbour_info(n)%l_leaf,       &
-                                       this%neighbour_info(n)%dirty_leaf,   &
+                                       this%remote(n)%l_leaf,       &
+                                       this%remote(n)%dirty_leaf,   &
                                        requests(n))
         enddo
 
@@ -527,7 +547,10 @@ contains
         enddo
 
         do n = 1, 8
-            call this%recv_all(n, this%neighbour_info(n)%l_leaf)
+            call this%recv_all(n, this%remote(n)%l_leaf)
+
+            ! Reset:
+            this%remote(n)%dirty_leaf = .false.
         enddo
 
         call MPI_Waitall(8,                 &
@@ -539,6 +562,7 @@ contains
                                 "in MPI_Waitall of parcel_mpi::sync_leaf.")
 
         call free_buffers
+
 
     end subroutine sync_leaf
 
@@ -553,9 +577,9 @@ contains
         !----------------------------------------------------------------------
         ! Send from remote to owning rank and sync data at owning rank
         do n = 1, 8
-            call this%send_from_remote(n,                                   &
-                                       this%neighbour_info(n)%l_merged,     &
-                                       this%neighbour_info(n)%dirty_merged, &
+            call this%send_from_remote(n,                           &
+                                       this%remote(n)%l_merged,     &
+                                       this%remote(n)%dirty_merged, &
                                        requests(n))
         enddo
 
@@ -573,8 +597,6 @@ contains
 
         call free_buffers
 
-        print *, "next step"
-
         !----------------------------------------------------------------------
         ! Send result from owning rank to remote
         do n = 1, 8
@@ -582,7 +604,10 @@ contains
         enddo
 
         do n = 1, 8
-            call this%recv_all(n, this%neighbour_info(n)%l_merged)
+            call this%recv_all(n, this%remote(n)%l_merged)
+
+            ! Reset:
+            this%remote(n)%dirty_merged = .false.
         enddo
 
         call MPI_Waitall(8,                 &
@@ -595,6 +620,7 @@ contains
 
         call free_buffers
 
+
     end subroutine sync_merged
 
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -603,30 +629,32 @@ contains
         class(tree_t),               intent(inout) :: this
         integer,                     intent(in)    :: n
         logical,                     intent(in)    :: l_data(:)
-        integer,                     intent(in)    :: dirty(:)
+        logical,                     intent(in)    :: dirty(:)
         type(MPI_Request),           intent(inout) :: request
         type(intlog_pair_t), dimension(:), pointer :: send_buf
-        integer                                    :: send_size, m, i, l
+        integer                                    :: send_size, m, i, ic
 
 
         call get_int_logical_buffer(n, send_buf)
 
-        ! find chagnged (i.e. 'dirty') values
-        send_size = count(dirty > 0)
-
-        print *, "send size:", send_size
+        ! find changed (i.e. 'dirty') values
+        send_size = count(dirty .eqv. .true.)
 
         allocate(send_buf(send_size))
 
+        print *, world%rank, send_size, size(send_buf), size(dirty)
+        print *, world%rank, dirty
+
         if (send_size > 0) then
             ! pack ic index and logical to send buffer
-            l = 1
+            i = 1
             do m = 1, size(dirty)
-                if (dirty(m) > 0) then
-                    i = 1 + (l-1)
-                    send_buf(i)%ival = dirty(m)
+                if (dirty(m)) then
+                    print *, world%rank, "i = ", i
+                    ic = this%remote(n)%put_iclo(m)
+                    send_buf(i)%ival = ic
                     send_buf(i)%lval = l_data(m)
-                    l = l + 1
+                    i = i + 1
                 endif
             enddo
         endif
@@ -653,7 +681,7 @@ contains
         logical,           intent(inout) :: l_data(:)
         type(intlog_pair_t), allocatable :: recv_buf(:)
         type(MPI_Status)                 :: recv_status
-        integer                          :: recv_size, m, i, ic
+        integer                          :: recv_size, m, ic
 
 
         ! check for incoming messages
@@ -663,8 +691,6 @@ contains
                                    cart,                    &
                                    MPI_INTEGER_LOGICAL_ARRAY)
 
-
-        print *, "recv size:", recv_size
 
         allocate(recv_buf(recv_size))
 
@@ -683,9 +709,8 @@ contains
         if (recv_size > 0) then
             ! unpack ic index and logical to recv buffer
             do m = 1, recv_size
-                i = 1 + (m-1)
-                ic = recv_buf(i)%ival
-                l_data(ic) = recv_buf(i)%lval
+                ic = recv_buf(m)%ival
+                l_data(ic) = recv_buf(m)%lval
             enddo
         endif
 
@@ -696,37 +721,35 @@ contains
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     subroutine send_all(this, n, l_data, request)
-        class(tree_t),     intent(inout) :: this
-        integer,           intent(in)    :: n
-        logical,           intent(in)    :: l_data(:)
-        type(MPI_Request), intent(inout) :: request
-        logical, dimension(:), pointer   :: send_buf
-        integer                          :: send_size, m, ic
+        class(tree_t),     intent(inout)           :: this
+        integer,           intent(in)              :: n
+        logical,           intent(in)              :: l_data(:)
+        type(MPI_Request), intent(inout)           :: request
+        type(intlog_pair_t), dimension(:), pointer :: send_buf
+        integer                                    :: send_size, m, ic
 
+        call get_int_logical_buffer(n, send_buf)
 
-        call get_logical_buffer(n, send_buf)
-
-        send_size = this%n_sends(n)
-
-        print *, "send size all", send_size, n, SEND_NEIGHBOUR_TAG(n)
+        send_size = size(this%remote(n)%get_iclo)
 
         allocate(send_buf(send_size))
 
         if (send_size > 0) then
             ! pack ic index and logical to send buffer
             do m = 1, send_size
-                ic = this%neighbour_info(n)%iclo(m)
-                send_buf(m) = l_data(ic)
+                ic = this%remote(n)%get_iclo(m)
+                send_buf(m)%ival = ic
+                send_buf(m)%lval = l_data(ic)
             enddo
         endif
 
-        call MPI_Isend(send_buf(1:send_size),   &
-                       send_size,               &
-                       MPI_LOGICAL,             &
-                       neighbours(n)%rank,      &
-                       SEND_NEIGHBOUR_TAG(n),   &
-                       cart%comm,               &
-                       request,                 &
+        call MPI_Isend(send_buf(1:send_size),       &
+                       send_size,                   &
+                       MPI_INTEGER_LOGICAL_ARRAY,   &
+                       neighbours(n)%rank,          &
+                       SEND_NEIGHBOUR_TAG(n),       &
+                       cart%comm,                   &
+                       request,                     &
                        cart%err)
 
         call mpi_check_for_error(cart, &
@@ -740,29 +763,27 @@ contains
         class(tree_t),     intent(inout) :: this
         integer,           intent(in)    :: n
         logical,           intent(inout) :: l_data(:)
-        logical, allocatable             :: recv_buf(:)
+        type(intlog_pair_t), allocatable :: recv_buf(:)
         type(MPI_Status)                 :: recv_status
-        integer                          :: recv_size, m
+        integer                          :: recv_size, m, l, ic
 
 
         ! check for incoming messages
-        call mpi_check_for_message(neighbours(n)%rank,      &
-                                   RECV_NEIGHBOUR_TAG(n),   &
-                                   recv_size,               &
-                                   cart,                    &
-                                   MPI_LOGICAL)
-
-        print *, "recv size all", recv_size, n, RECV_NEIGHBOUR_TAG(n)
+        call mpi_check_for_message(neighbours(n)%rank,          &
+                                   RECV_NEIGHBOUR_TAG(n),       &
+                                   recv_size,                   &
+                                   cart,                        &
+                                   MPI_INTEGER_LOGICAL_ARRAY)
 
         allocate(recv_buf(recv_size))
 
-        call MPI_Recv(recv_buf(1:recv_size),    &
-                      recv_size,                &
-                      MPI_LOGICAL,              &
-                      neighbours(n)%rank,       &
-                      RECV_NEIGHBOUR_TAG(n),    &
-                      cart%comm,                &
-                      recv_status,              &
+        call MPI_Recv(recv_buf(1:recv_size),        &
+                      recv_size,                    &
+                      MPI_INTEGER_LOGICAL_ARRAY,    &
+                      neighbours(n)%rank,           &
+                      RECV_NEIGHBOUR_TAG(n),        &
+                      cart%comm,                    &
+                      recv_status,                  &
                       cart%err)
 
         call mpi_check_for_error(cart, &
@@ -770,72 +791,20 @@ contains
 
         if (recv_size > 0) then
             ! unpack ic index and logical to recv buffer
-            do m = 1, recv_size
-                l_data(m) = recv_buf(m)
+            do l = 1, recv_size
+                ic = recv_buf(l)%ival
+                m = findloc(array=this%remote(n)%put_iclo, value=ic, dim=1)
+                if (m == 0) then
+                    call mpi_check_for_error(cart, &
+                        "in MPI_Recv of parcel_nearest::recv_all: Close index not found.")
+                endif
+                l_data(m) = recv_buf(l)%lval
             enddo
         endif
 
         deallocate(recv_buf)
 
     end subroutine recv_all
-
-    !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-    subroutine free_buffers
-
-        if (allocated(l_north_buf)) then
-            deallocate(l_north_buf)
-            deallocate(l_south_buf)
-            deallocate(l_west_buf)
-            deallocate(l_east_buf)
-            deallocate(l_northwest_buf)
-            deallocate(l_northeast_buf)
-            deallocate(l_southwest_buf)
-            deallocate(l_southeast_buf)
-        endif
-
-        if (allocated(il_north_buf)) then
-            deallocate(il_north_buf)
-            deallocate(il_south_buf)
-            deallocate(il_west_buf)
-            deallocate(il_east_buf)
-            deallocate(il_northwest_buf)
-            deallocate(il_northeast_buf)
-            deallocate(il_southwest_buf)
-            deallocate(il_southeast_buf)
-        endif
-
-    end subroutine free_buffers
-
-    !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-    subroutine get_logical_buffer(dir, buf_ptr)
-        integer,                        intent(in)  :: dir
-        logical, dimension(:), pointer, intent(out) :: buf_ptr
-
-        select case (dir)
-            case (MPI_NORTH)
-                buf_ptr => l_north_buf
-            case (MPI_SOUTH)
-                buf_ptr => l_south_buf
-            case (MPI_WEST)
-                buf_ptr => l_west_buf
-            case (MPI_EAST)
-                buf_ptr => l_east_buf
-            case (MPI_NORTHWEST)
-                buf_ptr => l_northwest_buf
-            case (MPI_NORTHEAST)
-                buf_ptr => l_northeast_buf
-            case (MPI_SOUTHWEST)
-                buf_ptr => l_southwest_buf
-            case (MPI_SOUTHEAST)
-                buf_ptr => l_southeast_buf
-            case default
-                call mpi_exit_on_error(&
-                    "in parcel_nearest_mpi::get_logical_buffer: No valid direction.")
-        end select
-
-    end subroutine get_logical_buffer
 
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -866,5 +835,22 @@ contains
         end select
 
     end subroutine get_int_logical_buffer
+
+    !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+    subroutine free_buffers
+
+        if (allocated(il_north_buf)) then
+            deallocate(il_north_buf)
+            deallocate(il_south_buf)
+            deallocate(il_west_buf)
+            deallocate(il_east_buf)
+            deallocate(il_northwest_buf)
+            deallocate(il_northeast_buf)
+            deallocate(il_southwest_buf)
+            deallocate(il_southeast_buf)
+        endif
+
+    end subroutine free_buffers
 
 end module parcel_nearest_mpi
