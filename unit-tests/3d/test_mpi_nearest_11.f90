@@ -33,9 +33,7 @@ program test_mpi_nearest_11
 
     call register_timer('merge nearest', merge_nearest_timer)
     call register_timer('merge tree resolve', merge_tree_resolve_timer)
-    call register_timer('nearest MPI barrier', nearest_barrier_timer)
     call register_timer('nearest MPI allreduce', nearest_allreduce_timer)
-    call register_timer('MPI RMA timer (in tree resolve)', nearest_rma_timer)
 
     parcel%lambda_max = five
     ! vmin = vcell / parcel%min_vratio
@@ -45,7 +43,6 @@ program test_mpi_nearest_11
 
     call update_parameters
 
-    call nearest_win_allocate
 
     call parcels%allocate(max_num_parcels)
 
@@ -86,7 +83,6 @@ program test_mpi_nearest_11
         call print_result_logical('Test MPI nearest algorithm: (7) a = b - c', passed)
     endif
 
-    call nearest_win_deallocate
 
     call mpi_env_finalise
 

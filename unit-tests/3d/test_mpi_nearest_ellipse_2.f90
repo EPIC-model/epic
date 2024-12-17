@@ -33,9 +33,7 @@ program test_mpi_nearest_8
 
     call register_timer('merge nearest', merge_nearest_timer)
     call register_timer('merge tree resolve', merge_tree_resolve_timer)
-    call register_timer('nearest MPI barrier', nearest_barrier_timer)
     call register_timer('nearest MPI allreduce', nearest_allreduce_timer)
-    call register_timer('MPI RMA timer (in tree resolve)', nearest_rma_timer)
 
     parcel%lambda_max = five
     ! vmin = vcell / parcel%min_vratio
@@ -46,15 +44,11 @@ program test_mpi_nearest_8
 
     call update_parameters
 
-    call nearest_win_allocate
-
     call run_test(parcels, iz=box%lo(3)+1, rmin=vmin)
     bot_parcels%z_position = lower(3)
     call run_test(bot_parcels, iz=box%lo(3), rmin=amin)
     top_parcels%z_position = extent(3)
     call run_test(top_parcels, iz=box%lo(3), rmin=amin)
-
-    call nearest_win_deallocate
 
     call mpi_env_finalise
 

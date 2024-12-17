@@ -50,7 +50,6 @@ module parcel_nearest_mpi
         logical, allocatable :: l_leaf(:)
         logical, allocatable :: l_available(:)
         logical, allocatable :: l_merged(:)    ! indicates parcels merged in first stage
-        integer, allocatable :: index_to_remote(:)  ! entries that must be sent to neighbours
 
     contains
         procedure, private :: send_from_remote
@@ -58,7 +57,10 @@ module parcel_nearest_mpi
         procedure, private :: send_all
         procedure, private :: recv_all
 
-        procedure :: setup
+        procedure :: initialise
+        procedure :: finalise
+        procedure :: gather_info
+        procedure :: free_memory
 
         procedure :: put_avail
         procedure :: put_leaf
@@ -150,6 +152,39 @@ contains
 
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+    subroutine initialise(this, num)
+        class(tree_t), intent(inout) :: this
+        integer,       intent(in)    :: num
+
+        if (.not. allocated(this%l_merged)) then
+            allocate(this%l_merged(num))
+            allocate(this%l_leaf(num))
+            allocate(this%l_available(num))
+        endif
+
+        this%l_merged = .false.
+        this%l_leaf = .false.
+        this%l_available = .false.
+
+    end subroutine initialise
+
+    !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+    subroutine finalise(this)
+        class(tree_t), intent(inout) :: this
+
+        if (allocated(this%l_merged)) then
+            deallocate(this%l_merged)
+            deallocate(this%l_leaf)
+            deallocate(this%l_available)
+        endif
+
+        call this%free_memory
+
+    end subroutine finalise
+
+    !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
     subroutine put_avail(this, rank, ic, val)
         class(tree_t), intent(inout) :: this
         integer,       intent(in)    :: rank
@@ -168,7 +203,6 @@ contains
                 call mpi_check_for_error(cart, &
                     "in parcel_nearest_mpi::put_avail: Close parcel index not found.")
             else if (m > size(this%remote(n)%l_available)) then
-                print *, m, size(this%remote(n)%l_available)
                 call mpi_check_for_error(cart, &
                     "in parcel_nearest_mpi::put_avail: Index larger than array size.")
             endif
@@ -319,7 +353,7 @@ contains
 
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-    subroutine setup(this, iclo, rclo, n_local_small)
+    subroutine gather_info(this, iclo, rclo, n_local_small)
         class(tree_t), intent(inout)   :: this
         integer,       intent(in)      :: iclo(:)
         integer,       intent(in)      :: rclo(:)
@@ -450,9 +484,36 @@ contains
             "in MPI_Waitall of parcel_nearest::setup.")
 
 !         call stop_timer(nearest_exchange_timer)
-    end subroutine setup
+    end subroutine gather_info
 
-    !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+    subroutine free_memory(this)
+        class(tree_t), intent(inout) :: this
+        integer                      :: n
+
+        do n = 1, 8
+            call this%remote(n)%dealloc
+
+            if (allocated(this%remote(n)%put_iclo)) then
+                deallocate(this%remote(n)%put_iclo)
+            endif
+
+            if (allocated(this%remote(n)%get_iclo)) then
+                deallocate(this%remote(n)%get_iclo)
+            endif
+
+        enddo
+
+        if (allocated(this%l_leaf)) then
+            deallocate(this%l_leaf)
+            deallocate(this%l_available)
+            deallocate(this%l_merged)
+        endif
+
+    end subroutine free_memory
+
+    !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     subroutine sync_avail(this)
         class(tree_t), intent(inout) :: this
@@ -632,25 +693,21 @@ contains
         logical,                     intent(in)    :: dirty(:)
         type(MPI_Request),           intent(inout) :: request
         type(intlog_pair_t), dimension(:), pointer :: send_buf
-        integer                                    :: send_size, m, i, ic
+        integer                                    :: send_size, m, i, ic, nlen
 
-
+        nlen = size(dirty)
         call get_int_logical_buffer(n, send_buf)
 
         ! find changed (i.e. 'dirty') values
-        send_size = count(dirty .eqv. .true.)
+        send_size = count(dirty)
 
         allocate(send_buf(send_size))
-
-        print *, world%rank, send_size, size(send_buf), size(dirty)
-        print *, world%rank, dirty
 
         if (send_size > 0) then
             ! pack ic index and logical to send buffer
             i = 1
-            do m = 1, size(dirty)
+            do m = 1, nlen
                 if (dirty(m)) then
-                    print *, world%rank, "i = ", i
                     ic = this%remote(n)%put_iclo(m)
                     send_buf(i)%ival = ic
                     send_buf(i)%lval = l_data(m)

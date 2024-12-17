@@ -82,9 +82,7 @@ program test_mpi_nearest_subcomm
 
     call register_timer('merge nearest', merge_nearest_timer)
     call register_timer('merge tree resolve', merge_tree_resolve_timer)
-    call register_timer('nearest MPI barrier', nearest_barrier_timer)
     call register_timer('nearest MPI allreduce', nearest_allreduce_timer)
-    call register_timer('MPI RMA timer (in tree resolve)', nearest_rma_timer)
 
     parcel%lambda_max = five
     ! vmin = vcell / parcel%min_vratio
@@ -93,8 +91,6 @@ program test_mpi_nearest_subcomm
     call mpi_layout_init(lower, extent, nx, ny, nz)
 
     call update_parameters
-
-    call nearest_win_allocate
 
     call parcels%allocate(max_num_parcels)
 
@@ -124,8 +120,6 @@ program test_mpi_nearest_subcomm
     if (world%rank == world%root) then
         call print_result_logical('Test MPI nearest algorithm subcomm', passed)
     endif
-
-    call nearest_win_deallocate
 
     call mpi_env_finalise
 

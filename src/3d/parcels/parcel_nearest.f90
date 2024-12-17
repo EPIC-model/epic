@@ -295,12 +295,8 @@ module parcel_nearest
             n_neighbour_small = 0
             n_remote_small = 0
 
-            allocate(tree%l_merged(max_num_parcels))
-            allocate(tree%l_leaf(max_num_parcels))
-            allocate(tree%l_available(max_num_parcels))
-            tree%l_merged = .false.
-            tree%l_leaf = .false.
-            tree%l_available = .false.
+            call tree%initialise(max_num_parcels)
+
             near%nppc = 0 !nppc(ijk) will contain the number of parcels in grid cell ijk
 
             ! Bin parcels in cells:
@@ -335,10 +331,8 @@ module parcel_nearest
             if (n_global_small == 0) then
                 call near%dealloc
                 call deallocate_parcel_id_buffers
+                call tree%finalise
                 call stop_timer(merge_nearest_timer)
-                deallocate(tree%l_merged)
-                deallocate(tree%l_leaf)
-                deallocate(tree%l_available)
                 return
             endif
 
@@ -513,9 +507,7 @@ module parcel_nearest
 
             call near%dealloc
 
-            deallocate(tree%l_merged)
-            deallocate(tree%l_leaf)
-            deallocate(tree%l_available)
+            call tree%finalise
 
             call stop_timer(merge_nearest_timer)
 
@@ -847,7 +839,7 @@ module parcel_nearest
             !------------------------------------------------------------------
             ! Exchange information:
 
-            call tree%setup(iclo, rclo, n_local_small)
+            call tree%gather_info(iclo, rclo, n_local_small)
 
             !------------------------------------------------------------------
             ! Resolve tree now:
@@ -1051,6 +1043,8 @@ module parcel_nearest
                 endif
             enddo
             n_local_small = j
+
+            call tree%free_memory
 
             call stop_timer(merge_tree_resolve_timer)
         end subroutine resolve_tree
