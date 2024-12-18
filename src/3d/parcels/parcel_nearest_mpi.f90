@@ -104,6 +104,13 @@ contains
             endif
         endif
 
+        this%l_merged = .false.
+        this%l_available = .false.
+        this%l_leaf = .false.
+        this%dirty_avail = .false.
+        this%dirty_leaf = .false.
+        this%dirty_merged = .false.
+
     end subroutine alloc
 
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -581,7 +588,7 @@ contains
         !----------------------------------------------------------------------
         ! Send from remote to owning rank and sync data at owning rank
         do n = 1, 8
-            call this%send_from_remote(n,                                   &
+            call this%send_from_remote(n,                           &
                                        this%remote(n)%l_leaf,       &
                                        this%remote(n)%dirty_leaf,   &
                                        requests(n))
