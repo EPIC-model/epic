@@ -38,6 +38,8 @@ program benchmark_parcel_merging
     call register_timer('MPI allreduce', allreduce_timer)
     call register_timer('generate data', generate_timer)
     call register_timer('nearest MPI allreduce', nearest_allreduce_timer)
+    call register_timer('nearest MPI graph info', nearest_graph_info_timer)
+    call register_timer('nearest MPI graph sync', nearest_graph_sync_timer)
 
     call parse_command_line
 

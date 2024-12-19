@@ -33,7 +33,7 @@ module parcel_nearest
                         , mpi_stop                   &
                         , mpi_check_rma_window_model
     use iso_c_binding, only : c_ptr, c_f_pointer
-    use parcel_nearest_mpi, only : tree_t
+    use parcel_nearest_graph, only : graph_t
     use parcel_mpi, only : n_parcel_sends               &
                          , north_pid                    &
                          , south_pid                    &
@@ -62,9 +62,10 @@ module parcel_nearest
 #endif
     implicit none
 
-    integer:: merge_nearest_timer, merge_tree_resolve_timer
-    integer:: nearest_allreduce_timer
-    integer:: nearest_exchange_timer
+    integer :: merge_nearest_timer, merge_tree_resolve_timer
+    integer :: nearest_allreduce_timer
+    integer :: nearest_graph_info_timer
+    integer :: nearest_graph_sync_timer
 
     private
 
@@ -88,7 +89,7 @@ module parcel_nearest
 
     type(nearest_type) :: near
 
-    type(tree_t) :: tree
+    type(graph_t) :: tree
 
     integer              :: n_neighbour_small(8)  ! number of small parcels received
 
@@ -117,7 +118,8 @@ module parcel_nearest
 #ifdef ENABLE_VERBOSE
             , simtime                           &
 #endif
-            , nearest_exchange_timer            &
+            , nearest_graph_info_timer          &
+            , nearest_graph_sync_timer          &
             , near
 
     contains
@@ -838,8 +840,9 @@ module parcel_nearest
 
             !------------------------------------------------------------------
             ! Exchange information:
-
+            call start_timer(nearest_graph_info_timer)
             call tree%gather_info(iclo, rclo, n_local_small)
+            call stop_timer(nearest_graph_info_timer)
 
             !------------------------------------------------------------------
             ! Resolve tree now:
@@ -864,7 +867,9 @@ module parcel_nearest
                 enddo
 
                 ! Exchange information:
+                call start_timer(nearest_graph_sync_timer)
                 call tree%sync_avail
+                call stop_timer(nearest_graph_sync_timer)
 
                 ! determine leaf parcels
                 do m = 1, n_local_small
@@ -878,7 +883,9 @@ module parcel_nearest
                 enddo
 
                 ! Exchange information:
+                call start_timer(nearest_graph_sync_timer)
                 call tree%sync_leaf
+                call stop_timer(nearest_graph_sync_timer)
 
                 ! filter out parcels that are "unavailable" for merging
                 do m = 1, n_local_small
@@ -894,7 +901,9 @@ module parcel_nearest
                 enddo
 
                 ! Exchange information:
+                call start_timer(nearest_graph_sync_timer)
                 call tree%sync_avail
+                call stop_timer(nearest_graph_sync_timer)
 
                 ! identify mergers in this iteration
                 do m = 1, n_local_small
@@ -915,7 +924,9 @@ module parcel_nearest
                 enddo
 
                 ! Exchange information:
+                call start_timer(nearest_graph_sync_timer)
                 call tree%sync_merged
+                call stop_timer(nearest_graph_sync_timer)
 
                 call start_timer(nearest_allreduce_timer)
                 ! Performance improvement: We actually only need to synchronize with neighbours
@@ -948,7 +959,9 @@ module parcel_nearest
             enddo
 
             ! Exchange information:
+            call start_timer(nearest_graph_sync_timer)
             call tree%sync_avail
+            call stop_timer(nearest_graph_sync_timer)
 
             ! Second stage
             do m = 1, n_local_small
@@ -1007,7 +1020,9 @@ module parcel_nearest
             enddo
 
             ! Exchange information:
+            call start_timer(nearest_graph_sync_timer)
             call tree%sync_avail
+            call stop_timer(nearest_graph_sync_timer)
 
             !------------------------------------------------------
             do m = 1, n_local_small

@@ -1,4 +1,4 @@
-module parcel_nearest_mpi
+module parcel_nearest_graph
     use mpi_layout
     use mpi_utils
     use parcel_mpi, only : get_parcel_id_buffer_ptr     &
@@ -40,7 +40,7 @@ module parcel_nearest_mpi
 
     end type
 
-    type :: tree_t
+    type :: graph_t
 
         type(remote_t) :: remote(8)
 
@@ -76,7 +76,7 @@ module parcel_nearest_mpi
 
     end type
 
-    public :: tree_t
+    public :: graph_t
 
 contains
 
@@ -160,8 +160,8 @@ contains
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     subroutine initialise(this, num)
-        class(tree_t), intent(inout) :: this
-        integer,       intent(in)    :: num
+        class(graph_t), intent(inout) :: this
+        integer,        intent(in)    :: num
 
         if (.not. allocated(this%l_merged)) then
             allocate(this%l_merged(num))
@@ -178,7 +178,7 @@ contains
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     subroutine finalise(this)
-        class(tree_t), intent(inout) :: this
+        class(graph_t), intent(inout) :: this
 
         if (allocated(this%l_merged)) then
             deallocate(this%l_merged)
@@ -193,11 +193,11 @@ contains
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     subroutine put_avail(this, rank, ic, val)
-        class(tree_t), intent(inout) :: this
-        integer,       intent(in)    :: rank
-        integer,       intent(in)    :: ic
-        logical,       intent(in)    :: val
-        integer                      :: n, m
+        class(graph_t), intent(inout) :: this
+        integer,        intent(in)    :: rank
+        integer,        intent(in)    :: ic
+        logical,        intent(in)    :: val
+        integer                       :: n, m
 
         if (rank == cart%rank) then
             this%l_available(ic) = val
@@ -208,10 +208,10 @@ contains
 
             if (m == 0) then
                 call mpi_check_for_error(cart, &
-                    "in parcel_nearest_mpi::put_avail: Close parcel index not found.")
+                    "in graph_t::put_avail: Close parcel index not found.")
             else if (m > size(this%remote(n)%l_available)) then
                 call mpi_check_for_error(cart, &
-                    "in parcel_nearest_mpi::put_avail: Index larger than array size.")
+                    "in graph_t::put_avail: Index larger than array size.")
             endif
 
             this%remote(n)%l_available(m) = val
@@ -223,11 +223,11 @@ contains
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     subroutine put_leaf(this, rank, ic, val)
-        class(tree_t), intent(inout) :: this
-        integer,       intent(in)    :: rank
-        integer,       intent(in)    :: ic
-        logical,       intent(in)    :: val
-        integer                      :: n, m
+        class(graph_t), intent(inout) :: this
+        integer,        intent(in)    :: rank
+        integer,        intent(in)    :: ic
+        logical,        intent(in)    :: val
+        integer                       :: n, m
 
         if (rank == cart%rank) then
             this%l_leaf(ic) = val
@@ -238,10 +238,10 @@ contains
 
             if (m == 0) then
                 call mpi_check_for_error(cart, &
-                    "in parcel_nearest_mpi::put_leaf: Close parcel index not found.")
+                    "in graph_t::put_leaf: Close parcel index not found.")
             else if (m > size(this%remote(n)%l_leaf)) then
                 call mpi_check_for_error(cart, &
-                    "in parcel_nearest_mpi::put_leaf: Index larger than array size.")
+                    "in graph_t::put_leaf: Index larger than array size.")
             endif
 
             this%remote(n)%l_leaf(m) = val
@@ -253,11 +253,11 @@ contains
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     subroutine put_merged(this, rank, ic, val)
-        class(tree_t), intent(inout) :: this
-        integer,       intent(in)    :: rank
-        integer,       intent(in)    :: ic
-        logical,       intent(in)    :: val
-        integer                      :: n, m
+        class(graph_t), intent(inout) :: this
+        integer,        intent(in)    :: rank
+        integer,        intent(in)    :: ic
+        logical,        intent(in)    :: val
+        integer                       :: n, m
 
         if (rank == cart%rank) then
             this%l_merged(ic) = val
@@ -268,10 +268,10 @@ contains
 
             if (m == 0) then
                 call mpi_check_for_error(cart, &
-                    "in parcel_nearest_mpi::put_merged: Close parcel index not found.")
+                    "in graph_t::put_merged: Close parcel index not found.")
             else if (m > size(this%remote(n)%l_merged)) then
                 call mpi_check_for_error(cart, &
-                    "in parcel_nearest_mpi::put_merged: Index larger than array size.")
+                    "in graph_t::put_merged: Index larger than array size.")
             endif
 
             this%remote(n)%l_merged(m) = val
@@ -283,11 +283,11 @@ contains
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     function get_avail(this, rank, ic) result(val)
-        class(tree_t), intent(inout) :: this
-        integer,       intent(in)    :: rank
-        integer,       intent(in)    :: ic
-        logical                      :: val
-        integer                      :: n, m
+        class(graph_t), intent(inout) :: this
+        integer,        intent(in)    :: rank
+        integer,        intent(in)    :: ic
+        logical                       :: val
+        integer                       :: n, m
 
         if (rank == cart%rank) then
             val = this%l_available(ic)
@@ -298,7 +298,7 @@ contains
 
             if (m == 0) then
                 call mpi_check_for_error(cart, &
-                    "in parcel_nearest_mpi::get_avail: Close parcel index not found.")
+                    "in graph_t::get_avail: Close parcel index not found.")
             endif
 
             val = this%remote(n)%l_available(m)
@@ -309,11 +309,11 @@ contains
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     function get_leaf(this, rank, ic) result(val)
-        class(tree_t), intent(inout) :: this
-        integer,       intent(in)    :: rank
-        integer,       intent(in)    :: ic
-        logical                      :: val
-        integer                      :: n, m
+        class(graph_t), intent(inout) :: this
+        integer,        intent(in)    :: rank
+        integer,        intent(in)    :: ic
+        logical                       :: val
+        integer                       :: n, m
 
         if (rank == cart%rank) then
             val = this%l_leaf(ic)
@@ -324,7 +324,7 @@ contains
 
             if (m == 0) then
                 call mpi_check_for_error(cart, &
-                    "in parcel_nearest_mpi::get_leaf: Close parcel index not found.")
+                    "in graph_t::get_leaf: Close parcel index not found.")
             endif
 
             val = this%remote(n)%l_leaf(m)
@@ -335,11 +335,11 @@ contains
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     function get_merged(this, rank, ic) result(val)
-        class(tree_t), intent(inout) :: this
-        integer,       intent(in)    :: rank
-        integer,       intent(in)    :: ic
-        logical                      :: val
-        integer                      :: n, m
+        class(graph_t), intent(inout) :: this
+        integer,        intent(in)    :: rank
+        integer,        intent(in)    :: ic
+        logical                       :: val
+        integer                       :: n, m
 
         if (rank == cart%rank) then
             val = this%l_merged(ic)
@@ -350,7 +350,7 @@ contains
 
             if (m == 0) then
                 call mpi_check_for_error(cart, &
-                    "in parcel_nearest_mpi::get_merged: Close parcel index not found.")
+                    "in graph_t::get_merged: Close parcel index not found.")
             endif
 
             val = this%remote(n)%l_merged(m)
@@ -361,16 +361,14 @@ contains
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     subroutine gather_info(this, iclo, rclo, n_local_small)
-        class(tree_t), intent(inout)   :: this
-        integer,       intent(in)      :: iclo(:)
-        integer,       intent(in)      :: rclo(:)
-        integer,       intent(in)      :: n_local_small
-        type(MPI_Request)              :: requests(8)
-        type(MPI_Status)               :: recv_status, send_statuses(8)
-        integer                        :: n_sends(8), n_recvs(8)
-        integer                        :: n, m, send_size, recv_size, rc, l
-
-!         call start_timer(nearest_exchange_timer)
+        class(graph_t), intent(inout) :: this
+        integer,        intent(in)    :: iclo(:)
+        integer,        intent(in)    :: rclo(:)
+        integer,        intent(in)    :: n_local_small
+        type(MPI_Request)             :: requests(8)
+        type(MPI_Status)              :: recv_status, send_statuses(8)
+        integer                       :: n_sends(8), n_recvs(8)
+        integer                       :: n, m, send_size, recv_size, rc, l
 
         n_recvs = 0
         n_sends = 0
@@ -399,7 +397,7 @@ contains
                            cart%err)
 
             call mpi_check_for_error(cart, &
-                "in MPI_Isend of parcel_nearest::resolve_tree.")
+                "in MPI_Isend of parcel_nearest::gather_info.")
         enddo
 
         ! Receive information from neighbouring ranks
@@ -414,7 +412,7 @@ contains
                           cart%err)
 
             call mpi_check_for_error(cart, &
-                "in MPI_Recv of parcel_nearest::resolve_tree.")
+                "in MPI_Recv of parcel_nearest::gather_info.")
         enddo
 
         call MPI_Waitall(8,                 &
@@ -423,7 +421,7 @@ contains
                          cart%err)
 
         call mpi_check_for_error(cart, &
-            "in MPI_Waitall of parcel_nearest::resolve_tree.")
+            "in MPI_Waitall of graph_t::gather_info.")
 
 
         !--------------------------------------------------
@@ -458,7 +456,7 @@ contains
                            cart%err)
 
             call mpi_check_for_error(cart, &
-                "in MPI_Isend of parcel_nearest::resolve_tree.")
+                "in MPI_Isend of graph_t::gather_info.")
         enddo
 
         ! Receive information from neighbouring ranks
@@ -478,7 +476,7 @@ contains
                           cart%err)
 
             call mpi_check_for_error(cart, &
-                "in MPI_Recv of parcel_nearest::resolve_tree.")
+                "in MPI_Recv of graph_t::gather_info.")
 
         enddo
 
@@ -488,16 +486,15 @@ contains
                          cart%err)
 
         call mpi_check_for_error(cart, &
-            "in MPI_Waitall of parcel_nearest::setup.")
+            "in MPI_Waitall of graph_t::gather_info.")
 
-!         call stop_timer(nearest_exchange_timer)
     end subroutine gather_info
 
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     subroutine free_memory(this)
-        class(tree_t), intent(inout) :: this
-        integer                      :: n
+        class(graph_t), intent(inout) :: this
+        integer                       :: n
 
         do n = 1, 8
             call this%remote(n)%dealloc
@@ -523,10 +520,10 @@ contains
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     subroutine sync_avail(this)
-        class(tree_t), intent(inout) :: this
-        type(MPI_Request)            :: requests(8)
-        type(MPI_Status)             :: statuses(8)
-        integer                      :: n
+        class(graph_t), intent(inout) :: this
+        type(MPI_Request)             :: requests(8)
+        type(MPI_Status)              :: statuses(8)
+        integer                       :: n
 
         !----------------------------------------------------------------------
         ! Send from remote to owning rank and sync data at owning rank
@@ -580,10 +577,10 @@ contains
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     subroutine sync_leaf(this)
-        class(tree_t), intent(inout) :: this
-        type(MPI_Request)            :: requests(8)
-        type(MPI_Status)             :: statuses(8)
-        integer                      :: n
+        class(graph_t), intent(inout) :: this
+        type(MPI_Request)             :: requests(8)
+        type(MPI_Status)              :: statuses(8)
+        integer                       :: n
 
         !----------------------------------------------------------------------
         ! Send from remote to owning rank and sync data at owning rank
@@ -637,10 +634,10 @@ contains
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     subroutine sync_merged(this)
-        class(tree_t), intent(inout) :: this
-        type(MPI_Request)            :: requests(8)
-        type(MPI_Status)             :: statuses(8)
-        integer                      :: n
+        class(graph_t), intent(inout) :: this
+        type(MPI_Request)             :: requests(8)
+        type(MPI_Status)              :: statuses(8)
+        integer                       :: n
 
         !----------------------------------------------------------------------
         ! Send from remote to owning rank and sync data at owning rank
@@ -694,13 +691,13 @@ contains
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     subroutine send_from_remote(this, n, l_data, dirty, request)
-        class(tree_t),               intent(inout) :: this
-        integer,                     intent(in)    :: n
-        logical,                     intent(in)    :: l_data(:)
-        logical,                     intent(in)    :: dirty(:)
-        type(MPI_Request),           intent(inout) :: request
-        type(intlog_pair_t), dimension(:), pointer :: send_buf
-        integer                                    :: send_size, m, i, ic, nlen
+        class(graph_t),               intent(inout) :: this
+        integer,                      intent(in)    :: n
+        logical,                      intent(in)    :: l_data(:)
+        logical,                      intent(in)    :: dirty(:)
+        type(MPI_Request),            intent(inout) :: request
+        type(intlog_pair_t), dimension(:), pointer  :: send_buf
+        integer                                     :: send_size, m, i, ic, nlen
 
         nlen = size(dirty)
         call get_int_logical_buffer(n, send_buf)
@@ -733,19 +730,19 @@ contains
                        cart%err)
 
         call mpi_check_for_error(cart, &
-            "in MPI_Isend of parcel_nearest::send_from_remote.")
+            "in MPI_Isend of graph_t::send_from_remote.")
 
     end subroutine send_from_remote
 
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     subroutine recv_from_remote(this, n, l_data)
-        class(tree_t),     intent(inout) :: this
-        integer,           intent(in)    :: n
-        logical,           intent(inout) :: l_data(:)
-        type(intlog_pair_t), allocatable :: recv_buf(:)
-        type(MPI_Status)                 :: recv_status
-        integer                          :: recv_size, m, ic
+        class(graph_t),     intent(inout) :: this
+        integer,            intent(in)    :: n
+        logical,            intent(inout) :: l_data(:)
+        type(intlog_pair_t), allocatable  :: recv_buf(:)
+        type(MPI_Status)                  :: recv_status
+        integer                           :: recv_size, m, ic
 
 
         ! check for incoming messages
@@ -768,7 +765,7 @@ contains
                       cart%err)
 
         call mpi_check_for_error(cart, &
-            "in MPI_Recv of parcel_nearest::recv_from_remote.")
+            "in MPI_Recv of graph_t::recv_from_remote.")
 
         if (recv_size > 0) then
             ! unpack ic index and logical to recv buffer
@@ -785,12 +782,12 @@ contains
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     subroutine send_all(this, n, l_data, request)
-        class(tree_t),     intent(inout)           :: this
-        integer,           intent(in)              :: n
-        logical,           intent(in)              :: l_data(:)
-        type(MPI_Request), intent(inout)           :: request
-        type(intlog_pair_t), dimension(:), pointer :: send_buf
-        integer                                    :: send_size, m, ic
+        class(graph_t),     intent(inout)           :: this
+        integer,            intent(in)              :: n
+        logical,            intent(in)              :: l_data(:)
+        type(MPI_Request),  intent(inout)           :: request
+        type(intlog_pair_t), dimension(:), pointer  :: send_buf
+        integer                                     :: send_size, m, ic
 
         call get_int_logical_buffer(n, send_buf)
 
@@ -817,19 +814,19 @@ contains
                        cart%err)
 
         call mpi_check_for_error(cart, &
-            "in MPI_Isend of parcel_nearest::send_all.")
+            "in MPI_Isend of graph_t::send_all.")
 
     end subroutine send_all
 
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     subroutine recv_all(this, n, l_data)
-        class(tree_t),     intent(inout) :: this
-        integer,           intent(in)    :: n
-        logical,           intent(inout) :: l_data(:)
-        type(intlog_pair_t), allocatable :: recv_buf(:)
-        type(MPI_Status)                 :: recv_status
-        integer                          :: recv_size, m, l, ic
+        class(graph_t),     intent(inout) :: this
+        integer,            intent(in)    :: n
+        logical,            intent(inout) :: l_data(:)
+        type(intlog_pair_t), allocatable  :: recv_buf(:)
+        type(MPI_Status)                  :: recv_status
+        integer                           :: recv_size, m, l, ic
 
 
         ! check for incoming messages
@@ -851,7 +848,7 @@ contains
                       cart%err)
 
         call mpi_check_for_error(cart, &
-            "in MPI_Recv of parcel_nearest::recv_all.")
+            "in MPI_Recv of graph_t::recv_all.")
 
         if (recv_size > 0) then
             ! unpack ic index and logical to recv buffer
@@ -860,7 +857,7 @@ contains
                 m = findloc(array=this%remote(n)%put_iclo, value=ic, dim=1)
                 if (m == 0) then
                     call mpi_check_for_error(cart, &
-                        "in MPI_Recv of parcel_nearest::recv_all: Close index not found.")
+                        "in MPI_Recv of graph_t::recv_all: Close index not found.")
                 endif
                 l_data(m) = recv_buf(l)%lval
             enddo
@@ -895,7 +892,7 @@ contains
                 buf_ptr => il_southeast_buf
             case default
                 call mpi_exit_on_error(&
-                    "in parcel_nearest_mpi::get_int_logical_buffer: No valid direction.")
+                    "in parcel_nearest_graph::get_int_logical_buffer: No valid direction.")
         end select
 
     end subroutine get_int_logical_buffer
@@ -917,4 +914,4 @@ contains
 
     end subroutine free_buffers
 
-end module parcel_nearest_mpi
+end module parcel_nearest_graph

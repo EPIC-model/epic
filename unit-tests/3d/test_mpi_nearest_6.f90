@@ -34,6 +34,8 @@ program test_mpi_nearest_6
     call register_timer('merge nearest', merge_nearest_timer)
     call register_timer('merge tree resolve', merge_tree_resolve_timer)
     call register_timer('nearest MPI allreduce', nearest_allreduce_timer)
+    call register_timer('nearest MPI graph info', nearest_graph_info_timer)
+    call register_timer('nearest MPI graph sync', nearest_graph_sync_timer)
 
     parcel%lambda_max = five
     ! vmin = vcell / parcel%min_vratio

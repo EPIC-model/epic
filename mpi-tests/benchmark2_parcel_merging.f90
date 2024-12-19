@@ -43,6 +43,8 @@ program benchmark2_parcel_merging
     call register_timer('merge nearest', merge_nearest_timer)
     call register_timer('merge tree resolve', merge_tree_resolve_timer)
     call register_timer('nearest MPI allreduce', nearest_allreduce_timer)
+    call register_timer('nearest MPI graph info', nearest_graph_info_timer)
+    call register_timer('nearest MPI graph sync', nearest_graph_sync_timer)
 
     parcel%lambda_max = 4.0d0
     parcel%min_vratio = 20.0d0
