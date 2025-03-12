@@ -59,7 +59,7 @@ module physics
     ![rad/s] default value: angular velocity of the earth
     double precision :: ang_vel = 0.000072921d0
 
-    logical, protected  :: l_planet_vorticity = .false.
+    logical, protected  :: l_planetary_vorticity = .false.
 
     ![°] latitude angle (45° corresponds to standard gravity)
     double precision, protected  :: lat_degrees = 45.0d0
@@ -131,14 +131,14 @@ module physics
             logical                  :: exists = .false.
 
             ! namelist definitions
-            namelist /PHYSICS/ gravity,             &
-                               L_v,                 &
-                               c_p,                 &
-                               theta_0,             &
-                               ang_vel,             &
-                               l_planet_vorticity,  &
-                               lat_degrees,         &
-                               q_0,                 &
+            namelist /PHYSICS/ gravity,                &
+                               L_v,                    &
+                               c_p,                    &
+                               theta_0,                &
+                               ang_vel,                &
+                               l_planetary_vorticity,  &
+                               lat_degrees,            &
+                               q_0,                    &
                                height_c
 
             ! check whether file exists
@@ -174,7 +174,7 @@ module physics
 
             lambda_c = one / height_c
 
-            if (l_planet_vorticity) then
+            if (l_planetary_vorticity) then
                 lat_ref = lat_degrees * deg2rad
                 f_cor(1) = zero
                 f_cor(2) = two * ang_vel * cos(lat_ref)
@@ -197,7 +197,7 @@ module physics
                 call read_netcdf_attribute_default(grp_ncid, 'temperature_at_sea_level', theta_0)
                 call read_netcdf_attribute_default(grp_ncid, 'planetary_angular_velocity', ang_vel)
                 call read_netcdf_attribute_default(grp_ncid, 'saturation_specific_humidity_at_ground_level', q_0)
-                call read_netcdf_attribute_default(grp_ncid, 'planetary_vorticity', l_planet_vorticity)
+                call read_netcdf_attribute_default(grp_ncid, 'l_planetary_vorticity', l_planetary_vorticity)
                 call read_netcdf_attribute_default(grp_ncid, 'latitude_degrees', lat_degrees)
                 call read_netcdf_attribute_default(grp_ncid, 'scale_height', height_c)
                 call read_netcdf_attribute_default(grp_ncid, 'ape_calculation', ape_calculation)
@@ -260,7 +260,7 @@ module physics
             call write_netcdf_attribute(grp_ncid, 'temperature_at_sea_level', theta_0)
             call write_netcdf_attribute(grp_ncid, 'planetary_angular_velocity', ang_vel)
             call write_netcdf_attribute(grp_ncid, 'saturation_specific_humidity_at_ground_level', q_0)
-            call write_netcdf_attribute(grp_ncid, 'planet_vorticity', l_planet_vorticity)
+            call write_netcdf_attribute(grp_ncid, 'l_planetary_vorticity', l_planetary_vorticity)
             call write_netcdf_attribute(grp_ncid, 'latitude_degrees', lat_degrees)
             call write_netcdf_attribute(grp_ncid, 'scale_height', height_c)
             if (l_peref) then
@@ -288,7 +288,7 @@ module physics
             call print_physical_quantity('temperature at sea level', theta_0, 'K')
             call print_physical_quantity('planetary angular velocity', ang_vel, 'rad/s')
             call print_physical_quantity('saturation specific humidity at ground level', q_0)
-            call print_physical_quantity('planetary vorticity', l_planet_vorticity)
+            call print_physical_quantity('planetary vorticity', l_planetary_vorticity)
             call print_physical_quantity('vertical planetary vorticity', f_cor(3), '1/s')
             call print_physical_quantity('horizontal planetary vorticity', f_cor(2), '1/s')
             call print_physical_quantity('latitude degrees', lat_degrees, 'deg')
