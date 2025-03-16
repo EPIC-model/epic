@@ -1,4 +1,4 @@
-AC_INIT([epic], [0.14.2], [mf248@st-andrews.ac.uk], [], [https://github.com/matt-frey/epic])
+AC_INIT([epic], [0.14.3], [mf248@st-andrews.ac.uk], [], [https://github.com/EPIC-model/epic])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 
 : ${CFLAGS=""}
