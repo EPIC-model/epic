@@ -18,6 +18,7 @@
 * [Fix error in get_local_bounds](https://github.com/EPIC-model/epic/pull/596)
 * [Fix label of planetary vorticity](https://github.com/EPIC-model/epic/pull/597)
 * [Remove default flags](https://github.com/EPIC-model/epic/pull/598)
+* [Change ENABLE_PYTHON to ENABLE_PYTHON_CHECK](https://github.com/EPIC-model/epic/pull/599)
 
 ## EPIC version 0.14.2
 * [Optimise nearest algorithm tree resolve step](https://github.com/EPIC-model/epic/pull/561)
