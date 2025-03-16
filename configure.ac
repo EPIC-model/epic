@@ -252,14 +252,14 @@ fi
 ## https://gitlab.psi.ch/H5hut/src/-/blob/master/configure.ac
 ##
 
-ENABLE_PYTHON='no'
+ENABLE_PYTHON_CHECK='no'
 AC_ARG_ENABLE([python],
-              [AS_HELP_STRING([--enable-python], [enable Python (default=no)])],
-              [ENABLE_PYTHON=$enableval])
+              [AS_HELP_STRING([--enable-python-check], [enable Python check (default=no)])],
+              [ENABLE_PYTHON_CHECK=$enableval])
 
-AM_CONDITIONAL([ENABLE_PYTHON], [test "$ENABLE_PYTHON" = "yes"])
+AM_CONDITIONAL([ENABLE_PYTHON_CHECK], [test "$ENABLE_PYTHON_CHECK" = "yes"])
 
-if test "x$ENABLE_PYTHON" = "xyes"; then
+if test "x$ENABLE_PYTHON_CHECK" = "xyes"; then
     AM_PATH_PYTHON([3.0])
     #
     # argparse
