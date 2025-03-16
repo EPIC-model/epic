@@ -7,7 +7,7 @@
 ! =============================================================================
 module moist_3d
     use physics, only : write_physical_quantities, &
-                        height_c, q_0, gravity, theta_0, L_v, c_p
+                        height_c, q_0, gravity, theta_0, L_v, c_p, ape_calculation
     use constants
     use netcdf_writer
     implicit none
@@ -180,6 +180,7 @@ module moist_3d
             call write_netcdf_dataset(ncid, buo_id, buoyg)
             call write_netcdf_dataset(ncid, hum_id, humg)
 
+            ape_calculation = 'none'
             call write_physical_quantities(ncid)
 
             deallocate(buoyg)
