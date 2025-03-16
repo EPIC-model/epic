@@ -62,6 +62,15 @@ try:
         help='plot the horizontal perturbation'
     )
 
+    parser.add_argument(
+        "--ape-calculation",
+        type=str,
+        default='none',
+        choices=['none', 'sorting', 'ape density'],
+        help="Option to calculate the available potential energy; " + \
+             "ensure src/utils/ape_density.f90 is implemented when enabled"
+    )
+
     args = parser.parse_args()
 
     # number of cells
@@ -116,7 +125,7 @@ try:
     ncf.add_physical_quantity('l_planetary_vorticity', 'true')
     ncf.add_physical_quantity('planetary_angular_velocity', 0.5)
     ncf.add_physical_quantity('latitude_degrees', 90)
-    ncf.add_physical_quantity('ape_calculation', 'ape density')
+    ncf.add_physical_quantity('ape_calculation', args.ape_calculation)
 
     ncf.close()
 
