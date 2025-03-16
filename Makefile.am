@@ -26,13 +26,14 @@ dataroot_DATA = 				\
 
 
 # make python script an executable script
+pybindir=$(bindir)/pybin
 install-exec-hook:
-	chmod 755 $(bindir)/animate-parcels.py
-	chmod 755 $(bindir)/plot-parcels.py
-	chmod 755 $(bindir)/plot-diagnostics.py
-	chmod 755 $(bindir)/plot-timings.py
-	chmod 755 $(bindir)/merge-ellipses.py
-	chmod 755 $(bindir)/epic-run.py
-	chmod 755 $(bindir)/subgrid_2d_generalised.py
-	chmod 755 $(bindir)/compare_results.py
-	chmod 755 $(bindir)/plot_slices.py
+	chmod 755 $(pybindir)/animate-parcels.py
+	chmod 755 $(pybindir)/plot-parcels.py
+	chmod 755 $(pybindir)/plot-diagnostics.py
+	chmod 755 $(pybindir)/plot-timings.py
+	chmod 755 $(pybindir)/merge-ellipses.py
+	chmod 755 $(pybindir)/epic-run.py
+	chmod 755 $(pybindir)/subgrid_2d_generalised.py
+	chmod 755 $(pybindir)/compare_results.py
+	chmod 755 $(pybindir)/plot_slices.py
