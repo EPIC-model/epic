@@ -181,10 +181,9 @@ AC_ARG_WITH([mpi],
 
 if test -n "${MPI_DIR}"; then
     # mod file may also be in $MPI_DIR/lib
+    AC_MSG_NOTICE([Found MPI_DIR environment. Appending include and lib path to FCFLAGS and LDFLAGS.])
     FCFLAGS="$FCFLAGS -I$MPI_DIR/include -I$MPI_DIR/lib"
     LDFLAGS="$LDFLAGS -L$MPI_DIR/lib"
-else
-    AC_MSG_ERROR([No MPI_DIR environment variable.])
 fi
 
 AC_SEARCH_LIBS([MPI_Init],
@@ -538,7 +537,6 @@ else
 
     # gfortran compiler flags
     AX_CHECK_COMPILE_FLAG([-funroll-all-loops], [FCFLAGS="$FCFLAGS -funroll-all-loops"])
-    AX_CHECK_COMPILE_FLAG([-flto], [FCFLAGS="$FCFLAGS -flto"])
 
     # intel compiler flags
     AX_CHECK_COMPILE_FLAG([-funroll-loops], [FCFLAGS="$FCFLAGS -funroll-loops"])
