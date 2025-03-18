@@ -20,6 +20,7 @@
 * [Remove default flags](https://github.com/EPIC-model/epic/pull/598)
 * [Change ENABLE_PYTHON to ENABLE_PYTHON_CHECK](https://github.com/EPIC-model/epic/pull/599)
 * [Remove unused 2D FFT routines](https://github.com/EPIC-model/epic/pull/600)
+* [Update CHANGELOG.md](https://github.com/EPIC-model/epic/pull/601)
 
 ## EPIC version 0.14.2
 * [Optimise nearest algorithm tree resolve step](https://github.com/EPIC-model/epic/pull/561)
