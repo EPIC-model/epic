@@ -437,7 +437,7 @@ module parcel_netcdf
                 ! READ PARCEL WITH REJECTION METHOD BUT MAKING USE OF
                 ! MPI BOX LAYOUT
                 !
-                call mpi_print(
+                call mpi_print(&
                     "WARNING: MPI ranks may disagree. Reading parcels with optimised rejection method!")
 
                 parcels%local_num = 0
