@@ -359,7 +359,7 @@ module parcel_netcdf
             integer                      :: n, n_total, pfirst, plast
             integer                      :: avail_size, n_remaining, n_read
             integer                      :: start(2), xlo, xhi, ylo, yhi
-            logical                      :: l_same_world_size
+            logical                      :: l_same_world_size, l_same_mpi_decomposition
 
             call start_timer(parcel_io_timer)
 
@@ -376,7 +376,38 @@ module parcel_netcdf
             call get_dimension_size(ncid, 'world%size', num_indices)
             l_same_world_size = (num_indices == world%size)
 
-            if (l_same_world_size .and. has_dataset(ncid, 'start_index')) then
+            l_same_mpi_decomposition = .false.
+            if (has_dataset(ncid, 'xlo') .and. has_dataset(ncid, 'xhi') .and. &
+                has_dataset(ncid, 'ylo') .and. has_dataset(ncid, 'yhi')) then
+
+                n = world%rank + 1
+                call read_netcdf_dataset(ncid, 'xlo', xlo, start=n)
+                call read_netcdf_dataset(ncid, 'xhi', xhi, start=n)
+                call read_netcdf_dataset(ncid, 'ylo', ylo, start=n)
+                call read_netcdf_dataset(ncid, 'yhi', yhi, start=n)
+
+                l_same_mpi_decomposition = ((xlo == box%lo(1)) .and. &
+                                            (xhi == box%hi(1)) .and. &
+                                            (ylo == box%lo(2)) .and. &
+                                            (yhi == box%hi(2)))
+
+
+                call MPI_Allreduce(MPI_IN_PLACE,                &
+                                l_same_mpi_decomposition,    &
+                                1,                           &
+                                MPI_LOGICAL,                 &
+                                MPI_LAND,                    &
+                                world%comm,                  &
+                                world%err)
+
+                if (.not. l_same_mpi_decomposition) then
+                    call mpi_print("WARNING: MPI ranks agree, but different MPI decomposition!")
+                endif
+            endif
+
+            if (l_same_world_size        .and. &
+                l_same_mpi_decomposition .and. &
+                has_dataset(ncid, 'start_index')) then
 
                 if (world%rank < world%size - 1) then
                     ! we must add +1 since the start index is 1
@@ -406,7 +437,8 @@ module parcel_netcdf
                 ! READ PARCEL WITH REJECTION METHOD BUT MAKING USE OF
                 ! MPI BOX LAYOUT
                 !
-                call mpi_print("WARNING: MPI ranks disagree. Reading parcels with optimised rejection method!")
+                call mpi_print(
+                    "WARNING: MPI ranks may disagree. Reading parcels with optimised rejection method!")
 
                 parcels%local_num = 0
                 pfirst = 1
