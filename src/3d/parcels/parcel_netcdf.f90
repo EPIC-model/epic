@@ -393,12 +393,12 @@ module parcel_netcdf
 
 
                 call MPI_Allreduce(MPI_IN_PLACE,                &
-                                l_same_mpi_decomposition,    &
-                                1,                           &
-                                MPI_LOGICAL,                 &
-                                MPI_LAND,                    &
-                                world%comm,                  &
-                                world%err)
+                                   l_same_mpi_decomposition,    &
+                                   1,                           &
+                                   MPI_LOGICAL,                 &
+                                   MPI_LAND,                    &
+                                   world%comm,                  &
+                                   world%err)
 
                 if (.not. l_same_mpi_decomposition) then
                     call mpi_print("WARNING: MPI ranks agree, but different MPI decomposition!")
