@@ -1,7 +1,8 @@
 AM_FCFLAGS =				\
 	-I $(top_builddir)/src/mpi      \
 	-I $(top_builddir)/src/utils	\
-	-I $(top_builddir)/src/netcdf
+	-I $(top_builddir)/src/netcdf   \
+	-I $(top_builddir)/src/parcel_types
 
 bin_PROGRAMS = epic2d
 epic2d_SOURCES = 				\
@@ -14,6 +15,7 @@ epic2d_SOURCES = 				\
 	fields/field_diagnostics.f90		\
 	fields/field_netcdf.f90			\
 	fields/field_diagnostics_netcdf.f90	\
+	parcels/dynamic_parcels.f90		\
 	parcels/parcel_ellipse.f90		\
 	parcels/parcel_container.f90 		\
 	parcels/parcel_bc.f90			\
@@ -35,7 +37,8 @@ epic2d_SOURCES = 				\
 epic2d_LDADD = 						\
 	$(top_builddir)/src/utils/libepic_utils.la 	\
 	$(top_builddir)/src/mpi/libepic_mpi.la          \
-	$(top_builddir)/src/netcdf/libepic_netcdf.la
+	$(top_builddir)/src/netcdf/libepic_netcdf.la    \
+	$(top_builddir)/src/parcel_types/libepic_parcel_types.la
 
 clean-local:
 	rm -f *.mod

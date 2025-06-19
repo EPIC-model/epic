@@ -17,7 +17,8 @@ module utils
     use parcel_diagnostics, only : calculate_parcel_diagnostics, calculate_peref
     use field_diagnostics, only : calculate_field_diagnostics
     use parcel_init, only : init_parcels
-    use parcel_container, only : n_parcels, parcel_alloc
+    use dynamic_parcels, only : parcels, n_parcels
+    use parcel_types, only : idealised_parcel_alloc
     use tri_inversion, only : vor2vel, vorticity_tendency
     use parcel_interpl, only : par2grid, grid2par
     use netcdf_reader, only : get_file_type, get_num_steps, get_time, get_netcdf_box
@@ -213,7 +214,10 @@ module utils
         subroutine setup_parcels
             character(len=16) :: file_type
 
-            call parcel_alloc(max_num_parcels)
+           call parcels%set_dimension(2)
+           parcels%is_moist=.true.
+           parcels%shape_type="ellipsoid2"
+           call parcels%alloc(max_num_parcels)
 
             if (l_restart) then
                 call setup_restart(trim(restart_file), time%initial, file_type)

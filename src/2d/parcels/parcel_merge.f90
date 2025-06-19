@@ -5,10 +5,9 @@
 module parcel_merge
     use parcel_nearest
     use constants, only : pi, zero, one, two, four
-    use parcel_container, only : parcel_container_type  &
-                               , n_parcels              &
-                               , parcel_replace         &
-                               , get_delx
+    use parcel_container, only : get_delx
+    use dynamic_parcels, only : n_parcels, parcels
+    use parcel_types, only : idealised_parcel_type
     use parcel_ellipse, only : get_B22, get_ab
     use options, only : parcel, verbose
     use parcel_bc
@@ -27,7 +26,7 @@ module parcel_merge
         ! parcels which are close by.
         ! @param[inout] parcels is the parcel container
         subroutine merge_ellipses(parcels)
-            type(parcel_container_type), intent(inout) :: parcels
+            type(idealised_parcel_type), intent(inout) :: parcels
             integer, allocatable, dimension(:)         :: isma
             integer, allocatable, dimension(:)         :: iclo
             integer                                    :: n_merge ! number of merges
@@ -73,7 +72,7 @@ module parcel_merge
         ! @param[out] B22m are the B22 matrix entries of the mergers
         ! @param[out] vm are the volumes of the mergers
         subroutine do_group_merge(parcels, isma, iclo, n_merge, B11m, B12m, B22m, vm)
-            type(parcel_container_type), intent(inout) :: parcels
+            type(idealised_parcel_type), intent(inout) :: parcels
             integer,                     intent(in)    :: isma(0:)
             integer,                     intent(in)    :: iclo(:)
             integer,                     intent(in)    :: n_merge
@@ -116,7 +115,7 @@ module parcel_merge
 #ifndef ENABLE_DRY_MODE
                     hum(l) = parcels%volume(ic) * parcels%humidity(ic)
 #endif
-                    vortm(l) = parcels%volume(ic) * parcels%vorticity(ic)
+                    vortm(l) = parcels%volume(ic) * parcels%vorticity(1, ic)
 
                     B11m(l) = zero
                     B12m(l) = zero
@@ -143,7 +142,7 @@ module parcel_merge
 #ifndef ENABLE_DRY_MODE
                 hum(n) = hum(n) + parcels%volume(is) * parcels%humidity(is)
 #endif
-                vortm(n) = vortm(n) + parcels%volume(is) * parcels%vorticity(is)
+                vortm(n) = vortm(n) + parcels%volume(is) * parcels%vorticity(1, is)
             enddo
 
             ! Obtain the merged parcel centres
@@ -201,7 +200,7 @@ module parcel_merge
 #ifndef ENABLE_DRY_MODE
                     parcels%humidity(ic) = hum(l)
 #endif
-                    parcels%vorticity(ic) = vortm(l)
+                    parcels%vorticity(1, ic) = vortm(l)
 
                 endif
 
@@ -232,7 +231,7 @@ module parcel_merge
         ! @param[in] iclo are the indices of the close parcels
         ! @param[in] n_merge is the array size of isma and iclo
         subroutine geometric_merge(parcels, isma, iclo, n_merge)
-            type(parcel_container_type), intent(inout) :: parcels
+            type(idealised_parcel_type), intent(inout) :: parcels
             integer,                     intent(in)    :: isma(0:)
             integer,                     intent(in)    :: iclo(:)
             integer,                     intent(in)    :: n_merge
@@ -307,7 +306,7 @@ module parcel_merge
 
             do while (m <= k)
                 ! invalid parcel; overwrite *isma(m)* with last valid parcel *l*
-                call parcel_replace(isma(m), l)
+                call parcels%replace(isma(m), l)
 
                 l = l - 1
 

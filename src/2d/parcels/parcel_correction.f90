@@ -20,7 +20,7 @@ module parcel_correction
     use constants
     use parameters, only : vcelli, nx, nz, dx, dxi
 
-    use parcel_container
+    use dynamic_parcels, only : parcels, n_parcels
 
     use timer, only : start_timer, stop_timer
 

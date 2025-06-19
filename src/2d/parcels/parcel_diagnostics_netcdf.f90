@@ -7,7 +7,7 @@ module parcel_diagnostics_netcdf
     use netcdf_utils
     use netcdf_writer
     use netcdf_reader
-    use parcel_container, only : parcels, n_parcels
+    use dynamic_parcels, only : parcels, n_parcels
     use parcel_diagnostics
     use parameters, only : lower, extent, nx, nz
     use config, only : package_version, cf_version

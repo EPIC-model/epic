@@ -7,7 +7,7 @@ module parcel_interpl
     use timer, only : start_timer, stop_timer
     use parameters, only : nx, nz, vmin
     use options, only : parcel
-    use parcel_container, only : parcels, n_parcels
+    use dynamic_parcels, only : parcels, n_parcels
     use parcel_bc, only : apply_periodic_bc
     use parcel_ellipse
     use fields
@@ -205,7 +205,7 @@ module parcel_interpl
                         weight = f12 * weights(l) * pvol
 
                         vortg(js(l), is(l)) = vortg(js(l), is(l)) &
-                                            + weight * parcels%vorticity(n)
+                                            + weight * parcels%vorticity(1, n)
 
 #ifndef ENABLE_DRY_MODE
                         dbuoyg(js(l), is(l)) = dbuoyg(js(l), is(l)) &

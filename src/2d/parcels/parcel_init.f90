@@ -4,7 +4,7 @@
 module parcel_init
     use options, only : parcel, output, verbose, field_tol
     use constants, only : zero, two, one, f12
-    use parcel_container, only : parcels, n_parcels
+    use dynamic_parcels, only : parcels, n_parcels
     use parcel_ellipse, only : get_ab, get_B22, get_eigenvalue
     use parcel_split, only : split_ellipses
     use parcel_interpl, only : bilinear, ngp
@@ -58,7 +58,6 @@ module parcel_init
                 stop
             endif
 
-
             call init_regular_positions
 
             ! initialize the volume of each parcel
@@ -92,7 +91,7 @@ module parcel_init
             !$omp parallel default(shared)
             !$omp do private(n)
             do n = 1, n_parcels
-                parcels%vorticity(n) = zero
+                parcels%vorticity(1, n) = zero
                 parcels%buoyancy(n) = zero
 #ifndef ENABLE_DRY_MODE
                 parcels%humidity(n) = zero
@@ -239,7 +238,7 @@ module parcel_init
             if (has_dataset(ncid, 'vorticity')) then
                 buffer = zero
                 call read_netcdf_dataset(ncid, 'vorticity', buffer(0:nz, :), start=start, cnt=cnt)
-                call gen_parcel_scalar_attr(buffer, tol, parcels%vorticity)
+                call gen_parcel_scalar_attr(buffer, tol, parcels%vorticity(1, :))
             endif
 
 

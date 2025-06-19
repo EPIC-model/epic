@@ -5,7 +5,8 @@ module parcel_split
     use options, only : verbose
     use constants, only : pi, three, f12, f14, f34
     use parameters, only : vmax
-    use parcel_container, only : parcel_container_type, n_parcels
+    use parcel_types, only : idealised_parcel_type
+    use dynamic_parcels, only : n_parcels
     use parcel_bc, only : apply_reflective_bc
     use parcel_ellipse, only : get_eigenvalue      &
                              , get_eigenvector     &
@@ -24,7 +25,7 @@ module parcel_split
         ! @param[inout] parcels
         ! @param[in] threshold is the largest allowed aspect ratio
         subroutine split_ellipses(parcels, threshold)
-            type(parcel_container_type), intent(inout) :: parcels
+            type(idealised_parcel_type), intent(inout) :: parcels
             double precision,            intent(in)    :: threshold
             double precision                           :: B11
             double precision                           :: B12
@@ -78,7 +79,7 @@ module parcel_split
 
                 parcels%B(:, n_thread_loc) = parcels%B(:, n)
 
-                parcels%vorticity(n_thread_loc) = parcels%vorticity(n)
+                parcels%vorticity(:, n_thread_loc) = parcels%vorticity(:, n)
                 parcels%volume(n_thread_loc) = parcels%volume(n)
                 parcels%buoyancy(n_thread_loc) = parcels%buoyancy(n)
 #ifndef ENABLE_DRY_MODE

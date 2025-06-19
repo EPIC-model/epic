@@ -4,7 +4,7 @@
 program epic2d
     use constants, only : zero
     use timer
-    use parcel_container
+    use dynamic_parcels
     use parcel_bc
     use parcel_split, only : split_ellipses, split_timer
     use parcel_merge, only : merge_ellipses, merge_timer
@@ -138,7 +138,7 @@ program epic2d
 
         subroutine post_run
             use options, only : output
-            call parcel_dealloc
+            call parcels%dealloc
             call ls_rk4_dealloc
 
             call stop_timer(epic_timer)
