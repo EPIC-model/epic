@@ -39,7 +39,9 @@ module parcel_container
         integer             :: local_num    ! local number of parcels
         integer(kind=int64) :: total_num    ! global number of parcels (over all MPI ranks)
         integer             :: max_num      ! capacity per attribute, i.e. maximum number of parcels
-        integer, private :: n_pos = -1      ! number of spatial dimensions
+        integer             :: n_pos = -1   ! number of spatial dimensions
+        character(len=1), allocatable, dimension(:) :: pos_names ! Names of directions for positions
+        character(len=8) :: dim_string ! Names of directions for positions
 
         contains
             procedure :: base_alloc   => base_parcel_alloc
@@ -55,27 +57,30 @@ module parcel_container
             procedure(parcel_dealloc), deferred :: dealloc
             procedure(parcel_resize), deferred :: resize
             procedure :: print_me
-            procedure :: set_dimension
+            procedure :: set_dimensions
             procedure :: register_attribute
             procedure :: register_int_attribute
             procedure :: reset_attribute
             procedure :: reset_int_attribute
-
     end type
 
     ! This type is for parcels associated with dynamics (which will always have volume and voriticity in EPIC)
-    type, extends(base_parcel_type) :: dynamic_parcel_type ! add procedures
+    type, abstract, extends(base_parcel_type) :: dynamic_parcel_type ! add procedures
         double precision, allocatable, dimension(:)   :: volume
         double precision, allocatable, dimension(:,:) :: vorticity
         double precision, allocatable, dimension(:,:) :: delta_vor
         double precision, allocatable, dimension(:) :: dilution
         integer(kind=8), allocatable, dimension(:) :: label
+        integer, private :: n_vor = -1      ! number of voriticity components
+        character(len=1), allocatable, dimension(:) :: vor_names ! Names of vorticity components
         logical   :: has_labels = .false.
 
         contains
-            procedure :: alloc => dynamic_parcel_alloc
-            procedure :: dealloc => dynamic_parcel_dealloc
-            procedure :: resize => dynamic_parcel_resize
+            procedure :: dynamic_alloc => dynamic_parcel_alloc
+            procedure :: dynamic_dealloc => dynamic_parcel_dealloc
+            procedure :: dynamic_resize => dynamic_parcel_resize
+            procedure :: set_vorticity_dimensions
+            procedure(dynamic_parcel_get_buoyancy), deferred :: get_buoyancy
 
     end type
 
@@ -109,7 +114,17 @@ module parcel_container
         module procedure :: try_deallocate_1d
         module procedure :: try_deallocate_1d_integer
         module procedure :: try_deallocate_2d
+        module procedure :: try_deallocate_string
     end interface try_deallocate
+
+    interface
+        subroutine dynamic_parcel_get_buoyancy(this, num, buoyancy)
+            import dynamic_parcel_type
+            class(dynamic_parcel_type), intent(inout) :: this
+            integer,                 intent(in)    :: num
+            double precision, intent(out) :: buoyancy
+        end subroutine dynamic_parcel_get_buoyancy
+    end interface
 
     contains
 
@@ -148,6 +163,17 @@ module parcel_container
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+        subroutine try_deallocate_string(in_array)
+            character(len=*), allocatable, dimension(:) :: in_array
+
+            if (allocated(in_array)) then
+                deallocate(in_array)
+            endif
+
+        end subroutine try_deallocate_string
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
         ! Allocate parcel memory
         ! ATTENTION: Extended types must allocate additional parcel attributes
         !            in their own routine.
@@ -155,7 +181,6 @@ module parcel_container
         subroutine base_parcel_alloc(this, num)
             class(base_parcel_type), intent(inout), target :: this
             integer,        intent(in)    :: num
-            character(len=1)              :: dir(3)
             integer                       :: n
 
             this%max_num = num
@@ -168,14 +193,12 @@ module parcel_container
                 stop
             endif
 
-            dir = (/'x', 'y', 'z'/)
-
             allocate(this%position(this%n_pos, num))
             allocate(this%delta_pos(this%n_pos, num))
 
             do n = 1, this%n_pos
-                call this%register_attribute(this%position(n, :), dir(n) // "_position", "m")
-                call this%register_attribute(this%delta_pos(n, :), dir(n) // "_position_rk_tendency", "m/s")
+                call this%register_attribute(this%position(n, :), this%pos_names(n) // "_position", "m")
+                call this%register_attribute(this%delta_pos(n, :), this%pos_names(n) // "_position_rk_tendency", "m/s")
             enddo
 
         end subroutine base_parcel_alloc
@@ -196,6 +219,7 @@ module parcel_container
 
             call try_deallocate(this%position)
             call try_deallocate(this%delta_pos)
+            call try_deallocate(this%pos_names)
 
             if (allocated(this%attrib)) then
                 deallocate(this%attrib)
@@ -212,7 +236,6 @@ module parcel_container
         subroutine base_parcel_resize(this, new_size)
             class(base_parcel_type), intent(inout), target :: this
             integer,        intent(in)    :: new_size
-            character(len=1)              :: dir(3)
             integer                       :: n
 
             if (new_size < this%local_num) then
@@ -222,30 +245,28 @@ module parcel_container
 
             this%max_num = new_size
 
-            if (this%n_pos > 3) then
-                print *, "Only 3 dimensions allowed."
+            if ((this%n_pos < 1) .or. (this%n_pos > 3)) then
+                print *, "ERROR: base_parcel_resize:: only 1-, 2- or 3-dimensional parcels allowed."
                 stop
             endif
-
-            dir = (/'x', 'y', 'z'/)
 
             call resize_array(this%position, new_size, this%local_num)
             call resize_array(this%delta_pos, new_size, this%local_num)
 
             do n = 1, this%n_pos
-                call this%reset_attribute(this%position(n, :), dir(n) // "_position")
-                call this%reset_attribute(this%delta_pos(n, :), dir(n) // "_position_rk_tendency")
+                call this%reset_attribute(this%position(n, :), this%pos_names(n) // "_position")
+                call this%reset_attribute(this%delta_pos(n, :), this%pos_names(n) // "_position_rk_tendency")
             enddo
 
         end subroutine base_parcel_resize
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine set_dimension(this, n_dim)
+        subroutine set_dimensions(this)
             class(base_parcel_type), intent(inout) :: this
-            integer,                 intent(in)    :: n_dim
+            integer :: n_dim, i_dim
 
-            this%n_pos = n_dim
+            n_dim = len_trim(this%dim_string)
 
             if (this%n_pos /= -1) then
                 print *, "WARNING: Dimension already set."
@@ -253,11 +274,50 @@ module parcel_container
             endif
 
             if ((n_dim < 1) .or. (n_dim > 3)) then
-                print *, "Only 1-, 2- or 3-dimensional."
+                print *, "ERROR: set_dimension:: only 1-, 2- or 3-dimensional parcels allowed."
                 stop
             endif
 
-        end subroutine set_dimension
+            this%n_pos=n_dim
+
+            allocate(this%pos_names(this%n_pos))
+
+            do i_dim = 1,this%n_pos
+               this%pos_names(i_dim)=this%dim_string(i_dim:i_dim)
+            enddo
+
+        end subroutine set_dimensions
+
+        subroutine set_vorticity_dimensions(this)
+            class(dynamic_parcel_type), intent(inout) :: this
+            integer :: i_dim
+
+            call set_dimensions(this)
+
+            if (trim(this%dim_string) == trim('xy')) then
+                this%n_vor=1
+                allocate(this%vor_names(this%n_vor))
+                this%vor_names(1)='z'
+            elseif (trim(this%dim_string) == trim('xz')) then
+                this%n_vor=1
+                allocate(this%vor_names(this%n_vor))
+                this%vor_names(1)='y'
+            elseif(trim(this%dim_string) == trim('yz')) then
+                this%n_vor=1
+                allocate(this%vor_names(this%n_vor))
+                this%vor_names(1)='x'
+            elseif(trim(this%dim_string) == trim('xyz')) then
+                this%n_vor=3
+                allocate(this%vor_names(this%n_vor))
+                do i_dim = 1,this%n_vor
+                   this%vor_names(i_dim)=this%dim_string(i_dim:i_dim)
+                enddo
+            else
+                print *, "ERROR: set_vorticiy_dimension:: only xy, xz, yz or xyz allowed."
+                stop
+            endif
+
+        end subroutine set_vorticity_dimensions
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -275,6 +335,7 @@ module parcel_container
             do j = 1, this%attr_num
                  if(trim(this%attrib(j)%name) == trim(name)) then
                      print *, "Attribute name not unique"
+                     print *, name
                      stop
                  end if
             end do
@@ -282,6 +343,7 @@ module parcel_container
             do j = 1, this%int_attr_num
                  if(trim(this%int_attrib(j)%name) == trim(name)) then
                      print *, "Attribute name not unique"
+                     print *, name
                      stop
                  end if
             end do
@@ -432,32 +494,24 @@ module parcel_container
         subroutine dynamic_parcel_alloc(this, num)
             class(dynamic_parcel_type), intent(inout) :: this
             integer,            intent(in)    :: num
+            integer                           :: i_dim
 
             call this%base_alloc(num)
 
             allocate(this%volume(num))
             call this%register_attribute(this%volume, "volume", "m^3")
 
-            if ((this%n_pos < 2) .or. (this%n_pos > 3)) then
-                print *, "Only 2- or 3-dimensional."
+            if(.not. ((this%n_vor == 1) .or. (this%n_vor == 3))) then
+                print *, "Vorticity needs 1 or 3 components."
                 stop
             endif
 
-            if (this%n_pos == 2) then
-                allocate(this%vorticity(1, num))
-                call this%register_attribute(this%vorticity(1, :), "z_vorticity", "1/s")
-                allocate(this%delta_vor(1, num))
-                call this%register_attribute(this%delta_vor(1, :), "z_vorticity_rk_tendency", "1/s")
-            elseif  (this%n_pos == 3) then
-                allocate(this%vorticity(3, num))
-                call this%register_attribute(this%vorticity(1, :), "x_vorticity", "1/s")
-                call this%register_attribute(this%vorticity(2, :), "y_vorticity", "1/s")
-                call this%register_attribute(this%vorticity(3, :), "z_vorticity", "1/s")
-                allocate(this%delta_vor(3, num))
-                call this%register_attribute(this%delta_vor(1, :), "x_vorticity_rk_tendency", "1/s")
-                call this%register_attribute(this%delta_vor(2, :), "y_vorticity_rk_tendency", "1/s")
-                call this%register_attribute(this%delta_vor(3, :), "z_vorticity_rk_tendency", "1/s")
-            endif
+            allocate(this%vorticity(this%n_vor, num))
+            allocate(this%delta_vor(this%n_vor, num))
+            do i_dim=1,this%n_vor
+                call this%register_attribute(this%vorticity(i_dim, :), this%vor_names(i_dim)//"_vorticity", "1/s")
+                call this%register_attribute(this%delta_vor(i_dim, :), this%vor_names(i_dim)//"_vorticity_rk_tendency", "1/s")
+            enddo
 
             if (this%has_labels) then
                 allocate(this%label(num))
@@ -478,6 +532,7 @@ module parcel_container
             call try_deallocate(this%delta_vor)
             call try_deallocate(this%dilution)
             call try_deallocate(this%label)
+            call try_deallocate(this%vor_names)
             call this%base_dealloc
 
         end subroutine dynamic_parcel_dealloc
@@ -487,6 +542,8 @@ module parcel_container
         subroutine dynamic_parcel_resize(this, new_size)
             class(dynamic_parcel_type), intent(inout) :: this
             integer,        intent(in)    :: new_size
+            integer                       :: i_dim
+
 
             call this%base_resize(new_size)
 
@@ -495,17 +552,11 @@ module parcel_container
             call resize_array(this%delta_vor, new_size, this%local_num)
 
             call this%reset_attribute(this%volume, "volume")
-            if (this%n_pos == 2) then
-                call this%reset_attribute(this%vorticity(1, :), "z_vorticity")
-                call this%reset_attribute(this%delta_vor(1, :), "z_vorticity_rk_tendency")
-            elseif  (this%n_pos == 3) then
-                call this%reset_attribute(this%vorticity(1, :), "x_vorticity")
-                call this%reset_attribute(this%vorticity(2, :), "y_vorticity")
-                call this%reset_attribute(this%vorticity(3, :), "z_vorticity")
-                call this%reset_attribute(this%delta_vor(1, :), "x_vorticity_rk_tendency")
-                call this%reset_attribute(this%delta_vor(2, :), "y_vorticity_rk_tendency")
-                call this%reset_attribute(this%delta_vor(3, :), "z_vorticity_rk_tendency")
-            endif
+
+            do i_dim=1,this%n_vor
+                call this%reset_attribute(this%vorticity(i_dim, :), this%vor_names(i_dim)//"_vorticity")
+                call this%reset_attribute(this%delta_vor(i_dim, :), this%vor_names(i_dim)//"_vorticity_rk_tendency")
+            end do
 
             if (this%has_labels) then
                 call resize_array(this%label, new_size, this%local_num)

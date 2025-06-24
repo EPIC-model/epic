@@ -4,7 +4,7 @@
 program epic2d
     use constants, only : zero
     use timer
-    use dynamic_parcels
+    use dynamic_parcels, only : parcels
     use parcel_bc
     use parcel_split, only : split_ellipses, split_timer
     use parcel_merge, only : merge_ellipses, merge_timer

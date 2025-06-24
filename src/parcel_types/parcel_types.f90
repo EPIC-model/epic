@@ -12,8 +12,9 @@
             procedure :: alloc => idealised_parcel_alloc
             procedure :: dealloc=> idealised_parcel_dealloc
             procedure :: resize => idealised_parcel_resize
+            procedure :: split => idealised_parcel_split
+            procedure :: get_buoyancy => idealised_parcel_get_buoyancy
 
-            ! get_buoyancy added here
     end type
 
     type, extends(ellipsoid_parcel_type) :: realistic_parcel_type ! add procedures
@@ -28,6 +29,8 @@
             procedure :: alloc => realistic_parcel_alloc
             procedure :: dealloc=> realistic_parcel_dealloc
             procedure :: resize => realistic_parcel_resize
+            procedure :: split => realistic_parcel_split
+            procedure :: get_buoyancy => realistic_parcel_get_buoyancy
 
             ! get_buoyancy added here
     end type
@@ -53,13 +56,16 @@
             class(idealised_parcel_type), intent(inout) :: this
             integer,            intent(in)    :: num
 
-            call this%ellipsoid_parcel_type%alloc(num)
+            call this%ellipsoid_alloc(num)
 
-            allocate(this%humidity(num))
             allocate(this%buoyancy(num))
 
-            call this%register_attribute(this%humidity, "humidity", "kg/kg")
             call this%register_attribute(this%buoyancy, "buoyancy", "m/s^2")
+
+            if(this%is_moist) then
+                allocate(this%humidity(num))
+                call this%register_attribute(this%humidity, "humidity", "kg/kg")
+            endif
 
         end subroutine idealised_parcel_alloc
 
@@ -70,7 +76,7 @@
 
             call try_deallocate(this%humidity)
             call try_deallocate(this%buoyancy)
-            call this%ellipsoid_parcel_type%dealloc
+            call this%ellipsoid_dealloc
 
         end subroutine idealised_parcel_dealloc
 
@@ -80,7 +86,7 @@
             class(idealised_parcel_type), intent(inout) :: this
             integer,        intent(in)    :: new_size
 
-            call this%ellipsoid_parcel_type%resize(new_size)
+            call this%ellipsoid_resize(new_size)
 
             call resize_array(this%buoyancy, new_size, this%local_num)
             call this%reset_attribute(this%buoyancy, "buoyancy")
@@ -98,7 +104,7 @@
             class(realistic_parcel_type), intent(inout) :: this
             integer,            intent(in)    :: num
 
-            call this%ellipsoid_parcel_type%alloc(num)
+            call this%ellipsoid_alloc(num)
 
             allocate(this%theta(num))
 
@@ -128,7 +134,7 @@
             call try_deallocate(this%ql)
             call try_deallocate(this%Nl)
 
-            call this%ellipsoid_parcel_type%dealloc
+            call this%ellipsoid_dealloc
 
         end subroutine realistic_parcel_dealloc
 
@@ -138,7 +144,7 @@
             class(realistic_parcel_type), intent(inout) :: this
             integer,        intent(in)    :: new_size
 
-            call this%ellipsoid_parcel_type%resize(new_size)
+            call this%ellipsoid_resize(new_size)
 
             call resize_array(this%theta, new_size, this%local_num)
             call resize_array(this%qv, new_size, this%local_num)
@@ -203,5 +209,33 @@
             call this%reset_attribute(this%Nr, "Nr")
 
         end subroutine prec_parcel_resize
+
+        subroutine realistic_parcel_split(this, n, n_thread_loc)
+            class(realistic_parcel_type), intent(inout) :: this
+            integer, intent(in) :: n
+            integer, intent(in) :: n_thread_loc
+            call this%ellipsoid_split(n, n_thread_loc)
+        end subroutine realistic_parcel_split
+
+        subroutine idealised_parcel_split(this, n, n_thread_loc)
+            class(idealised_parcel_type), intent(inout) :: this
+            integer, intent(in) :: n
+            integer, intent(in) :: n_thread_loc
+            call this%ellipsoid_split(n, n_thread_loc)
+        end subroutine idealised_parcel_split
+
+        pure subroutine realistic_parcel_get_buoyancy(this, num, buoyancy)
+            class(realistic_parcel_type), intent(inout) :: this
+            integer, intent(in) :: num
+            double precision, intent(out) :: buoyancy
+            buoyancy = 0.0
+        end subroutine realistic_parcel_get_buoyancy
+
+        pure subroutine idealised_parcel_get_buoyancy(this, num, buoyancy)
+            class(idealised_parcel_type), intent(inout) :: this
+            integer, intent(in) :: num
+            double precision, intent(out) :: buoyancy
+            buoyancy = 0.0
+        end subroutine idealised_parcel_get_buoyancy
 
 end module

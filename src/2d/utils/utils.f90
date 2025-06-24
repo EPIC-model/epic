@@ -214,9 +214,9 @@ module utils
         subroutine setup_parcels
             character(len=16) :: file_type
 
-           call parcels%set_dimension(2)
+           parcels%dim_string='xz'
+           call parcels%ellipsoid_dimensions()
            parcels%is_moist=.true.
-           parcels%shape_type="ellipsoid2"
            call parcels%alloc(max_num_parcels)
 
             if (l_restart) then
