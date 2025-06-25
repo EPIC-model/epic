@@ -1,5 +1,6 @@
  module parcel_types
-
+    use physics, only : glat, lambda_c, q_0, qv_dens_coeff, theta_0, gravity
+    use constants, only : zero, one
     use parcel_ellipsoid
     implicit none
 
@@ -228,14 +229,30 @@
             class(realistic_parcel_type), intent(inout) :: this
             integer, intent(in) :: num
             double precision, intent(out) :: buoyancy
-            buoyancy = 0.0
+
+            if(this%is_moist) then
+                ! total buoyancy (including effects of latent heating)
+                buoyancy = gravity*(this%theta(num)*(one+qv_dens_coeff*this%qv(num)-this%ql(num))/theta_0-one)
+            else
+                buoyancy = gravity*(this%theta(num)/theta_0-one)
+            endif
         end subroutine realistic_parcel_get_buoyancy
 
         pure subroutine idealised_parcel_get_buoyancy(this, num, buoyancy)
             class(idealised_parcel_type), intent(inout) :: this
             integer, intent(in) :: num
             double precision, intent(out) :: buoyancy
-            buoyancy = 0.0
+            double precision :: q_c
+
+            !! NOTE: need to check height offset (see previous code)
+            if(this%is_moist) then
+                q_c = this%humidity(num) &
+                    - q_0 * exp(- lambda_c * this%position(this%z_dim, num))
+                q_c = max(zero, q_c)
+                buoyancy = this%buoyancy(num) + glat * q_c
+            else
+                buoyancy = this%buoyancy(num)
+            endif
         end subroutine idealised_parcel_get_buoyancy
 
 end module

@@ -168,17 +168,8 @@ module parcel_interpl
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
 
-#ifndef ENABLE_DRY_MODE
-                ! liquid water content
-                q_c = parcels%humidity(n) &
-                    - q_0 * exp(lambda_c * (lower(2) - parcels%position(2, n)))
-                q_c = max(zero, q_c)
+                call parcels%get_buoyancy(n, btot)
 
-                ! total buoyancy (including effects of latent heating)
-                btot = parcels%buoyancy(n) + glat * q_c
-#else
-                btot = parcels%buoyancy(n)
-#endif
                 points = get_ellipse_points(parcels%position(:, n), &
                                             pvol, parcels%B(:, n))
 

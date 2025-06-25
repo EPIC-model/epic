@@ -1,4 +1,4 @@
-SUBDIRS = mpi netcdf parcel_types utils fft 2d
+SUBDIRS = mpi netcdf utils parcel_types fft 2d
 
 if ENABLE_3D
 SUBDIRS += 3d

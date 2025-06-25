@@ -70,7 +70,12 @@ module physics
     ![m] MPIC specific, scale-height, H
     double precision, protected :: height_c = 1000.0d0
 
-    !
+    ![-] Molecular weight of dry air/ molecular weight of water - 1
+    double precision, protected :: qv_dens_coeff = 0.608
+
+    ! gas constant of gry air
+    double precision, protected :: r_d = 287.05
+
     ! The following quantities are calculated:
     !
 
@@ -131,14 +136,14 @@ module physics
             logical                  :: exists = .false.
 
             ! namelist definitions
-            namelist /PHYSICS/ gravity,                &
-                               L_v,                    &
-                               c_p,                    &
-                               theta_0,                &
-                               ang_vel,                &
+            namelist /PHYSICS/ gravity,             &
+                               L_v,                 &
+                               c_p,                 &
+                               theta_0,             &
+                               ang_vel,             &
                                l_planetary_vorticity,  &
-                               lat_degrees,            &
-                               q_0,                    &
+                               lat_degrees,         &
+                               q_0,                 &
                                height_c
 
             ! check whether file exists
@@ -171,7 +176,6 @@ module physics
 
             glat = gravity * L_v / (c_p * theta_0)
             glati = one / glat
-
             lambda_c = one / height_c
 
             if (l_planetary_vorticity) then
@@ -288,7 +292,7 @@ module physics
             call print_physical_quantity('temperature at sea level', theta_0, 'K')
             call print_physical_quantity('planetary angular velocity', ang_vel, 'rad/s')
             call print_physical_quantity('saturation specific humidity at ground level', q_0)
-            call print_physical_quantity('planetary vorticity', l_planetary_vorticity)
+            call print_physical_quantity('l_planetary vorticity', l_planetary_vorticity)
             call print_physical_quantity('vertical planetary vorticity', f_cor(3), '1/s')
             call print_physical_quantity('horizontal planetary vorticity', f_cor(2), '1/s')
             call print_physical_quantity('latitude degrees', lat_degrees, 'deg')

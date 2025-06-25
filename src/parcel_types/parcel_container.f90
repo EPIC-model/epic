@@ -42,6 +42,9 @@ module parcel_container
         integer             :: n_pos = -1   ! number of spatial dimensions
         character(len=1), allocatable, dimension(:) :: pos_names ! Names of directions for positions
         character(len=8) :: dim_string ! Names of directions for positions
+        integer :: x_dim = -1 ! For reverse lookup
+        integer :: y_dim = -1 ! For reverse lookup
+        integer :: z_dim = -1 ! For reverse lookup
 
         contains
             procedure :: base_alloc   => base_parcel_alloc
@@ -199,6 +202,16 @@ module parcel_container
             do n = 1, this%n_pos
                 call this%register_attribute(this%position(n, :), this%pos_names(n) // "_position", "m")
                 call this%register_attribute(this%delta_pos(n, :), this%pos_names(n) // "_position_rk_tendency", "m/s")
+            enddo
+
+            do n = 1, this%n_pos
+               if(this%pos_names(n)=='x') then
+                  this%x_dim=n
+               elseif(this%pos_names(n)=='y') then
+                  this%y_dim=n
+               elseif(this%pos_names(n)=='z') then
+                  this%z_dim=n
+               endif
             enddo
 
         end subroutine base_parcel_alloc
