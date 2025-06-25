@@ -211,18 +211,33 @@
 
         end subroutine prec_parcel_resize
 
-        subroutine realistic_parcel_split(this, n, n_thread_loc)
+        subroutine realistic_parcel_split(this, n, n_thread_loc, d_pos_split)
             class(realistic_parcel_type), intent(inout) :: this
             integer, intent(in) :: n
             integer, intent(in) :: n_thread_loc
-            call this%ellipsoid_split(n, n_thread_loc)
+            double precision, intent(in) :: d_pos_split(:)
+
+            call this%ellipsoid_split(n, n_thread_loc, d_pos_split)
+
+            this%theta(n_thread_loc) = this%theta(n)
+            if(this%is_moist) then
+                this%qv(n_thread_loc) = this%qv(n)
+                this%ql(n_thread_loc) = this%ql(n)
+            endif
         end subroutine realistic_parcel_split
 
-        subroutine idealised_parcel_split(this, n, n_thread_loc)
+        subroutine idealised_parcel_split(this, n, n_thread_loc,  d_pos_split)
             class(idealised_parcel_type), intent(inout) :: this
             integer, intent(in) :: n
             integer, intent(in) :: n_thread_loc
-            call this%ellipsoid_split(n, n_thread_loc)
+            double precision, intent(in) :: d_pos_split(:)
+
+            call this%ellipsoid_split(n, n_thread_loc, d_pos_split)
+
+            this%buoyancy(n_thread_loc) = this%buoyancy(n)
+            if(this%is_moist) then
+                this%humidity(n_thread_loc) = this%humidity(n)
+            endif
         end subroutine idealised_parcel_split
 
         pure subroutine realistic_parcel_get_buoyancy(this, num, buoyancy)

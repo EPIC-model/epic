@@ -54,32 +54,7 @@ module parcel_container
             delx = delx - extent(1) * dble(nint(delx * extenti(1)))
         end function get_delx
 
-
-        ! Overwrite parcel n with parcel m
-        ! @param[in] n index of parcel to be replaced
-        ! @param[in] m index of parcel used to replace parcel at index n
-        ! @pre n and m must be valid parcel indices
-        subroutine parcel_replace(n, m)
-            integer, intent(in) :: n, m
-
-#ifdef ENABLE_VERBOSE
-            if (verbose) then
-                print '(a19, i0, a6, i0)', '    replace parcel ', n, ' with ', m
-            endif
-#endif
-
-            parcels%position(:, n) = parcels%position(:, m)
-
-            parcels%vorticity(n) = parcels%vorticity(m)
-
-            parcels%volume(n)  = parcels%volume(m)
-            parcels%buoyancy(n) = parcels%buoyancy(m)
-#ifndef ENABLE_DRY_MODE
-            parcels%humidity(n) = parcels%humidity(m)
-#endif
-            parcels%B(:, n) = parcels%B(:, m)
-
-        end subroutine parcel_replace
+        ! KEEP AROUND FOR NOW FOR UNIT TESTS
 
         ! Allocate parcel memory
         ! @param[in] num number of parcels

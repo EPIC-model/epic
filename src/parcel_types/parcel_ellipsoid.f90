@@ -1,6 +1,7 @@
  module parcel_ellipsoid
 
     use parcel_container
+    use constants, only : f12
     implicit none
 
     ! Adding the ellipsoid geomerty to the dynamics
@@ -29,11 +30,12 @@
     end type
 
     interface
-        subroutine parcel_split(this, n, n_thread_loc)
+        subroutine parcel_split(this, n, n_thread_loc, d_pos_split)
             import ellipsoid_parcel_type
             class(ellipsoid_parcel_type), intent(inout) :: this
             integer, intent(in) :: n
             integer, intent(in) :: n_thread_loc
+            double precision, intent(in) :: d_pos_split(:)
         end subroutine parcel_split
     end interface
 
@@ -205,10 +207,23 @@
 
         end subroutine ellipsoid_parcel_resize
 
-        subroutine ellipsoid_parcel_split(this, n, n_thread_loc)
+        subroutine ellipsoid_parcel_split(this, n, n_thread_loc, d_pos_split)
             class(ellipsoid_parcel_type), intent(inout) :: this
             integer, intent(in) :: n
             integer, intent(in) :: n_thread_loc
+            double precision, intent(in) :: d_pos_split(:)
+
+            this%volume(n) = f12 * this%volume(n)
+            this%B(:, n_thread_loc) = this%B(:, n)
+            this%vorticity(:, n_thread_loc) = this%vorticity(:, n)
+            this%volume(n_thread_loc) = this%volume(n)
+            this%position(:, n_thread_loc) = this%position(:, n) - d_pos_split
+            this%position(:, n) = this%position(:, n) + d_pos_split
+            if(this%has_labels) then
+                this%label(n_thread_loc) = this%label(n)
+                this%dilution(n_thread_loc) = this%dilution(n)
+            endif
+
         end subroutine ellipsoid_parcel_split
 
 end module
