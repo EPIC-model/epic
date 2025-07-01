@@ -74,7 +74,7 @@ module parcel_container
         double precision, allocatable, dimension(:,:) :: delta_vor
         double precision, allocatable, dimension(:) :: dilution
         integer(kind=8), allocatable, dimension(:) :: label
-        integer, private :: n_vor = -1      ! number of voriticity components
+        integer :: n_vor = -1      ! number of voriticity components
         character(len=1), allocatable, dimension(:) :: vor_names ! Names of vorticity components
         logical   :: has_labels = .false.
 
@@ -543,8 +543,10 @@ module parcel_container
             call try_deallocate(this%volume)
             call try_deallocate(this%vorticity)
             call try_deallocate(this%delta_vor)
-            call try_deallocate(this%dilution)
-            call try_deallocate(this%label)
+            if(this%has_labels) then
+                call try_deallocate(this%dilution)
+                call try_deallocate(this%label)
+            endif
             call try_deallocate(this%vor_names)
             call this%base_dealloc
 

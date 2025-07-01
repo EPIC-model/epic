@@ -7,15 +7,22 @@
     type, extends(ellipsoid_parcel_type) :: idealised_parcel_type ! add procedures
         double precision, allocatable, dimension(:) :: humidity
         double precision, allocatable, dimension(:) :: buoyancy
+        double precision, allocatable, dimension(:) :: merge_humidity
+        double precision, allocatable, dimension(:) :: merge_buoyancy
         logical :: is_moist = .false.
 
         contains
             procedure :: alloc => idealised_parcel_alloc
-            procedure :: dealloc=> idealised_parcel_dealloc
+            procedure :: dealloc => idealised_parcel_dealloc
             procedure :: resize => idealised_parcel_resize
             procedure :: split => idealised_parcel_split
             procedure :: get_buoyancy => idealised_parcel_get_buoyancy
-
+            procedure :: merge_alloc => idealised_merge_alloc
+            procedure :: merge_dealloc => idealised_merge_dealloc
+            procedure :: assign_p2m => idealised_assign_p2m
+            procedure :: add_p2m => idealised_add_p2m
+            procedure :: assign_m2m => idealised_assign_m2m
+            procedure :: assign_m2p => idealised_assign_m2p
     end type
 
     type, extends(ellipsoid_parcel_type) :: realistic_parcel_type ! add procedures
@@ -23,6 +30,10 @@
         double precision, allocatable, dimension(:) :: ql
         double precision, allocatable, dimension(:) :: theta
         double precision, allocatable, dimension(:) :: Nl ! optional droplet number
+        double precision, allocatable, dimension(:) :: merge_qv
+        double precision, allocatable, dimension(:) :: merge_ql
+        double precision, allocatable, dimension(:) :: merge_theta
+        double precision, allocatable, dimension(:) :: merge_Nl
         logical :: is_moist = .false.
         logical :: has_droplets = .false.
 
@@ -32,8 +43,12 @@
             procedure :: resize => realistic_parcel_resize
             procedure :: split => realistic_parcel_split
             procedure :: get_buoyancy => realistic_parcel_get_buoyancy
-
-            ! get_buoyancy added here
+            procedure :: merge_alloc => realistic_merge_alloc
+            procedure :: merge_dealloc => realistic_merge_dealloc
+            procedure :: assign_p2m => realistic_assign_p2m
+            procedure :: add_p2m => realistic_add_p2m
+            procedure :: assign_m2m => realistic_assign_m2m
+            procedure :: assign_m2p => realistic_assign_m2p
     end type
 
     type, extends(base_parcel_type) :: prec_parcel_type ! add procedures
@@ -131,9 +146,15 @@
             class(realistic_parcel_type), intent(inout) :: this
 
             call try_deallocate(this%theta)
-            call try_deallocate(this%qv)
-            call try_deallocate(this%ql)
-            call try_deallocate(this%Nl)
+
+            if(this%is_moist) then
+                call try_deallocate(this%qv)
+                call try_deallocate(this%ql)
+            endif
+
+            if(this%has_droplets) then
+                call try_deallocate(this%Nl)
+            endif
 
             call this%ellipsoid_dealloc
 
@@ -224,6 +245,9 @@
                 this%qv(n_thread_loc) = this%qv(n)
                 this%ql(n_thread_loc) = this%ql(n)
             endif
+            if(this%has_droplets) then
+                this%Nl(n_thread_loc) = this%Nl(n)
+            endif
         end subroutine realistic_parcel_split
 
         subroutine idealised_parcel_split(this, n, n_thread_loc,  d_pos_split)
@@ -269,5 +293,183 @@
                 buoyancy = this%buoyancy(num)
             endif
         end subroutine idealised_parcel_get_buoyancy
+
+        subroutine realistic_merge_alloc(this, n_merge)
+            class(realistic_parcel_type), intent(inout) :: this
+            integer,            intent(in)    :: n_merge
+
+            call this%ellipsoid_merge_alloc(n_merge)
+            allocate(this%merge_theta(n_merge))
+            if(this%is_moist) then
+                allocate(this%merge_qv(n_merge))
+                allocate(this%merge_ql(n_merge))
+            endif
+            if(this%has_droplets) then
+                allocate(this%merge_Nl(n_merge))
+            endif
+        end subroutine realistic_merge_alloc
+
+        subroutine idealised_merge_alloc(this, n_merge)
+            class(idealised_parcel_type), intent(inout) :: this
+            integer,            intent(in)    :: n_merge
+
+            call this%ellipsoid_merge_alloc(n_merge)
+            allocate(this%merge_buoyancy(n_merge))
+            if(this%is_moist) then
+                allocate(this%merge_humidity(n_merge))
+            endif
+
+        end subroutine idealised_merge_alloc
+
+        subroutine realistic_merge_dealloc(this)
+            class(realistic_parcel_type), intent(inout) :: this
+
+            call this%ellipsoid_merge_dealloc
+            call try_deallocate(this%merge_theta)
+            if(this%is_moist) then
+                call try_deallocate(this%merge_qv)
+                call try_deallocate(this%merge_ql)
+            endif
+            if(this%has_droplets) then
+                call try_deallocate(this%merge_Nl)
+            endif
+
+        end subroutine realistic_merge_dealloc
+
+        subroutine idealised_merge_dealloc(this)
+            class(idealised_parcel_type), intent(inout) :: this
+
+            call this%ellipsoid_merge_dealloc
+            call try_deallocate(this%merge_buoyancy)
+            if(this%is_moist) then
+                call try_deallocate(this%merge_humidity)
+            endif
+
+        end subroutine idealised_merge_dealloc
+
+        subroutine idealised_assign_p2m(this, n_in, n_out, temp_volume)
+            class(idealised_parcel_type), intent(inout) :: this
+            integer, intent(in) :: n_in
+            integer, intent(in) :: n_out
+            double precision, intent(in) :: temp_volume
+
+            call ellipsoid_assign_p2m(this, n_in, n_out, temp_volume)
+
+            this%merge_buoyancy(n_out) = temp_volume * this%buoyancy(n_in)
+            if(this%is_moist) then
+                this%merge_humidity(n_out) = temp_volume * this%humidity(n_in)
+            endif
+        end subroutine idealised_assign_p2m
+
+        subroutine idealised_add_p2m(this, n_in, n_out, temp_volume)
+            class(idealised_parcel_type), intent(inout) :: this
+            integer, intent(in) :: n_in
+            integer, intent(in) :: n_out
+            double precision, intent(in) :: temp_volume
+
+            call ellipsoid_add_p2m(this, n_in, n_out, temp_volume)
+
+            this%merge_buoyancy(n_out) = this%merge_buoyancy(n_out) + temp_volume * this%buoyancy(n_in)
+            if(this%is_moist) then
+                this%merge_humidity(n_out) = this%merge_humidity(n_out) + temp_volume * this%humidity(n_in)
+            endif
+        end subroutine idealised_add_p2m
+
+        subroutine idealised_assign_m2m(this, n_inout, temp_volume)
+            class(idealised_parcel_type), intent(inout) :: this
+            integer, intent(in) :: n_inout
+            double precision, intent(in) :: temp_volume
+
+            call ellipsoid_assign_m2m(this, n_inout, temp_volume)
+
+            this%merge_buoyancy(n_inout) = temp_volume * this%merge_buoyancy(n_inout)
+            if(this%is_moist) then
+                this%merge_humidity(n_inout) = temp_volume * this%merge_humidity(n_inout)
+            endif
+        end subroutine idealised_assign_m2m
+
+        subroutine idealised_assign_m2p(this, n_in, n_out)
+            class(idealised_parcel_type), intent(inout) :: this
+            integer, intent(in) :: n_in
+            integer, intent(in) :: n_out
+
+            call ellipsoid_assign_m2p(this, n_in, n_out)
+
+            this%buoyancy(n_out) = this%merge_buoyancy(n_in)
+            if(this%is_moist) then
+                this%humidity(n_out) = this%merge_humidity(n_in)
+            endif
+       end subroutine idealised_assign_m2p
+
+        subroutine realistic_assign_p2m(this, n_in, n_out, temp_volume)
+            class(realistic_parcel_type), intent(inout) :: this
+            integer, intent(in) :: n_in
+            integer, intent(in) :: n_out
+            double precision, intent(in) :: temp_volume
+
+            call ellipsoid_assign_p2m(this, n_in, n_out, temp_volume)
+
+            this%merge_theta(n_out) = temp_volume * this%theta(n_in)
+            if(this%is_moist) then
+                this%merge_qv(n_out) = temp_volume * this%qv(n_in)
+                this%merge_ql(n_out) = temp_volume * this%ql(n_in)
+            endif
+            if(this%has_droplets) then
+                this%merge_Nl(n_out) = temp_volume * this%Nl(n_in)
+            endif
+        end subroutine realistic_assign_p2m
+
+        subroutine realistic_add_p2m(this, n_in, n_out, temp_volume)
+            class(realistic_parcel_type), intent(inout) :: this
+            integer, intent(in) :: n_in
+            integer, intent(in) :: n_out
+            double precision, intent(in) :: temp_volume
+
+            call ellipsoid_add_p2m(this, n_in, n_out, temp_volume)
+
+            this%merge_theta(n_out) = this%merge_theta(n_out) + temp_volume * this%theta(n_in)
+            if(this%is_moist) then
+                this%merge_qv(n_out) = this%merge_qv(n_out) + temp_volume * this%qv(n_in)
+                this%merge_ql(n_out) = this%merge_ql(n_out) + temp_volume * this%ql(n_in)
+            endif
+            if(this%has_droplets) then
+                this%merge_Nl(n_out) = this%merge_Nl(n_out) + temp_volume * this%Nl(n_in)
+            endif
+        end subroutine realistic_add_p2m
+
+        subroutine realistic_assign_m2m(this, n_inout, temp_volume)
+            class(realistic_parcel_type), intent(inout) :: this
+            integer, intent(in) :: n_inout
+            double precision, intent(in) :: temp_volume
+
+            call ellipsoid_assign_m2m(this, n_inout, temp_volume)
+
+            this%merge_theta(n_inout) = temp_volume * this%merge_theta(n_inout)
+            if(this%is_moist) then
+                this%merge_qv(n_inout) = temp_volume * this%merge_qv(n_inout)
+                this%merge_ql(n_inout) = temp_volume * this%merge_ql(n_inout)
+            endif
+            if(this%has_droplets) then
+                this%merge_Nl(n_inout) = temp_volume * this%merge_Nl(n_inout)
+            endif
+        end subroutine realistic_assign_m2m
+
+        subroutine realistic_assign_m2p(this, n_in, n_out)
+            class(realistic_parcel_type), intent(inout) :: this
+            integer, intent(in) :: n_in
+            integer, intent(in) :: n_out
+
+            call ellipsoid_assign_m2p(this, n_in, n_out)
+
+            this%theta(n_out) = this%merge_theta(n_in)
+            if(this%is_moist) then
+                this%qv(n_out) = this%merge_qv(n_in)
+                this%ql(n_out) = this%merge_ql(n_in)
+            endif
+            if(this%has_droplets) then
+                this%Nl(n_out) = this%merge_Nl(n_in)
+            endif
+       end subroutine realistic_assign_m2p
+
 
 end module

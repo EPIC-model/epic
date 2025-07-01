@@ -216,7 +216,7 @@ module utils
 
            parcels%dim_string='xz'
            call parcels%ellipsoid_dimensions()
-           parcels%is_moist=.true.
+           parcels%is_moist=.false.
            call parcels%alloc(max_num_parcels)
 
             if (l_restart) then

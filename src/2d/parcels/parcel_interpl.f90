@@ -142,9 +142,6 @@ module parcel_interpl
             double precision :: points(2, 2)
             integer          :: n, p, l, i, j
             double precision :: pvol, weight, btot
-#ifndef ENABLE_DRY_MODE
-            double precision :: q_c
-#endif
 
             call start_timer(par2grid_timer)
 
@@ -199,9 +196,9 @@ module parcel_interpl
                                             + weight * parcels%vorticity(1, n)
 
 #ifndef ENABLE_DRY_MODE
-                        dbuoyg(js(l), is(l)) = dbuoyg(js(l), is(l)) &
+                            dbuoyg(js(l), is(l)) = dbuoyg(js(l), is(l)) &
                                              + weight * parcels%buoyancy(n)
-                        humg(js(l), is(l)) = humg(js(l), is(l)) &
+                            humg(js(l), is(l)) = humg(js(l), is(l)) &
                                              + weight * parcels%humidity(n)
 #endif
                         tbuoyg(js(l), is(l)) = tbuoyg(js(l), is(l)) &
