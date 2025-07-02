@@ -7,7 +7,7 @@ module parcel_interpl
     use timer, only : start_timer, stop_timer
     use parameters, only : nx, nz, vmin
     use options, only : parcel
-    use parcel_container, only : parcels, n_parcels
+    use dynamic_parcels, only : parcels, n_parcels
     use parcel_bc, only : apply_periodic_bc
     use parcel_ellipse
     use fields
@@ -142,9 +142,6 @@ module parcel_interpl
             double precision :: points(2, 2)
             integer          :: n, p, l, i, j
             double precision :: pvol, weight, btot
-#ifndef ENABLE_DRY_MODE
-            double precision :: q_c
-#endif
 
             call start_timer(par2grid_timer)
 
@@ -168,17 +165,8 @@ module parcel_interpl
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
 
-#ifndef ENABLE_DRY_MODE
-                ! liquid water content
-                q_c = parcels%humidity(n) &
-                    - q_0 * exp(lambda_c * (lower(2) - parcels%position(2, n)))
-                q_c = max(zero, q_c)
+                call parcels%get_buoyancy(n, btot)
 
-                ! total buoyancy (including effects of latent heating)
-                btot = parcels%buoyancy(n) + glat * q_c
-#else
-                btot = parcels%buoyancy(n)
-#endif
                 points = get_ellipse_points(parcels%position(:, n), &
                                             pvol, parcels%B(:, n))
 
@@ -205,12 +193,12 @@ module parcel_interpl
                         weight = f12 * weights(l) * pvol
 
                         vortg(js(l), is(l)) = vortg(js(l), is(l)) &
-                                            + weight * parcels%vorticity(n)
+                                            + weight * parcels%vorticity(1, n)
 
 #ifndef ENABLE_DRY_MODE
-                        dbuoyg(js(l), is(l)) = dbuoyg(js(l), is(l)) &
+                            dbuoyg(js(l), is(l)) = dbuoyg(js(l), is(l)) &
                                              + weight * parcels%buoyancy(n)
-                        humg(js(l), is(l)) = humg(js(l), is(l)) &
+                            humg(js(l), is(l)) = humg(js(l), is(l)) &
                                              + weight * parcels%humidity(n)
 #endif
                         tbuoyg(js(l), is(l)) = tbuoyg(js(l), is(l)) &

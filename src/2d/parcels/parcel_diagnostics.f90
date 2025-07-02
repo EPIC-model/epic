@@ -5,7 +5,7 @@ module parcel_diagnostics
     use constants, only : zero, one, f12
     use merge_sort
     use parameters, only : extent, lower, vcell, vmin, nx, nz, vdomaini
-    use parcel_container, only : parcels, n_parcels
+    use dynamic_parcels, only : parcels, n_parcels
     use parcel_ellipse
     use omp_lib
     use physics, only : peref, ape_calculation
@@ -101,8 +101,8 @@ module parcel_diagnostics
             ! this way the result is reproducible
             bmin = minval(parcels%buoyancy(1:n_parcels))
             bmax = maxval(parcels%buoyancy(1:n_parcels))
-            vormin = minval(parcels%vorticity(1:n_parcels))
-            vormax = maxval(parcels%vorticity(1:n_parcels))
+            vormin = minval(parcels%vorticity(1, 1:n_parcels))
+            vormax = maxval(parcels%vorticity(1, 1:n_parcels))
 
             lsum = zero
             l2sum = zero
@@ -155,7 +155,7 @@ module parcel_diagnostics
                     n_small = n_small + 1
                 endif
 
-                rms_zeta = rms_zeta + vol * parcels%vorticity(n) ** 2
+                rms_zeta = rms_zeta + vol * parcels%vorticity(1, n) ** 2
 
             enddo
             !$omp end do
@@ -242,7 +242,7 @@ module parcel_diagnostics
                     xzbv = xzbv + bv * parcels%position(1, n) * parcels%position(2, n)
 
 
-                    vv = parcels%vorticity(n) * parcels%volume(n)
+                    vv = parcels%vorticity(1, n) * parcels%volume(n)
                     vvsum = vvsum + vv
                     xvv = xvv + vv * parcels%position(1, n)
                     zvv = zvv + vv * parcels%position(2, n)

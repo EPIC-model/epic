@@ -24,6 +24,7 @@ AC_CONFIG_FILES([
     src/mpi/Makefile
     src/netcdf/Makefile
     src/fft/Makefile
+    src/parcel_types/Makefile
     src/2d/Makefile
     src/3d/Makefile
     models/Makefile

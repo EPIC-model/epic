@@ -5,7 +5,8 @@ module parcel_split
     use options, only : verbose
     use constants, only : pi, three, f12, f14, f34
     use parameters, only : vmax
-    use parcel_container, only : parcel_container_type, n_parcels
+    use parcel_types, only : idealised_parcel_type
+    use dynamic_parcels, only : n_parcels
     use parcel_bc, only : apply_reflective_bc
     use parcel_ellipse, only : get_eigenvalue      &
                              , get_eigenvector     &
@@ -24,7 +25,7 @@ module parcel_split
         ! @param[inout] parcels
         ! @param[in] threshold is the largest allowed aspect ratio
         subroutine split_ellipses(parcels, threshold)
-            type(parcel_container_type), intent(inout) :: parcels
+            type(idealised_parcel_type), intent(inout) :: parcels
             double precision,            intent(in)    :: threshold
             double precision                           :: B11
             double precision                           :: B12
@@ -66,7 +67,6 @@ module parcel_split
                 parcels%B(2, n) = B12 - f34 * a2 * (evec(1) * evec(2))
 
                 h = f14 * sqrt(three * a2)
-                parcels%volume(n) = f12 * V
 
                 !$omp critical
                 n_thread_loc = n_parcels + 1
@@ -75,17 +75,7 @@ module parcel_split
                 n_parcels = n_parcels + 1
                 !$omp end critical
 
-
-                parcels%B(:, n_thread_loc) = parcels%B(:, n)
-
-                parcels%vorticity(n_thread_loc) = parcels%vorticity(n)
-                parcels%volume(n_thread_loc) = parcels%volume(n)
-                parcels%buoyancy(n_thread_loc) = parcels%buoyancy(n)
-#ifndef ENABLE_DRY_MODE
-                parcels%humidity(n_thread_loc) = parcels%humidity(n)
-#endif
-                parcels%position(:, n_thread_loc) = parcels%position(:, n) - h * evec
-                parcels%position(:, n) = parcels%position(:, n) + h * evec
+                call parcels%split(n, n_thread_loc, h*evec)
 
                 ! child parcels need to be reflected into domain, if their center
                 ! is inside the halo region

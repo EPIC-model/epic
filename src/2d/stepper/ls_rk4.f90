@@ -4,7 +4,7 @@
 ! =============================================================================
 module ls_rk4
     use options, only : parcel
-    use parcel_container
+    use dynamic_parcels, only : parcels, n_parcels
     use parcel_bc
     use rk4_utils, only: get_B, get_time_step
     use utils, only : write_step
@@ -164,7 +164,7 @@ module ls_rk4
                 parcels%position(:, n) = parcels%position(:, n) &
                                       + cb * dt * delta_pos(:, n)
 
-                parcels%vorticity(n) = parcels%vorticity(n) + cb * dt * delta_vor(n)
+                parcels%vorticity(1, n) = parcels%vorticity(1, n) + cb * dt * delta_vor(n)
                 parcels%B(:, n) = parcels%B(:, n) + cb * dt * delta_b(:, n)
             enddo
             !$omp end parallel do

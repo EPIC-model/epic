@@ -3,7 +3,7 @@ module parcel_netcdf
     use netcdf_utils
     use netcdf_writer
     use netcdf_reader
-    use parcel_container, only : parcels, n_parcels
+    use dynamic_parcels, only : parcels, n_parcels
     use parameters, only : nx, nz, extent, lower, max_num_parcels
     use config, only : package_version, cf_version
     use timer, only : start_timer, stop_timer
@@ -208,7 +208,7 @@ module parcel_netcdf
 
             call write_netcdf_dataset(ncid, vol_id, parcels%volume(1:n_parcels), start, cnt)
 
-            call write_netcdf_dataset(ncid, vor_id, parcels%vorticity(1:n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, vor_id, parcels%vorticity(1, 1:n_parcels), start, cnt)
 
             call write_netcdf_dataset(ncid, buo_id, parcels%buoyancy(1:n_parcels), start, cnt)
 
@@ -290,7 +290,7 @@ module parcel_netcdf
             if (has_dataset(ncid, 'vorticity')) then
                 l_valid = .true.
                 call read_netcdf_dataset(ncid, 'vorticity', &
-                                         parcels%vorticity(1:n_parcels), start, cnt)
+                                         parcels%vorticity(1, 1:n_parcels), start, cnt)
             endif
 
             if (has_dataset(ncid, 'buoyancy')) then

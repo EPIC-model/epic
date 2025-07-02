@@ -6,7 +6,7 @@
 module parcel_bc
     use constants, only : zero, two
     use parameters, only : lower, upper, extent, hli, center
-    use parcel_container, only : n_parcels
+    use dynamic_parcels, only : n_parcels
     use omp_lib
     implicit none
 
