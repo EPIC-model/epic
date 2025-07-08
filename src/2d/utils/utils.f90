@@ -81,7 +81,7 @@ module utils
             double precision              :: strain(4, n_parcels)
             double precision              :: vorticity(n_parcels)
 
-            call par2grid
+            call par2grid(parcels)
 
             ! need to be called in order to set initial time step;
             ! this is also needed for the first ls-rk4 substep

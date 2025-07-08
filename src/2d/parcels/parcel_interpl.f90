@@ -9,6 +9,7 @@ module parcel_interpl
     use options, only : parcel
     use dynamic_parcels, only : parcels, n_parcels
     use parcel_bc, only : apply_periodic_bc
+    use parcel_types, only : idealised_parcel_type
     use parcel_ellipse
     use fields
     use physics, only : glat, lambda_c, q_0
@@ -32,6 +33,11 @@ module parcel_interpl
                grid2par_timer
 
     private :: is, js, weights
+
+    interface par2grid
+        module procedure par2grid_idealised
+        !module procedure par2grid_realistic
+    end interface par2grid
 
     contains
 
@@ -138,7 +144,8 @@ module parcel_interpl
         ! It also updates the scalar fields:
         !   - nparg, that is the number of parcels per grid cell
         !   - nsparg, that is the number of small parcels per grid cell
-        subroutine par2grid
+        subroutine par2grid_idealised(parcels)
+            class(idealised_parcel_type), intent(in) :: parcels
             double precision :: points(2, 2)
             integer          :: n, p, l, i, j
             double precision :: pvol, weight, btot
@@ -149,19 +156,14 @@ module parcel_interpl
             volg = zero
             nparg = zero
             nsparg = zero
-#ifndef ENABLE_DRY_MODE
-            dbuoyg = zero
-            humg = zero
-#endif
+            if(parcels%is_moist) then
+                dbuoyg = zero
+                humg = zero
+            endif
             tbuoyg = zero
             !$omp parallel default(shared)
-#ifndef ENABLE_DRY_MODE
-            !$omp do private(n, p, l, i, j, points, pvol, weight, btot, q_c, is, js, weights) &
-            !$omp& reduction(+:nparg, nsparg, vortg, dbuoyg, humg, tbuoyg, volg)
-#else
             !$omp do private(n, p, l, i, j, points, pvol, weight, btot, is, js, weights) &
-            !$omp& reduction(+:nparg, nsparg, vortg, tbuoyg, volg)
-#endif
+            !$omp& reduction(+:nparg, nsparg, vortg, dbuoyg, humg, tbuoyg, volg)
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
 
@@ -195,12 +197,13 @@ module parcel_interpl
                         vortg(js(l), is(l)) = vortg(js(l), is(l)) &
                                             + weight * parcels%vorticity(1, n)
 
-#ifndef ENABLE_DRY_MODE
+                        if(parcels%is_moist) then
                             dbuoyg(js(l), is(l)) = dbuoyg(js(l), is(l)) &
-                                             + weight * parcels%buoyancy(n)
+                                                 + weight * parcels%buoyancy(n)
                             humg(js(l), is(l)) = humg(js(l), is(l)) &
-                                             + weight * parcels%humidity(n)
-#endif
+                                               + weight * parcels%humidity(n)
+                        endif
+
                         tbuoyg(js(l), is(l)) = tbuoyg(js(l), is(l)) &
                                              + weight * btot
                         volg(js(l), is(l)) = volg(js(l), is(l)) &
@@ -225,16 +228,17 @@ module parcel_interpl
             vortg(1,    :) = vortg(1,    :) + vortg(-1,   :)
             vortg(nz-1, :) = vortg(nz-1, :) + vortg(nz+1, :)
 
-#ifndef ENABLE_DRY_MODE
-            dbuoyg(0,  :) = two * dbuoyg(0,  :)
-            dbuoyg(nz, :) = two * dbuoyg(nz, :)
-            dbuoyg(1,    :) = dbuoyg(1,    :) + dbuoyg(-1,   :)
-            dbuoyg(nz-1, :) = dbuoyg(nz-1, :) + dbuoyg(nz+1, :)
-            humg(0,  :) = two * humg(0,  :)
-            humg(nz, :) = two * humg(nz, :)
-            humg(1,    :) = humg(1,    :) + humg(-1,   :)
-            humg(nz-1, :) = humg(nz-1, :) + humg(nz+1, :)
-#endif
+            if(parcels%is_moist) then
+                dbuoyg(0,  :) = two * dbuoyg(0,  :)
+                dbuoyg(nz, :) = two * dbuoyg(nz, :)
+                dbuoyg(1,    :) = dbuoyg(1,    :) + dbuoyg(-1,   :)
+                dbuoyg(nz-1, :) = dbuoyg(nz-1, :) + dbuoyg(nz+1, :)
+                humg(0,  :) = two * humg(0,  :)
+                humg(nz, :) = two * humg(nz, :)
+                humg(1,    :) = humg(1,    :) + humg(-1,   :)
+                humg(nz-1, :) = humg(nz-1, :) + humg(nz+1, :)
+            endif
+
             tbuoyg(0,  :) = two * tbuoyg(0,  :)
             tbuoyg(nz, :) = two * tbuoyg(nz, :)
             tbuoyg(1,    :) = tbuoyg(1,    :) + tbuoyg(-1,   :)
@@ -247,10 +251,10 @@ module parcel_interpl
             vortg(-1,   :) = two * vortg(0,  :) - vortg(1,    :)
             vortg(nz+1, :) = two * vortg(nz, :) - vortg(nz-1, :)
 
-#ifndef ENABLE_DRY_MODE
-            dbuoyg(0:nz, :) = dbuoyg(0:nz, :) / volg(0:nz, :)
-            humg(0:nz, :) = humg(0:nz, :) / volg(0:nz, :)
-#endif
+            if(parcels%is_moist) then
+                dbuoyg(0:nz, :) = dbuoyg(0:nz, :) / volg(0:nz, :)
+                humg(0:nz, :) = humg(0:nz, :) / volg(0:nz, :)
+            endif
             tbuoyg(0:nz, :) = tbuoyg(0:nz, :) / volg(0:nz, :)
 
             ! extrapolate to halo grid points (needed to compute
@@ -275,7 +279,7 @@ module parcel_interpl
 
             call stop_timer(par2grid_timer)
 
-        end subroutine par2grid
+        end subroutine par2grid_idealised
 
 
         ! Interpolate the gridded quantities to the parcels

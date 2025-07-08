@@ -79,7 +79,7 @@ module ls_rk4
             double precision                :: dt
             integer                         :: n
 
-            call par2grid
+            call par2grid(parcels)
 
             ! need to be called in order to set initial time step;
             ! this is also needed for the first ls-rk4 substep
@@ -100,7 +100,7 @@ module ls_rk4
 
             do n = 1, 4
                 call ls_rk4_substep(dt, n)
-                call par2grid
+                call par2grid(parcels)
             enddo
             call ls_rk4_substep(dt, 5)
 
