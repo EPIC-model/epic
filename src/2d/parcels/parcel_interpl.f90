@@ -9,7 +9,7 @@ module parcel_interpl
     use options, only : parcel
     use dynamic_parcels, only : parcels, n_parcels
     use parcel_bc, only : apply_periodic_bc
-    use parcel_types, only : idealised_parcel_type
+    use parcel_types, only : idealised_parcel_type, realistic_parcel_type
     use parcel_ellipse
     use fields
     use physics, only : glat, lambda_c, q_0
@@ -36,7 +36,7 @@ module parcel_interpl
 
     interface par2grid
         module procedure par2grid_idealised
-        !module procedure par2grid_realistic
+        module procedure par2grid_realistic
     end interface par2grid
 
     contains
@@ -280,6 +280,180 @@ module parcel_interpl
             call stop_timer(par2grid_timer)
 
         end subroutine par2grid_idealised
+
+
+        ! Interpolate parcel quantities to the grid, these consist of the parcel
+        !   - vorticity
+        !   - buoyancy
+        !   - volume
+        ! It also updates the scalar fields:
+        !   - nparg, that is the number of parcels per grid cell
+        !   - nsparg, that is the number of small parcels per grid cell
+        subroutine par2grid_realistic(parcels)
+            class(realistic_parcel_type), intent(in) :: parcels
+            double precision :: points(2, 2)
+            integer          :: n, p, l, i, j
+            double precision :: pvol, weight, btot
+
+            call start_timer(par2grid_timer)
+
+            vortg = zero
+            volg = zero
+            nparg = zero
+            nsparg = zero
+            if(parcels%is_moist) then
+                qvg = zero
+                qlg = zero
+            endif
+            if(parcels%has_droplets) then
+                Nlg = zero
+            endif
+            thetag = zero
+            tbuoyg = zero
+            !$omp parallel default(shared)
+            !$omp do private(n, p, l, i, j, points, pvol, weight, btot, is, js, weights) &
+            !$omp& reduction(+:nparg, nsparg, vortg, qvg, qlg, tbuoyg, thetag, Nlg, volg)
+            do n = 1, n_parcels
+                pvol = parcels%volume(n)
+
+                call parcels%get_buoyancy(n, btot)
+
+                points = get_ellipse_points(parcels%position(:, n), &
+                                            pvol, parcels%B(:, n))
+
+                call get_index(parcels%position(:, n), i, j)
+                i = mod(i + nx, nx)
+                nparg(j, i) = nparg(j, i) + 1
+                if (parcels%volume(n) <= vmin) then
+                    nsparg(j, i) = nsparg(j, i) + 1
+                endif
+
+                ! we have 2 points per ellipse
+                do p = 1, 2
+
+                    ! ensure point is within the domain
+                    call apply_periodic_bc(points(:, p))
+
+                    ! get interpolation weights and mesh indices
+                    call bilinear(points(:, p), is, js, weights)
+
+                    ! loop over grid points which are part of the interpolation
+                    ! the weight is halved due to 2 points per ellipse
+                    do l = 1, ngp
+
+                        weight = f12 * weights(l) * pvol
+
+                        vortg(js(l), is(l)) = vortg(js(l), is(l)) &
+                                            + weight * parcels%vorticity(1, n)
+
+                        if(parcels%is_moist) then
+                            qvg(js(l), is(l)) = qvg(js(l), is(l)) &
+                                                 + weight * parcels%ql(n)
+                            qlg(js(l), is(l)) = qlg(js(l), is(l)) &
+                                               + weight * parcels%qv(n)
+                        endif
+                        if(parcels%has_droplets) then
+                            Nlg(js(l), is(l)) = Nlg(js(l), is(l)) &
+                                                 + weight * parcels%Nl(n)
+                        endif
+                        tbuoyg(js(l), is(l)) = tbuoyg(js(l), is(l)) &
+                                             + weight * btot
+                        thetag(js(l), is(l)) = thetag(js(l), is(l)) &
+                                             + weight * parcels%theta(n)
+                        volg(js(l), is(l)) = volg(js(l), is(l)) &
+                                           + weight
+                    enddo
+                enddo
+            enddo
+            !$omp end do
+            !$omp end parallel
+
+            ! apply free slip boundary condition
+            volg(0,  :) = two * volg(0,  :)
+            volg(nz, :) = two * volg(nz, :)
+
+            ! free slip boundary condition is reflective with mirror
+            ! axis at the physical domain
+            volg(1,    :) = volg(1,    :) + volg(-1,   :)
+            volg(nz-1, :) = volg(nz-1, :) + volg(nz+1, :)
+
+            vortg(0,  :) = two * vortg(0,  :)
+            vortg(nz, :) = two * vortg(nz, :)
+            vortg(1,    :) = vortg(1,    :) + vortg(-1,   :)
+            vortg(nz-1, :) = vortg(nz-1, :) + vortg(nz+1, :)
+
+            if(parcels%is_moist) then
+                qvg(0,  :) = two * qvg(0,  :)
+                qvg(nz, :) = two * qvg(nz, :)
+                qvg(1,    :) = qvg(1,    :) + qvg(-1,   :)
+                qvg(nz-1, :) = qvg(nz-1, :) + qvg(nz+1, :)
+                qlg(0,  :) = two * qlg(0,  :)
+                qlg(nz, :) = two * qlg(nz, :)
+                qlg(1,    :) = qlg(1,    :) + qlg(-1,   :)
+                qlg(nz-1, :) = qlg(nz-1, :) + qlg(nz+1, :)
+            endif
+
+            if(parcels%has_droplets) then
+                Nlg(0,  :) = two * Nlg(0,  :)
+                Nlg(nz, :) = two * Nlg(nz, :)
+                Nlg(1,    :) = Nlg(1,    :) + Nlg(-1,   :)
+                Nlg(nz-1, :) = Nlg(nz-1, :) + Nlg(nz+1, :)
+            endif
+
+            tbuoyg(0,  :) = two * tbuoyg(0,  :)
+            tbuoyg(nz, :) = two * tbuoyg(nz, :)
+            tbuoyg(1,    :) = tbuoyg(1,    :) + tbuoyg(-1,   :)
+            tbuoyg(nz-1, :) = tbuoyg(nz-1, :) + tbuoyg(nz+1, :)
+
+            thetag(0,  :) = two * thetag(0,  :)
+            thetag(nz, :) = two * thetag(nz, :)
+            thetag(1,    :) = thetag(1,    :) + thetag(-1,   :)
+            thetag(nz-1, :) = thetag(nz-1, :) + thetag(nz+1, :)
+
+            ! exclude halo cells to avoid division by zero
+            vortg(0:nz, :) = vortg(0:nz, :) / volg(0:nz, :)
+
+            ! extrapolate to halo grid points (since halo grid points
+            ! are used to get u_z = w_x - zeta)
+            vortg(-1,   :) = two * vortg(0,  :) - vortg(1,    :)
+            vortg(nz+1, :) = two * vortg(nz, :) - vortg(nz-1, :)
+
+            if(parcels%is_moist) then
+                qvg(0:nz, :) = qvg(0:nz, :) / volg(0:nz, :)
+                qlg(0:nz, :) = qlg(0:nz, :) / volg(0:nz, :)
+            endif
+
+            if(parcels%has_droplets) then
+                Nlg(0:nz, :) = Nlg(0:nz, :) / volg(0:nz, :)
+            endif
+            tbuoyg(0:nz, :) = tbuoyg(0:nz, :) / volg(0:nz, :)
+            thetag(0:nz, :) = thetag(0:nz, :) / volg(0:nz, :)
+
+            ! extrapolate to halo grid points (needed to compute
+            ! z derivative used for the time step)
+            tbuoyg(-1,   :) = two * tbuoyg(0,  :) - tbuoyg(1, :)
+            tbuoyg(nz+1, :) = two * tbuoyg(nz, :) - tbuoyg(nz-1, :)
+            thetag(-1,   :) = two * thetag(0,  :) - thetag(1, :)
+            thetag(nz+1, :) = two * thetag(nz, :) - thetag(nz-1, :)
+
+            ! sum halo contribution into internal cells
+            ! (be aware that halo cell contribution at upper boundary
+            ! are added to cell nz)
+            nparg(0,    :) = nparg(0,    :) + nparg(-1, :)
+            nparg(nz-1, :) = nparg(nz-1, :) + nparg(nz, :)
+
+            nsparg(0,    :) = nsparg(0,    :) + nsparg(-1, :)
+            nsparg(nz-1, :) = nsparg(nz-1, :) + nsparg(nz, :)
+
+            ! sanity check
+            if (sum(nparg(0:nz-1, :)) /= n_parcels) then
+                print *, "par2grid: Wrong total number of parcels!"
+                stop
+            endif
+
+            call stop_timer(par2grid_timer)
+
+        end subroutine par2grid_realistic
 
 
         ! Interpolate the gridded quantities to the parcels
