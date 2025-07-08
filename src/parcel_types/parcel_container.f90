@@ -77,6 +77,9 @@ module parcel_container
         integer :: n_vor = -1      ! number of voriticity components
         character(len=1), allocatable, dimension(:) :: vor_names ! Names of vorticity components
         logical   :: has_labels = .false.
+        logical   :: is_idealised = .false.
+        logical :: is_moist = .false.
+        logical :: has_droplets = .false.
 
         contains
             procedure :: dynamic_alloc => dynamic_parcel_alloc
@@ -123,7 +126,7 @@ module parcel_container
     interface
         subroutine dynamic_parcel_get_buoyancy(this, num, buoyancy)
             import dynamic_parcel_type
-            class(dynamic_parcel_type), intent(inout) :: this
+            class(dynamic_parcel_type), intent(in) :: this
             integer,                 intent(in)    :: num
             double precision, intent(out) :: buoyancy
         end subroutine dynamic_parcel_get_buoyancy

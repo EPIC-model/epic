@@ -8,6 +8,7 @@ module field_netcdf
     use timer, only : start_timer, stop_timer
     use options, only : write_netcdf_options
     use physics, only : write_physical_quantities
+    use dynamic_parcels, only : parcels
     implicit none
 
     integer :: field_io_timer
@@ -21,9 +22,8 @@ module field_netcdf
 
     integer             :: x_vel_id, z_vel_id, vor_id, &
                            tbuo_id, n_writes
-#ifndef ENABLE_DRY_MODE
     integer             :: dbuo_id, hum_id
-#endif
+    integer             :: theta_id, qv_id, ql_id, Nl_id
 #ifdef ENABLE_DIAGNOSE
     integer             :: vol_id, npar_id
 #endif
@@ -36,9 +36,10 @@ module field_netcdf
                coord_ids, t_axis_id,                &
                x_vel_id, z_vel_id, vor_id, tbuo_id, &
                n_writes, restart_time
-#ifndef ENABLE_DRY_MODE
+
     private :: dbuo_id, hum_id
-#endif
+    private :: theta_id, qv_id, ql_id, Nl_id
+
 #ifdef ENABLE_DIAGNOSE
     private :: vol_id, npar_id
 #endif
@@ -124,8 +125,46 @@ module field_netcdf
                                        dimids=dimids,                       &
                                        varid=vor_id)
 
-#ifdef ENABLE_DRY_MODE
-            call define_netcdf_dataset(ncid=ncid,                           &
+            if(parcels%is_idealised) then
+                if(parcels%is_moist) then
+                    call define_netcdf_dataset(ncid=ncid,                   &
+                                           name='total_buoyancy',           &
+                                           long_name='total buoyancy',      &
+                                           std_name='',                     &
+                                           unit='m/s^2',                    &
+                                           dtype=NF90_DOUBLE,               &
+                                           dimids=dimids,                   &
+                                           varid=tbuo_id)
+
+                    call define_netcdf_dataset(ncid=ncid,                   &
+                                           name='dry_buoyancy',             &
+                                           long_name='dry buoyancy',        &
+                                           std_name='',                     &
+                                           unit='m/s^2',                    &
+                                           dtype=NF90_DOUBLE,               &
+                                           dimids=dimids,                   &
+                                           varid=dbuo_id)
+
+                    call define_netcdf_dataset(ncid=ncid,                   &
+                                           name='humidity',                 &
+                                           long_name='specific humidity',   &
+                                           std_name='',                     &
+                                           unit='kg/kg',                    &
+                                           dtype=NF90_DOUBLE,               &
+                                           dimids=dimids,                   &
+                                           varid=hum_id)
+                else
+                   call define_netcdf_dataset(ncid=ncid,                   &
+                                           name='buoyancy',                 &
+                                           long_name='buoyancy',            &
+                                           std_name='',                     &
+                                           unit='m/s^2',                    &
+                                           dtype=NF90_DOUBLE,               &
+                                           dimids=dimids,                   &
+                                           varid=tbuo_id)
+                endif
+            else
+               call define_netcdf_dataset(ncid=ncid,                       &
                                        name='buoyancy',                     &
                                        long_name='buoyancy',                &
                                        std_name='',                         &
@@ -133,34 +172,44 @@ module field_netcdf
                                        dtype=NF90_DOUBLE,                   &
                                        dimids=dimids,                       &
                                        varid=tbuo_id)
-#else
-            call define_netcdf_dataset(ncid=ncid,                           &
-                                       name='total_buoyancy',               &
-                                       long_name='total buoyancy',          &
+                call define_netcdf_dataset(ncid=ncid,                       &
+                                       name='theta',                        &
+                                       long_name='potential temperature',   &
                                        std_name='',                         &
-                                       unit='m/s^2',                        &
+                                       unit='K',                            &
                                        dtype=NF90_DOUBLE,                   &
                                        dimids=dimids,                       &
-                                       varid=tbuo_id)
+                                       varid=theta_id)
+                if(parcels%is_moist) then
+                    call define_netcdf_dataset(ncid=ncid,                        &
+                                           name='qv',                            &
+                                           long_name='water vapour mixing ratio',&
+                                           std_name='',                          &
+                                           unit='kg/kg',                         &
+                                           dtype=NF90_DOUBLE,                    &
+                                           dimids=dimids,                        &
+                                           varid=qv_id)
 
-            call define_netcdf_dataset(ncid=ncid,                           &
-                                       name='dry_buoyancy',                 &
-                                       long_name='dry buoyancy',            &
-                                       std_name='',                         &
-                                       unit='m/s^2',                        &
-                                       dtype=NF90_DOUBLE,                   &
-                                       dimids=dimids,                       &
-                                       varid=dbuo_id)
-
-            call define_netcdf_dataset(ncid=ncid,                           &
-                                       name='humidity',                     &
-                                       long_name='specific humidity',       &
-                                       std_name='',                         &
-                                       unit='kg/kg',                        &
-                                       dtype=NF90_DOUBLE,                   &
-                                       dimids=dimids,                       &
-                                       varid=hum_id)
-#endif
+                    call define_netcdf_dataset(ncid=ncid,                        &
+                                           name='ql',                            &
+                                           long_name='liquid water mixing ratio',&
+                                           std_name='',                          &
+                                           unit='kg/kg',                         &
+                                           dtype=NF90_DOUBLE,                    &
+                                           dimids=dimids,                        &
+                                           varid=qv_id)
+                endif
+                if(parcels%has_droplets) then
+                   call define_netcdf_dataset(ncid=ncid,                        &
+                                           name='Nl',                            &
+                                           long_name='droplet number',           &
+                                           std_name='',                          &
+                                           unit='-',                             &
+                                           dtype=NF90_DOUBLE,                    &
+                                           dimids=dimids,                        &
+                                           varid=Nl_id)
+                endif
+            endif
 
 #ifdef ENABLE_DIAGNOSE
             call define_netcdf_dataset(ncid=ncid,                           &
@@ -219,16 +268,25 @@ module field_netcdf
 
             call get_var_id(ncid, 'vorticity', vor_id)
 
-#ifdef ENABLE_DRY_MODE
-            call get_var_id(ncid, 'buoyancy',tbuo_id)
-#else
-            call get_var_id(ncid, 'total_buoyancy', tbuo_id)
-
-            call get_var_id(ncid, 'dry_buoyancy', dbuo_id)
-            
-            call get_var_id(ncid, 'humidity', hum_id)
-#endif
-
+            if(parcels%is_idealised) then
+                if(parcels%is_moist) then
+                    call get_var_id(ncid, 'total_buoyancy', tbuo_id)
+                    call get_var_id(ncid, 'dry_buoyancy', dbuo_id)
+                   call get_var_id(ncid, 'humidity', hum_id)
+                else
+                    call get_var_id(ncid, 'buoyancy',tbuo_id)
+                endif
+            else
+                call get_var_id(ncid, 'buoyancy',tbuo_id)
+                call get_var_id(ncid, 'theta', theta_id)
+                if(parcels%is_moist) then
+                   call get_var_id(ncid, 'qv', qv_id)
+                   call get_var_id(ncid, 'ql', ql_id)
+                endif
+                if(parcels%has_droplets) then
+                    call get_var_id(ncid, 'Nl', Nl_id)
+                endif
+            endif
 #ifdef ENABLE_DIAGNOSE
             call get_var_id(ncid, 'volume', vol_id)
 
@@ -282,13 +340,28 @@ module field_netcdf
             call write_netcdf_dataset(ncid, tbuo_id, tbuoyg(0:nz, 0:nx-1), &
                                       start, cnt)
 
+            if(parcels%is_idealised) then
+                if(parcels%is_moist) then
+                    call write_netcdf_dataset(ncid, dbuo_id, dbuoyg(0:nz, 0:nx-1), &
+                                              start, cnt)
+                    call write_netcdf_dataset(ncid, hum_id, humg(0:nz, 0:nx-1), &
+                                              start, cnt)
+                endif
+            else
+                call write_netcdf_dataset(ncid, theta_id, thetag(0:nz, 0:nx-1), &
+                                              start, cnt)
+                if(parcels%is_moist) then
+                    call write_netcdf_dataset(ncid, qv_id, qvg(0:nz, 0:nx-1), &
+                                                  start, cnt)
+                    call write_netcdf_dataset(ncid, ql_id, qlg(0:nz, 0:nx-1), &
+                                                  start, cnt)
+                endif
+                if(parcels%has_droplets) then
+                    call write_netcdf_dataset(ncid, nl_id, Nlg(0:nz, 0:nx-1), &
+                                                  start, cnt)
+                endif
+            endif
 
-#ifndef ENABLE_DRY_MODE
-            call write_netcdf_dataset(ncid, dbuo_id, dbuoyg(0:nz, 0:nx-1), &
-                                      start, cnt)
-            call write_netcdf_dataset(ncid, hum_id, humg(0:nz, 0:nx-1), &
-                                      start, cnt)
-#endif
 #ifdef ENABLE_DIAGNOSE
             call write_netcdf_dataset(ncid, vol_id, volg(0:nz, 0:nx-1))
 

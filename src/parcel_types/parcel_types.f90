@@ -9,7 +9,6 @@
         double precision, allocatable, dimension(:) :: buoyancy
         double precision, allocatable, dimension(:) :: merge_humidity
         double precision, allocatable, dimension(:) :: merge_buoyancy
-        logical :: is_moist = .false.
 
         contains
             procedure :: alloc => idealised_parcel_alloc
@@ -34,8 +33,6 @@
         double precision, allocatable, dimension(:) :: merge_ql
         double precision, allocatable, dimension(:) :: merge_theta
         double precision, allocatable, dimension(:) :: merge_Nl
-        logical :: is_moist = .false.
-        logical :: has_droplets = .false.
 
         contains
             procedure :: alloc => realistic_parcel_alloc
@@ -71,6 +68,8 @@
         subroutine idealised_parcel_alloc(this, num)
             class(idealised_parcel_type), intent(inout) :: this
             integer,            intent(in)    :: num
+
+            this%is_idealised = .true.
 
             call this%ellipsoid_alloc(num)
 
@@ -119,6 +118,8 @@
         subroutine realistic_parcel_alloc(this, num)
             class(realistic_parcel_type), intent(inout) :: this
             integer,            intent(in)    :: num
+
+            this%is_idealised = .false.
 
             call this%ellipsoid_alloc(num)
 
@@ -265,7 +266,7 @@
         end subroutine idealised_parcel_split
 
         pure subroutine realistic_parcel_get_buoyancy(this, num, buoyancy)
-            class(realistic_parcel_type), intent(inout) :: this
+            class(realistic_parcel_type), intent(in) :: this
             integer, intent(in) :: num
             double precision, intent(out) :: buoyancy
 
@@ -278,7 +279,7 @@
         end subroutine realistic_parcel_get_buoyancy
 
         pure subroutine idealised_parcel_get_buoyancy(this, num, buoyancy)
-            class(idealised_parcel_type), intent(inout) :: this
+            class(idealised_parcel_type), intent(in) :: this
             integer, intent(in) :: num
             double precision, intent(out) :: buoyancy
             double precision :: q_c

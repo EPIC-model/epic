@@ -5,6 +5,7 @@
 module fields
     use parameters, only : dx, dxi, extent, lower, nx, nz
     use constants, only : zero
+    use dynamic_parcels, only  : parcels
     implicit none
 
     ! Halo grid points in vertical direction z are -1 and nz+1,
@@ -17,11 +18,13 @@ module fields
     double precision, allocatable, dimension(:, :) :: &
         vortg,     &   ! vorticity scalar field
         vtend,     &   ! vorticity tendency
-#ifndef ENABLE_DRY_MODE
         dbuoyg,    &   ! dry buoyancy (or liquid-water buoyancy)
         humg,      &   ! humidity
-#endif
         tbuoyg,    &   ! buoyancy
+        thetag,    &   ! potential temperature
+        qvg,    &      ! mixing ratio (vapour)
+        qlg,    &      ! mixing ratio (liquid)
+        Nlg,    &      ! droplet number
 #ifndef NDEBUG
         sym_volg,  &   ! symmetry volume (debug mode only)
 #endif
@@ -54,10 +57,36 @@ module fields
 
             allocate(tbuoyg(-1:nz+1, 0:nx-1))
 
-#ifndef ENABLE_DRY_MODE
-            allocate(dbuoyg(-1:nz+1, 0:nx-1))
-            allocate(humg(-1:nz+1, 0:nx-1))
-#endif
+            ! For now, only use a select type here
+            if(parcels%is_idealised) then
+                if(parcels%is_moist) then
+                    allocate(dbuoyg(-1:nz+1, 0:nx-1))
+                    allocate(humg(-1:nz+1, 0:nx-1))
+                else
+                    allocate(dbuoyg(1, 1))
+                    allocate(humg(1, 1))
+                endif
+                dbuoyg = zero
+                humg = zero
+            else
+                allocate(thetag(-1:nz+1, 0:nx-1))
+                thetag = zero
+                if(parcels%is_moist) then
+                    allocate(qvg(-1:nz+1, 0:nx-1))
+                    allocate(qlg(-1:nz+1, 0:nx-1))
+                else ! use dummies for openmp reduction
+                    allocate(qvg(1, 1))
+                    allocate(qlg(1, 1))
+                endif
+                qvg = zero
+                qlg = zero
+                if(parcels%has_droplets) then
+                    allocate(Nlg(-1:nz+1, 0:nx-1))
+                else
+                    allocate(Nlg(1, 1))
+                endif
+                Nlg = zero
+            endif
 
             allocate(nparg(-1:nz, 0:nx-1))
             allocate(nsparg(-1:nz, 0:nx-1))
@@ -74,10 +103,6 @@ module fields
             vortg    = zero
             vtend    = zero
             tbuoyg   = zero
-#ifndef ENABLE_DRY_MODE
-            dbuoyg   = zero
-            humg     = zero
-#endif
             nparg    = zero
             nsparg   = zero
 #ifndef NDEBUG

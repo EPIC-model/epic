@@ -11,11 +11,11 @@ epic2d_SOURCES = 				\
 	utils/deriv1d.f90			\
 	utils/options.f90			\
 	utils/parameters.f90			\
+	parcels/dynamic_parcels.f90		\
 	fields/fields.f90			\
 	fields/field_diagnostics.f90		\
 	fields/field_netcdf.f90			\
 	fields/field_diagnostics_netcdf.f90	\
-	parcels/dynamic_parcels.f90		\
 	parcels/parcel_ellipse.f90		\
 	parcels/parcel_container.f90 		\
 	parcels/parcel_bc.f90			\
