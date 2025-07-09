@@ -1,5 +1,5 @@
  module parcel_types
-    use physics, only : glat, lambda_c, q_0, qv_dens_coeff, theta_0, gravity
+    use physics, only : glat, lambda_c, q_0, qv_dens_coeff, theta_0, gravity, r_d, c_p, L_v
     use constants, only : zero, one
     use parcel_ellipsoid
     implicit none
@@ -16,6 +16,7 @@
             procedure :: resize => idealised_parcel_resize
             procedure :: split => idealised_parcel_split
             procedure :: get_buoyancy => idealised_parcel_get_buoyancy
+            procedure :: saturation_adjustment => idealised_saturation_adjustment ! just a stub
             procedure :: merge_alloc => idealised_merge_alloc
             procedure :: merge_dealloc => idealised_merge_dealloc
             procedure :: assign_p2m => idealised_assign_p2m
@@ -40,6 +41,7 @@
             procedure :: resize => realistic_parcel_resize
             procedure :: split => realistic_parcel_split
             procedure :: get_buoyancy => realistic_parcel_get_buoyancy
+            procedure :: saturation_adjustment => realistic_saturation_adjustment
             procedure :: merge_alloc => realistic_merge_alloc
             procedure :: merge_dealloc => realistic_merge_dealloc
             procedure :: assign_p2m => realistic_assign_p2m
@@ -472,5 +474,70 @@
             endif
        end subroutine realistic_assign_m2p
 
+       subroutine idealised_saturation_adjustment(this)
+            class(idealised_parcel_type), intent(inout) :: this
+       end subroutine idealised_saturation_adjustment
+
+       subroutine realistic_saturation_adjustment(this)
+            class(realistic_parcel_type), intent(inout) :: this
+            double precision, parameter :: tk0c = 273.15       ! Temperature of freezing in Kelvin
+            double precision, parameter :: qsa1 = 3.8          ! Top in equation to calculate qsat
+            double precision, parameter :: qsa2 = -17.2693882  ! Constant in qsat equation
+            double precision, parameter :: qsa3 = 35.86        ! Constant in qsat equation
+            double precision, parameter :: qsa4 = 6.109        ! Constant in qsat equation
+            double precision, parameter :: pressure_scale_height = 8619.0 ! Scale height for bomex
+            double precision, parameter :: surf_press = 100000.0
+            double precision, parameter :: ref_press =  100000.0
+            double precision :: press, exn, temp, temp_low, qsat_low, qt_start, ql_start, ql_iter, temp_start, qsat
+            double precision :: err_at_temp, err_at_temp_inv_deriv,efact,divfact
+            integer :: n, iter
+
+            if(.not. this%is_moist) then
+                return
+            endif
+
+            ! TO DO: ADD OPENMP
+            do n = 1, this%local_num
+                press=surf_press*exp(-this%position(3, n)/pressure_scale_height)
+                exn=(press/ref_press)**(r_d/c_p)
+                temp=this%theta(n)*exn
+                temp_start=temp
+                ql_start=this%ql(n)
+                qt_start=ql_start+this%qv(n)
+                ! Test unsaturated case first
+                temp_low=temp-(L_v/c_p)*ql_start
+                qsat_low = qsa1/(0.01*press*exp(qsa2*(temp_low - tk0c)/(temp_low - qsa3)) - qsa4)
+                if(qt_start < qsat_low) then ! Evaporate everything, if needed at all
+                   if(ql_start>0.) then
+                      this%theta(n)=this%theta(n)-(L_v/(c_p*exn))*ql_start
+                      this%qv(n)=this%qv(n)+ql_start
+                      this%ql(n)=0.
+                   end if
+                ! Moist case: iterate a few times, start from temp instead of temp_low
+                ! Use Newton-Raphson to converge
+                else
+                   do iter=1,3
+                      efact=0.01*press*exp(qsa2*(temp - tk0c)/(temp - qsa3))
+                      qsat=qsa1/(efact - qsa4)
+                      ql_iter=max(qt_start-qsat,0.0)
+                      err_at_temp=temp-(temp_start-(L_v/c_p)*(ql_start-ql_iter))
+                      if(ql_iter>0.0) then
+                         !calculate 1/(d err/ dt) to save a division latet on
+                         divfact=((efact - qsa4)*(efact - qsa4)*(temp - qsa3)*(temp - qsa3))
+                         err_at_temp_inv_deriv=divfact/(divfact+(L_v/c_p)*(qsa1*qsa2*efact*(qsa3-tk0c)))
+                      else
+                         err_at_temp_inv_deriv=1.0
+                      endif
+                      temp=temp-err_at_temp*err_at_temp_inv_deriv
+                   enddo
+                   qsat=qsa1/(0.01*press*exp(qsa2*(temp - tk0c)/(temp - qsa3)) - qsa4)
+                   ql_iter=max(qt_start-qsat,0.0)
+                   this%theta(n)=this%theta(n)-(L_v/(c_p*exn))*(ql_start-ql_iter)
+                   this%qv(n)=qt_start-ql_iter
+                   this%ql(n)=ql_iter
+                end if
+            end do
+
+       end subroutine realistic_saturation_adjustment
 
 end module

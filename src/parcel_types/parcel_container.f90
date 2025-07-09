@@ -87,6 +87,7 @@ module parcel_container
             procedure :: dynamic_resize => dynamic_parcel_resize
             procedure :: set_vorticity_dimensions
             procedure(dynamic_parcel_get_buoyancy), deferred :: get_buoyancy
+            procedure(dynamic_parcel_saturation_adjustment), deferred :: saturation_adjustment
 
     end type
 
@@ -130,6 +131,13 @@ module parcel_container
             integer,                 intent(in)    :: num
             double precision, intent(out) :: buoyancy
         end subroutine dynamic_parcel_get_buoyancy
+    end interface
+
+    interface
+        subroutine dynamic_parcel_saturation_adjustment(this)
+            import dynamic_parcel_type
+            class(dynamic_parcel_type), intent(inout) :: this
+        end subroutine dynamic_parcel_saturation_adjustment
     end interface
 
     contains

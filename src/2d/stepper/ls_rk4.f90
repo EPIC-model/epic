@@ -182,6 +182,8 @@ module ls_rk4
             enddo
             !$omp end parallel do
 
+            call parcels%saturation_adjustment
+
             call stop_timer(rk4_timer)
 
             if (step == 5) then

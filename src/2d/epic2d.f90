@@ -127,6 +127,8 @@ program epic2d
                     call apply_gradient(parcel%gradient_pref, parcel%max_compression)
                 enddo
 
+                call parcels%saturation_adjustment
+
             enddo
 
             ! write final step (we only write if we really advanced in time)

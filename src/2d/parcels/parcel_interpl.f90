@@ -290,12 +290,13 @@ module parcel_interpl
         !   - nparg, that is the number of parcels per grid cell
         !   - nsparg, that is the number of small parcels per grid cell
         subroutine par2grid_realistic(parcels)
-            class(realistic_parcel_type), intent(in) :: parcels
+            class(realistic_parcel_type), intent(inout) :: parcels
             double precision :: points(2, 2)
             integer          :: n, p, l, i, j
             double precision :: pvol, weight, btot
 
             call start_timer(par2grid_timer)
+            call parcels%saturation_adjustment
 
             vortg = zero
             volg = zero
