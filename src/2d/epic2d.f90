@@ -120,7 +120,7 @@ program epic2d
 
                 call merge_ellipses(parcels)
 
-                call split_ellipses(parcels, parcel%lambda_max)
+                call split_ellipses(parcel%lambda_max)
 
                 do cor_iter = 1, parcel%correction_iters
                     call apply_laplace

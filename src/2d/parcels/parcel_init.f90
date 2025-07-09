@@ -8,6 +8,7 @@ module parcel_init
     use parcel_ellipse, only : get_ab, get_B22, get_eigenvalue
     use parcel_split, only : split_ellipses
     use parcel_interpl, only : bilinear, ngp
+    use parcel_types, only : idealised_parcel_type, realistic_parcel_type
     use parameters, only : dx, vcell, ncell,        &
                            extent, lower, nx, nz,   &
                            max_num_parcels
@@ -25,7 +26,6 @@ module parcel_init
 
 
     private :: init_refine,                 &
-               init_from_grids,             &
                alloc_and_precompute,        &
                dealloc
 
@@ -47,6 +47,8 @@ module parcel_init
             integer                      :: n
 
             call start_timer(init_timer)
+
+            call initiate_parcel_type(fname)
 
             ! set the number of parcels (see parcels.f90)
             ! we use "n_per_cell" parcels per grid cell
@@ -88,19 +90,13 @@ module parcel_init
 
             call init_refine(lam)
 
-            !$omp parallel default(shared)
-            !$omp do private(n)
-            do n = 1, n_parcels
-                parcels%vorticity(1, n) = zero
-                parcels%buoyancy(n) = zero
-                if(parcels%is_moist) then
-                    parcels%humidity(n) = zero
-                endif
-            enddo
-            !$omp end do
-            !$omp end parallel
+            select type(parcels)
+            type is (idealised_parcel_type)
+                call init_from_grids_idealised(parcels, fname, tol)
+            type is (realistic_parcel_type)
+                call init_from_grids_realistic(parcels, fname, tol)
+            end select
 
-            call init_from_grids(fname, tol)
 
             call stop_timer(init_timer)
 
@@ -148,7 +144,7 @@ module parcel_init
 
             ! do refining by splitting
             do while (lam >= parcel%lambda_max)
-                call split_ellipses(parcels, parcel%lambda_max)
+                call split_ellipses(parcel%lambda_max)
                 B22 = get_B22(parcels%B(1, 1), zero, parcels%volume(1))
                 a2 = get_eigenvalue(parcels%B(1, 1), zero, B22)
                 lam = a2 / get_ab(parcels%volume(1))
@@ -214,11 +210,152 @@ module parcel_init
             deallocate(js)
         end subroutine dealloc
 
+        subroutine initiate_parcel_type(ncfname)
+            character(*),     intent(in)  :: ncfname
+            integer                       :: ncid
+            integer                       :: n_steps, start(3), cnt(3)
+            logical                       :: l_idealised = .false.
+            logical                       :: l_realistic = .false.
+            logical                       :: l_moist = .false.
+            logical                       :: l_droplets = .false.
+            logical                       :: l_theta_present = .false.
+            logical                       :: l_ql_present = .false.
+            logical                       :: l_Nl_present = .false.
+
+            call open_netcdf_file(ncfname, NF90_NOWRITE, ncid)
+
+            if (has_dataset(ncid, 'buoyancy')) then
+               l_idealised = .true.
+            endif
+
+            if (has_dataset(ncid, 'humidity')) then
+               l_idealised = .true.
+               l_moist = .true.
+            endif
+
+            if (has_dataset(ncid, 'theta')) then
+               l_realistic = .true.
+               l_theta_present = .true.
+            endif
+
+            if (has_dataset(ncid, 'qv')) then
+               l_realistic = .true.
+               l_moist = .true.
+            endif
+
+            if (has_dataset(ncid, 'ql')) then
+               l_realistic = .true.
+               l_moist = .true.
+            endif
+
+            if (has_dataset(ncid, 'Nl')) then
+               l_realistic = .true.
+               l_droplets = .true.
+            endif
+
+            if(l_realistic .and. l_idealised) then
+                print *, "Inconsistency in initial attributes for realistic/idealised simulation"
+                stop
+            endif
+
+            if(l_realistic .and. .not. l_theta_present) then
+                print *, "Inconsisstency in initial attributes for realistic simulation: theta absent"
+                stop
+            endif
+
+            if(l_droplets .and. .not. l_moist) then
+                print *, "Inconsistency in initial attributes for realistic simulation: droplets but no moisture"
+                stop
+            endif
+
+            if(l_idealised) then
+                 if (allocated(parcels)) deallocate(parcels)
+                 allocate(idealised_parcel_type :: parcels)
+            elseif(l_realistic) then
+                 if (allocated(parcels)) deallocate(parcels)
+                 allocate(realistic_parcel_type :: parcels)
+            else
+                print *, "Inconsistency in initial attributes: neither realistic nor idealised simulation"
+                stop
+            endif
+
+            parcels%dim_string='xz'
+            call parcels%ellipsoid_dimensions()
+            if(l_moist) then
+                parcels%is_moist=.true.
+            endif
+            if(l_droplets) then
+                parcels%has_droplets=.true.
+            endif
+            call parcels%alloc(max_num_parcels)
+
+            call close_netcdf_file(ncid)
+
+        end subroutine initiate_parcel_type
+
+       ! Initialise parcel attributes from gridded quantities.
+        ! Attention: This subroutine currently only supports
+        !            vorticity and buoyancy fields.
+        subroutine init_from_grids_realistic(parcels, ncfname, tol)
+            class(realistic_parcel_type), intent(inout) :: parcels
+            character(*),     intent(in)  :: ncfname
+            double precision, intent(in)  :: tol
+            double precision              :: buffer(-1:nz+1, 0:nx-1)
+            integer                       :: ncid
+            integer                       :: n_steps, start(3), cnt(3)
+
+            call alloc_and_precompute
+
+            call open_netcdf_file(ncfname, NF90_NOWRITE, ncid)
+
+            call get_num_steps(ncid, n_steps)
+
+            cnt  =  (/ nx, nz+1, 1       /)
+            start = (/ 1,  1,    n_steps /)
+
+
+            if (has_dataset(ncid, 'vorticity')) then
+                buffer = zero
+                call read_netcdf_dataset(ncid, 'vorticity', buffer(0:nz, :), start=start, cnt=cnt)
+                call gen_parcel_scalar_attr(buffer, tol, parcels%vorticity(1, :))
+            endif
+
+
+            if (has_dataset(ncid, 'theta')) then
+                buffer = zero
+                call read_netcdf_dataset(ncid, 'theta', buffer(0:nz, :), start=start, cnt=cnt)
+                call gen_parcel_scalar_attr(buffer, tol, parcels%theta)
+            endif
+
+            if (has_dataset(ncid, 'qv')) then
+                buffer = zero
+                call read_netcdf_dataset(ncid, 'qv', buffer(0:nz, :), start=start, cnt=cnt)
+                call gen_parcel_scalar_attr(buffer, tol, parcels%qv)
+            endif
+
+            if (has_dataset(ncid, 'ql')) then
+                buffer = zero
+                call read_netcdf_dataset(ncid, 'ql', buffer(0:nz, :), start=start, cnt=cnt)
+                call gen_parcel_scalar_attr(buffer, tol, parcels%ql)
+            endif
+
+            if (has_dataset(ncid, 'Nl')) then
+                buffer = zero
+                call read_netcdf_dataset(ncid, 'Nl', buffer(0:nz, :), start=start, cnt=cnt)
+                call gen_parcel_scalar_attr(buffer, tol, parcels%Nl)
+            endif
+
+            call close_netcdf_file(ncid)
+
+            call dealloc
+
+        end subroutine init_from_grids_realistic
 
         ! Initialise parcel attributes from gridded quantities.
         ! Attention: This subroutine currently only supports
         !            vorticity and buoyancy fields.
-        subroutine init_from_grids(ncfname, tol)
+        subroutine init_from_grids_idealised(parcels, ncfname, tol)
+            class(idealised_parcel_type), intent(inout) :: parcels
             character(*),     intent(in)  :: ncfname
             double precision, intent(in)  :: tol
             double precision              :: buffer(-1:nz+1, 0:nx-1)
@@ -252,7 +389,7 @@ module parcel_init
 
             call dealloc
 
-        end subroutine init_from_grids
+        end subroutine init_from_grids_idealised
 
         ! Generates the parcel attribute "par" from the field values provided
         ! in "field" (see Fontane & Dritschel, J. Comput. Phys. 2009, section 2.2)

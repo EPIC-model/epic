@@ -400,7 +400,7 @@
             if(this%is_moist) then
                 this%humidity(n_out) = this%merge_humidity(n_in)
             endif
-       end subroutine idealised_assign_m2p
+        end subroutine idealised_assign_m2p
 
         subroutine realistic_assign_p2m(this, n_in, n_out, temp_volume)
             class(realistic_parcel_type), intent(inout) :: this

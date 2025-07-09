@@ -1,8 +1,8 @@
 module  dynamic_parcels
-use parcel_types, only : idealised_parcel_type
+use parcel_ellipsoid, only : ellipsoid_parcel_type
 implicit none
 
-    type(idealised_parcel_type) :: parcels
+    class(ellipsoid_parcel_type), allocatable :: parcels
     integer :: n_parcels
 
 end module dynamic_parcels

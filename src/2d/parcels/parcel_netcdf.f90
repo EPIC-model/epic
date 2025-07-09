@@ -3,6 +3,9 @@ module parcel_netcdf
     use netcdf_utils
     use netcdf_writer
     use netcdf_reader
+    use parcel_types, only : idealised_parcel_type, realistic_parcel_type
+    use parcel_ellipsoid, only : ellipsoid_parcel_type
+
     use dynamic_parcels, only : parcels, n_parcels
     use parameters, only : nx, nz, extent, lower, max_num_parcels
     use config, only : package_version, cf_version
@@ -19,25 +22,29 @@ module parcel_netcdf
 
     character(len=512) :: ncfname
     integer            :: ncid
-    integer            :: npar_dim_id, vol_id, buo_id,  &
+    integer            :: npar_dim_id, vol_id, buo_id, hum_id, &
+                          theta_id, qv_id, ql_id, Nl_id, &
                           x_pos_id, z_pos_id, vor_id,   &
                           b11_id, b12_id,               &
                           t_axis_id, t_dim_id
     double precision   :: restart_time
 
-#ifndef ENABLE_DRY_MODE
-    integer :: hum_id
-#endif
-
     private :: ncid, ncfname, n_writes, npar_dim_id,        &
                x_pos_id, z_pos_id, vor_id, vol_id, buo_id,  &
                b11_id, b12_id, t_axis_id, t_dim_id,         &
                restart_time
-#ifndef ENABLE_DRY_MODE
-    private :: hum_id
-#endif
 
     private :: ncbasename
+
+    interface write_netcdf_parcels
+        module procedure write_netcdf_parcels_idealised
+        module procedure write_netcdf_parcels_realistic
+    end interface write_netcdf_parcels
+
+    interface read_netcdf_parcels
+        module procedure read_netcdf_parcels_idealised
+        module procedure read_netcdf_parcels_realistic
+    end interface read_netcdf_parcels
 
     contains
 
@@ -151,7 +158,8 @@ module parcel_netcdf
                                        dimids=dimids,                           &
                                        varid=vor_id)
 
-            call define_netcdf_dataset(ncid=ncid,                               &
+            if(parcels%is_idealised) then
+                call define_netcdf_dataset(ncid=ncid,                           &
                                        name='buoyancy',                         &
                                        long_name='parcel buoyancy',             &
                                        std_name='',                             &
@@ -160,8 +168,8 @@ module parcel_netcdf
                                        dimids=dimids,                           &
                                        varid=buo_id)
 
-#ifndef ENABLE_DRY_MODE
-            call define_netcdf_dataset(ncid=ncid,                               &
+                if(parcels%is_moist) then
+                    call define_netcdf_dataset(ncid=ncid,                       &
                                        name='humidity',                         &
                                        long_name='parcel humidity',             &
                                        std_name='',                             &
@@ -169,17 +177,57 @@ module parcel_netcdf
                                        dtype=NF90_DOUBLE,                       &
                                        dimids=dimids,                           &
                                        varid=hum_id)
-#endif
+                endif
+            else
+                call define_netcdf_dataset(ncid=ncid,                           &
+                                       name='theta',                            &
+                                       long_name='parcel potential temperature',&
+                                       std_name='',                             &
+                                       unit='K',                            &
+                                       dtype=NF90_DOUBLE,                       &
+                                       dimids=dimids,                           &
+                                       varid=buo_id)
 
+                if(parcels%is_moist) then
+                    call define_netcdf_dataset(ncid=ncid,                       &
+                                       name='qv',                               &
+                                       long_name='parcel water vapour mixing ratio',             &
+                                       std_name='',                             &
+                                       unit='kg/kg',                                &
+                                       dtype=NF90_DOUBLE,                       &
+                                       dimids=dimids,                           &
+                                       varid=hum_id)
+
+                    call define_netcdf_dataset(ncid=ncid,                       &
+                                       name='ql',                               &
+                                       long_name='parcel liquid water mixing ratio',             &
+                                       std_name='',                             &
+                                       unit='kg/kg',                                &
+                                       dtype=NF90_DOUBLE,                       &
+                                       dimids=dimids,                           &
+                                       varid=hum_id)
+                endif
+                if(parcels%has_droplets) then
+                    call define_netcdf_dataset(ncid=ncid,                       &
+                                       name='Nl',                               &
+                                       long_name='parcel number concentration', &
+                                       std_name='',                             &
+                                       unit='/kg',                                &
+                                       dtype=NF90_DOUBLE,                       &
+                                       dimids=dimids,                           &
+                                       varid=hum_id)
+                endif
+            endif
             call close_definition(ncid)
 
         end subroutine create_netcdf_parcel_file
 
         ! Write parcels of the current time step into the parcel file.
         ! @param[in] t is the time
-        subroutine write_netcdf_parcels(t)
+        subroutine write_netcdf_parcels_generic_part_1(parcels, t, cnt, start)
+            class(ellipsoid_parcel_type), intent(in) :: parcels
             double precision, intent(in) :: t
-            integer                      :: cnt(2), start(2)
+            integer, intent(out) :: cnt(2), start(2)
 
             call start_timer(parcel_io_timer)
 
@@ -209,12 +257,9 @@ module parcel_netcdf
             call write_netcdf_dataset(ncid, vol_id, parcels%volume(1:n_parcels), start, cnt)
 
             call write_netcdf_dataset(ncid, vor_id, parcels%vorticity(1, 1:n_parcels), start, cnt)
+        end subroutine write_netcdf_parcels_generic_part_1
 
-            call write_netcdf_dataset(ncid, buo_id, parcels%buoyancy(1:n_parcels), start, cnt)
-
-#ifndef ENABLE_DRY_MODE
-            call write_netcdf_dataset(ncid, hum_id, parcels%humidity(1:n_parcels), start, cnt)
-#endif
+        subroutine write_netcdf_parcels_generic_part_2
             ! increment counter
             n_writes = n_writes + 1
 
@@ -222,12 +267,57 @@ module parcel_netcdf
 
             call stop_timer(parcel_io_timer)
 
-        end subroutine write_netcdf_parcels
+        end subroutine write_netcdf_parcels_generic_part_2
 
-        subroutine read_netcdf_parcels(fname)
-            character(*),     intent(in) :: fname
-            logical                      :: l_valid = .false.
+        ! Write parcels of the current time step into the parcel file.
+        ! @param[in] t is the time
+        subroutine write_netcdf_parcels_idealised(parcels, t)
+            class(idealised_parcel_type), intent(in) :: parcels
+            double precision, intent(in) :: t
             integer                      :: cnt(2), start(2)
+
+            call write_netcdf_parcels_generic_part_1(parcels, t, cnt, start)
+
+            call write_netcdf_dataset(ncid, buo_id, parcels%buoyancy(1:n_parcels), start, cnt)
+
+            if(parcels%is_moist) then
+                call write_netcdf_dataset(ncid, hum_id, parcels%humidity(1:n_parcels), start, cnt)
+            endif
+
+            call write_netcdf_parcels_generic_part_2
+
+        end subroutine write_netcdf_parcels_idealised
+
+
+        ! Write parcels of the current time step into the parcel file.
+        ! @param[in] t is the time
+        subroutine write_netcdf_parcels_realistic(parcels, t)
+            class(realistic_parcel_type), intent(in) :: parcels
+            double precision, intent(in) :: t
+            integer                      :: cnt(2), start(2)
+
+            call write_netcdf_parcels_generic_part_1(parcels, t, cnt, start)
+
+            call write_netcdf_dataset(ncid, theta_id, parcels%theta(1:n_parcels), start, cnt)
+
+            if(parcels%is_moist) then
+                call write_netcdf_dataset(ncid, qv_id, parcels%qv(1:n_parcels), start, cnt)
+                call write_netcdf_dataset(ncid, ql_id, parcels%ql(1:n_parcels), start, cnt)
+            endif
+            if(parcels%has_droplets) then
+                call write_netcdf_dataset(ncid, Nl_id, parcels%Nl(1:n_parcels), start, cnt)
+            endif
+
+            call write_netcdf_parcels_generic_part_2
+
+        end subroutine write_netcdf_parcels_realistic
+
+        subroutine read_netcdf_parcels_generic_part_1(fname, l_valid, cnt, start)
+            character(*),     intent(in) :: fname
+            logical, intent(inout)       :: l_valid
+            integer, intent(inout)       :: cnt(2), start(2)
+
+            l_valid = .false.
 
             call start_timer(parcel_io_timer)
 
@@ -293,19 +383,11 @@ module parcel_netcdf
                                          parcels%vorticity(1, 1:n_parcels), start, cnt)
             endif
 
-            if (has_dataset(ncid, 'buoyancy')) then
-                l_valid = .true.
-                call read_netcdf_dataset(ncid, 'buoyancy', &
-                                         parcels%buoyancy(1:n_parcels), start, cnt)
-            endif
+        end subroutine read_netcdf_parcels_generic_part_1
 
-#ifndef ENABLE_DRY_MODE
-            if (has_dataset(ncid, 'humidity')) then
-                l_valid = .true.
-                call read_netcdf_dataset(ncid, 'humidity', &
-                                         parcels%humidity(1:n_parcels), start, cnt)
-            endif
-#endif
+        subroutine read_netcdf_parcels_generic_part_2(fname, l_valid)
+            character(*),     intent(in) :: fname
+            logical, intent(in)          :: l_valid
 
             if (.not. l_valid) then
                 print *, "Either the parcel buoyancy or vorticity must be present! Exiting."
@@ -316,6 +398,66 @@ module parcel_netcdf
 
             call stop_timer(parcel_io_timer)
 
-        end subroutine read_netcdf_parcels
+        end subroutine read_netcdf_parcels_generic_part_2
+
+        subroutine read_netcdf_parcels_idealised(parcels, fname)
+            class(idealised_parcel_type), intent(inout) :: parcels
+            character(*),     intent(in) :: fname
+            logical                      :: l_valid
+            integer                      :: cnt(2), start(2)
+
+            call read_netcdf_parcels_generic_part_1(fname, l_valid, cnt, start)
+
+            if (has_dataset(ncid, 'buoyancy')) then
+                l_valid = .true.
+                call read_netcdf_dataset(ncid, 'buoyancy', &
+                                         parcels%buoyancy(1:n_parcels), start, cnt)
+            endif
+
+            if (has_dataset(ncid, 'humidity')) then
+                l_valid = .true.
+                call read_netcdf_dataset(ncid, 'humidity', &
+                                         parcels%humidity(1:n_parcels), start, cnt)
+            endif
+
+            call read_netcdf_parcels_generic_part_2(fname, l_valid)
+
+        end subroutine read_netcdf_parcels_idealised
+
+        subroutine read_netcdf_parcels_realistic(parcels, fname)
+            class(realistic_parcel_type), intent(inout) :: parcels
+            character(*),     intent(in) :: fname
+            logical                      :: l_valid
+            integer                      :: cnt(2), start(2)
+
+            call read_netcdf_parcels_generic_part_1(fname, l_valid, cnt, start)
+
+            if (has_dataset(ncid, 'theta')) then
+                l_valid = .true.
+                call read_netcdf_dataset(ncid, 'theta', &
+                                         parcels%theta(1:n_parcels), start, cnt)
+            endif
+
+            if (has_dataset(ncid, 'qv')) then
+                l_valid = .true.
+                call read_netcdf_dataset(ncid, 'qv', &
+                                         parcels%qv(1:n_parcels), start, cnt)
+            endif
+
+            if (has_dataset(ncid, 'ql')) then
+                l_valid = .true.
+                call read_netcdf_dataset(ncid, 'ql', &
+                                         parcels%ql(1:n_parcels), start, cnt)
+            endif
+
+            if (has_dataset(ncid, 'Nl')) then
+                l_valid = .true.
+                call read_netcdf_dataset(ncid, 'Nl', &
+                                         parcels%Nl(1:n_parcels), start, cnt)
+            endif
+
+            call read_netcdf_parcels_generic_part_2(fname, l_valid)
+
+        end subroutine read_netcdf_parcels_realistic
 
 end module parcel_netcdf

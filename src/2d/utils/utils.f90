@@ -16,11 +16,11 @@ module utils
                                           write_netcdf_parcel_stats
     use parcel_diagnostics, only : calculate_parcel_diagnostics, calculate_peref
     use field_diagnostics, only : calculate_field_diagnostics
-    use parcel_init, only : init_parcels
+    use parcel_init, only : init_parcels, initiate_parcel_type
     use dynamic_parcels, only : parcels, n_parcels
-    use parcel_types, only : idealised_parcel_alloc
+    use parcel_types, only : idealised_parcel_alloc, realistic_parcel_alloc
     use tri_inversion, only : vor2vel, vorticity_tendency
-    use parcel_interpl, only : par2grid, grid2par
+    use parcel_interpl, only : par2grid_idealised, par2grid_realistic, grid2par
     use netcdf_reader, only : get_file_type, get_num_steps, get_time, get_netcdf_box
     use parameters, only : lower, extent, update_parameters, max_num_parcels
     use physics, only : read_physical_quantities, print_physical_quantities, l_peref
@@ -81,7 +81,12 @@ module utils
             double precision              :: strain(4, n_parcels)
             double precision              :: vorticity(n_parcels)
 
-            call par2grid(parcels)
+            select type (parcels)
+            type is (idealised_parcel_type)
+                call par2grid_idealised(parcels)
+            type is (realistic_parcel_type)
+                call par2grid_realistic(parcels)
+            end select
 
             ! need to be called in order to set initial time step;
             ! this is also needed for the first ls-rk4 substep
@@ -130,7 +135,12 @@ module utils
 
             if (output%write_parcels .and. &
                 (t + epsilon(zero) >= neg * dble(npw) * output%parcel_freq)) then
-                call write_netcdf_parcels(t)
+                select type (parcels)
+                type is (idealised_parcel_type)
+                    call write_netcdf_parcels_idealised(parcels, t)
+                type is (realistic_parcel_type)
+                    call write_netcdf_parcels_realistic(parcels, t)
+                end select
 
                 npw = npw + 1
 
@@ -214,25 +224,25 @@ module utils
         subroutine setup_parcels
             character(len=16) :: file_type
 
-           parcels%dim_string='xz'
-           call parcels%ellipsoid_dimensions()
-           parcels%is_moist=.false.
-           call parcels%alloc(max_num_parcels)
-
             if (l_restart) then
                 call setup_restart(trim(restart_file), time%initial, file_type)
-
+                call initiate_parcel_type(restart_file)
                 if (file_type == 'fields') then
                     call init_parcels(restart_file, field_tol)
                 else if (file_type == 'parcels') then
-                    call read_netcdf_parcels(restart_file)
+                    select type (parcels)
+                    type is (idealised_parcel_type)
+                        call read_netcdf_parcels_idealised(parcels, restart_file)
+                    type is (realistic_parcel_type)
+                        call read_netcdf_parcels_realistic(parcels, restart_file)
+                    end select
                 else
                     print *, 'Restart file must be of type "fields" or "parcels".'
                     stop
                 endif
             else
                 time%initial = zero ! make sure user cannot start at arbitrary time
-
+                call initiate_parcel_type(field_file)
                 call init_parcels(field_file, field_tol)
             endif
         end subroutine setup_parcels

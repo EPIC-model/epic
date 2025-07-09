@@ -7,7 +7,6 @@ module parcel_merge
     use constants, only : pi, zero, one, two, four
     use parcel_container, only : get_delx
     use dynamic_parcels, only : n_parcels, parcels
-    use parcel_types, only : idealised_parcel_type
     use parcel_ellipsoid, only : ellipsoid_parcel_type
     use parcel_ellipse, only : get_B22, get_ab
     use options, only : parcel, verbose
@@ -27,7 +26,7 @@ module parcel_merge
         ! parcels which are close by.
         ! @param[inout] parcels is the parcel container
         subroutine merge_ellipses(parcels)
-            type(idealised_parcel_type), intent(inout) :: parcels
+            class(ellipsoid_parcel_type), intent(inout) :: parcels
             integer, allocatable, dimension(:)         :: isma
             integer, allocatable, dimension(:)         :: iclo
             integer                                    :: n_merge ! number of merges
@@ -69,7 +68,7 @@ module parcel_merge
         ! @param[in] iclo are the indices of the close parcels
         ! @param[in] n_merge is the array size of isma and iclo
         subroutine do_group_merge(parcels, isma, iclo, n_merge)
-            type(idealised_parcel_type), intent(inout) :: parcels
+            class(ellipsoid_parcel_type), intent(inout) :: parcels
             integer,                     intent(in)    :: isma(0:)
             integer,                     intent(in)    :: iclo(:)
             integer,                     intent(in)    :: n_merge
@@ -203,7 +202,7 @@ module parcel_merge
         ! @param[in] iclo are the indices of the close parcels
         ! @param[in] n_merge is the array size of isma and iclo
         subroutine geometric_merge(parcels, isma, iclo, n_merge)
-            type(idealised_parcel_type), intent(inout) :: parcels
+            class(ellipsoid_parcel_type), intent(inout) :: parcels
             integer,                     intent(in)    :: isma(0:)
             integer,                     intent(in)    :: iclo(:)
             integer,                     intent(in)    :: n_merge

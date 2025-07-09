@@ -5,8 +5,8 @@ module parcel_split
     use options, only : verbose
     use constants, only : pi, three, f12, f14, f34
     use parameters, only : vmax
-    use parcel_types, only : idealised_parcel_type
-    use dynamic_parcels, only : n_parcels
+    use parcel_ellipsoid, only : ellipsoid_parcel_type
+    use dynamic_parcels, only : n_parcels, parcels
     use parcel_bc, only : apply_reflective_bc
     use parcel_ellipse, only : get_eigenvalue      &
                              , get_eigenvector     &
@@ -24,8 +24,7 @@ module parcel_split
         ! parcels with aspect ratios larger than the threshold.
         ! @param[inout] parcels
         ! @param[in] threshold is the largest allowed aspect ratio
-        subroutine split_ellipses(parcels, threshold)
-            type(idealised_parcel_type), intent(inout) :: parcels
+        subroutine split_ellipses(threshold)
             double precision,            intent(in)    :: threshold
             double precision                           :: B11
             double precision                           :: B12

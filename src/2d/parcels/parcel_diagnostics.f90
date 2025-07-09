@@ -60,7 +60,9 @@ module parcel_diagnostics
 
             call start_timer(parcel_stats_timer)
 
-            b = parcels%buoyancy(1:n_parcels)
+            do n = 1, n_parcels
+               call parcels%get_buoyancy(n, b(n))
+            end do
 
             ! sort buoyancy in ascending order
             call msort(b, ii)
@@ -87,8 +89,9 @@ module parcel_diagnostics
         subroutine calculate_parcel_diagnostics(velocity)
             double precision :: velocity(:, :)
             integer          :: n
-            double precision :: b, z, vel(2), vol, zmin
+            double precision :: z, vel(2), vol, zmin
             double precision :: eval, lam, B22, lsum, l2sum, vsum, v2sum
+            double precision :: b(n_parcels)
 
             call start_timer(parcel_stats_timer)
 
@@ -97,10 +100,14 @@ module parcel_diagnostics
             ape = zero
             pe = zero
 
+            do n = 1, n_parcels
+               call parcels%get_buoyancy(n, b(n))
+            end do
+
             ! find extrema outside OpenMP loop, we can integrate it later;
             ! this way the result is reproducible
-            bmin = minval(parcels%buoyancy(1:n_parcels))
-            bmax = maxval(parcels%buoyancy(1:n_parcels))
+            bmin = minval(b)
+            bmax = maxval(b)
             vormin = minval(parcels%vorticity(1, 1:n_parcels))
             vormax = maxval(parcels%vorticity(1, 1:n_parcels))
 
@@ -128,7 +135,7 @@ module parcel_diagnostics
 
                 vel = velocity(:, n)
                 vol = parcels%volume(n)
-                b   = parcels%buoyancy(n)
+                call parcels%get_buoyancy(n, b(n))
                 z   = parcels%position(2, n)
 
                 ! kinetic energy
@@ -136,9 +143,9 @@ module parcel_diagnostics
 
                 if (ape_calculation == 'sorting') then
                     ! potential energy using sorting approach
-                    pe = pe - b * (z - zmin) * vol
+                    pe = pe - b(n) * (z - zmin) * vol
                 else if (ape_calculation == 'ape density') then
-                    ape = ape + ape_den(b, z) * vol
+                    ape = ape + ape_den(b(n), z) * vol
                 endif
 
                 B22 = get_B22(parcels%B(1, n), parcels%B(2, n), vol)
@@ -232,7 +239,8 @@ module parcel_diagnostics
             do n = 1, n_parcels
                 ! we only use the upper half in horizontal direction
                 if (parcels%position(1, n) >= 0) then
-                    bv = parcels%buoyancy(n) * parcels%volume(n)
+                    call parcels%get_buoyancy(n, bv)
+                    bv= bv*parcels%volume(n)
                     bvsum = bvsum + bv
                     xbv = xbv + bv * parcels%position(1, n)
                     zbv = zbv + bv * parcels%position(2, n)
