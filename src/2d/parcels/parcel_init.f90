@@ -97,7 +97,6 @@ module parcel_init
                 call init_from_grids_realistic(parcels, fname, tol)
             end select
 
-
             call stop_timer(init_timer)
 
         end subroutine init_parcels
@@ -213,14 +212,11 @@ module parcel_init
         subroutine initiate_parcel_type(ncfname)
             character(*),     intent(in)  :: ncfname
             integer                       :: ncid
-            integer                       :: n_steps, start(3), cnt(3)
             logical                       :: l_idealised = .false.
             logical                       :: l_realistic = .false.
             logical                       :: l_moist = .false.
             logical                       :: l_droplets = .false.
             logical                       :: l_theta_present = .false.
-            logical                       :: l_ql_present = .false.
-            logical                       :: l_Nl_present = .false.
 
             call open_netcdf_file(ncfname, NF90_NOWRITE, ncid)
 
@@ -319,7 +315,6 @@ module parcel_init
                 call read_netcdf_dataset(ncid, 'vorticity', buffer(0:nz, :), start=start, cnt=cnt)
                 call gen_parcel_scalar_attr(buffer, tol, parcels%vorticity(1, :))
             endif
-
 
             if (has_dataset(ncid, 'theta')) then
                 buffer = zero

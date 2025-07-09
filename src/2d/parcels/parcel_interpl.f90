@@ -344,9 +344,9 @@ module parcel_interpl
 
                         if(parcels%is_moist) then
                             qvg(js(l), is(l)) = qvg(js(l), is(l)) &
-                                                 + weight * parcels%ql(n)
+                                                 + weight * parcels%qv(n)
                             qlg(js(l), is(l)) = qlg(js(l), is(l)) &
-                                               + weight * parcels%qv(n)
+                                               + weight * parcels%ql(n)
                         endif
                         if(parcels%has_droplets) then
                             Nlg(js(l), is(l)) = Nlg(js(l), is(l)) &

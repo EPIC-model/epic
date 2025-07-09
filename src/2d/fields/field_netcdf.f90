@@ -197,7 +197,7 @@ module field_netcdf
                                            unit='kg/kg',                         &
                                            dtype=NF90_DOUBLE,                    &
                                            dimids=dimids,                        &
-                                           varid=qv_id)
+                                           varid=ql_id)
                 endif
                 if(parcels%has_droplets) then
                    call define_netcdf_dataset(ncid=ncid,                        &
@@ -272,7 +272,7 @@ module field_netcdf
                 if(parcels%is_moist) then
                     call get_var_id(ncid, 'total_buoyancy', tbuo_id)
                     call get_var_id(ncid, 'dry_buoyancy', dbuo_id)
-                   call get_var_id(ncid, 'humidity', hum_id)
+                    call get_var_id(ncid, 'humidity', hum_id)
                 else
                     call get_var_id(ncid, 'buoyancy',tbuo_id)
                 endif

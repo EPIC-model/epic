@@ -1,8 +1,15 @@
  module parcel_types
-    use physics, only : glat, lambda_c, q_0, qv_dens_coeff, theta_0, gravity, r_d, c_p, L_v
+    use physics, only : glat, lambda_c, q_0, qv_dens_coeff, theta_0, gravity, r_d, c_p, L_v, p_surf, p_ref, pressure_scale_height
     use constants, only : zero, one
     use parcel_ellipsoid
     implicit none
+
+    ! For now, put some of the constants for setting up simulations here
+    double precision, parameter :: tk0c = 273.15       ! Temperature of freezing in Kelvin
+    double precision, parameter :: qsa1 = 3.8          ! Top in equation to calculate qsat
+    double precision, parameter :: qsa2 = -17.2693882  ! Constant in qsat equation
+    double precision, parameter :: qsa3 = 35.86        ! Constant in qsat equation
+    double precision, parameter :: qsa4 = 6.109        ! Constant in qsat equation
 
     type, extends(ellipsoid_parcel_type) :: idealised_parcel_type ! add procedures
         double precision, allocatable, dimension(:) :: humidity
@@ -480,14 +487,6 @@
 
        subroutine realistic_saturation_adjustment(this)
             class(realistic_parcel_type), intent(inout) :: this
-            double precision, parameter :: tk0c = 273.15       ! Temperature of freezing in Kelvin
-            double precision, parameter :: qsa1 = 3.8          ! Top in equation to calculate qsat
-            double precision, parameter :: qsa2 = -17.2693882  ! Constant in qsat equation
-            double precision, parameter :: qsa3 = 35.86        ! Constant in qsat equation
-            double precision, parameter :: qsa4 = 6.109        ! Constant in qsat equation
-            double precision, parameter :: pressure_scale_height = 8619.0 ! Scale height for bomex
-            double precision, parameter :: surf_press = 100000.0
-            double precision, parameter :: ref_press =  100000.0
             double precision :: press, exn, temp, temp_low, qsat_low, qt_start, ql_start, ql_iter, temp_start, qsat
             double precision :: err_at_temp, err_at_temp_inv_deriv,efact,divfact
             integer :: n, iter
@@ -498,8 +497,8 @@
 
             ! TO DO: ADD OPENMP
             do n = 1, this%local_num
-                press=surf_press*exp(-this%position(3, n)/pressure_scale_height)
-                exn=(press/ref_press)**(r_d/c_p)
+                press=p_surf*exp(-this%position(this%n_pos, n)/pressure_scale_height)
+                exn=(press/p_ref)**(r_d/c_p)
                 temp=this%theta(n)*exn
                 temp_start=temp
                 ql_start=this%ql(n)
@@ -539,5 +538,24 @@
             end do
 
        end subroutine realistic_saturation_adjustment
+
+       subroutine set_rh(this, n, rh)
+            class(realistic_parcel_type), intent(inout) :: this
+            integer, intent(in) :: n
+            double precision, intent(in) :: rh
+            double precision :: temp, exn, press, qsat
+
+            if(.not. this%is_moist) then
+                print *, "Trying to set RH in non-moist simulation"
+                stop
+            endif
+
+            press=p_surf*exp(-this%position(this%n_pos, n)/pressure_scale_height)
+            exn=(press/p_ref)**(r_d/c_p)
+            temp=this%theta(n)*exn
+            qsat = qsa1/(0.01*press*exp(qsa2*(temp - tk0c)/(temp - qsa3)) - qsa4)
+            this%qv(n)= rh*qsat
+
+       end subroutine set_rh
 
 end module

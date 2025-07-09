@@ -5,6 +5,7 @@ program epic2d_models
     use taylor_green_2d
     use straka_2d
     use robert_2d
+    use grabowski_bubble
     use robert_2d_theta
     use constants, only : pi, zero
     use parameters, only : nx, nz, dx, lower, extent, set_mesh_spacing
@@ -85,6 +86,8 @@ program epic2d_models
                     call robert_init(ncid, dimids, nx, nz, box%origin, dx)
                 case ('Robert_theta')
                     call robert_init_theta(ncid, dimids, nx, nz, box%origin, dx)
+                case ('Grabowski')
+                    call grabowski_init_bubble(ncid, dimids, nx, nz, box%origin, dx)
                 case default
                     print *, "Unknown model: '", trim(model), "'."
                     stop

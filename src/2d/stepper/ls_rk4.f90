@@ -9,7 +9,7 @@ module ls_rk4
     use parcel_bc
     use rk4_utils, only: get_B, get_time_step
     use utils, only : write_step
-    use parcel_interpl, only : par2grid, grid2par, grid2par_add
+    use parcel_interpl, only : par2grid_idealised, par2grid_realistic, grid2par, grid2par_add
     use fields, only : velgradg, velog, vortg, vtend, tbuoyg
     use tri_inversion, only : vor2vel, vorticity_tendency
     use parcel_diagnostics, only : calculate_parcel_diagnostics
@@ -80,7 +80,12 @@ module ls_rk4
             double precision                :: dt
             integer                         :: n
 
-            call par2grid
+            select type (parcels)
+            type is (idealised_parcel_type)
+                call par2grid_idealised(parcels)
+            type is (realistic_parcel_type)
+                call par2grid_realistic(parcels)
+            end select
 
             ! need to be called in order to set initial time step;
             ! this is also needed for the first ls-rk4 substep
@@ -102,7 +107,12 @@ module ls_rk4
             do n = 1, 4
                 call ls_rk4_substep(dt, n)
 
-                call par2grid
+                select type (parcels)
+                type is (idealised_parcel_type)
+                    call par2grid_idealised(parcels)
+                type is (realistic_parcel_type)
+                    call par2grid_realistic(parcels)
+                end select
 
             enddo
             call ls_rk4_substep(dt, 5)

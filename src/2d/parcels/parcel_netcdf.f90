@@ -176,7 +176,7 @@ module parcel_netcdf
                                        unit='K',                            &
                                        dtype=NF90_DOUBLE,                       &
                                        dimids=dimids,                           &
-                                       varid=buo_id)
+                                       varid=theta_id)
 
                 if(parcels%is_moist) then
                     call define_netcdf_dataset(ncid=ncid,                       &
@@ -186,7 +186,7 @@ module parcel_netcdf
                                        unit='kg/kg',                                &
                                        dtype=NF90_DOUBLE,                       &
                                        dimids=dimids,                           &
-                                       varid=hum_id)
+                                       varid=qv_id)
 
                     call define_netcdf_dataset(ncid=ncid,                       &
                                        name='ql',                               &
@@ -195,7 +195,7 @@ module parcel_netcdf
                                        unit='kg/kg',                                &
                                        dtype=NF90_DOUBLE,                       &
                                        dimids=dimids,                           &
-                                       varid=hum_id)
+                                       varid=ql_id)
                 endif
                 if(parcels%has_droplets) then
                     call define_netcdf_dataset(ncid=ncid,                       &
@@ -205,7 +205,7 @@ module parcel_netcdf
                                        unit='/kg',                                &
                                        dtype=NF90_DOUBLE,                       &
                                        dimids=dimids,                           &
-                                       varid=hum_id)
+                                       varid=Nl_id)
                 endif
             endif
             call close_definition(ncid)

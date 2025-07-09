@@ -76,6 +76,14 @@ module physics
     ! gas constant of gry air
     double precision, protected :: r_d = 287.05
 
+    ! surface pressure
+    double precision, protected :: p_surf = 100000.0
+    double precision, protected :: p_ref =  100000.0
+
+    ! pressure scale height
+    double precision, protected :: pressure_scale_height = 8619.0 ! Scale height for bomex
+
+
     ! The following quantities are calculated:
     !
 
@@ -144,6 +152,9 @@ module physics
                                l_planetary_vorticity,  &
                                lat_degrees,         &
                                q_0,                 &
+                               p_surf,              &
+                               p_ref,               &
+                               pressure_scale_height,  &
                                height_c
 
             ! check whether file exists
@@ -197,6 +208,9 @@ module physics
             if (ncerr == 0) then
                 call read_netcdf_attribute_default(grp_ncid, 'standard_gravity', gravity)
                 call read_netcdf_attribute_default(grp_ncid, 'latent_heat_of_vaporization', L_v)
+                call read_netcdf_attribute_default(grp_ncid, 'surface_pressure', p_surf)
+                call read_netcdf_attribute_default(grp_ncid, 'reference_pressure', p_ref)
+                call read_netcdf_attribute_default(grp_ncid, 'pressure_scale_height', pressure_scale_height)
                 call read_netcdf_attribute_default(grp_ncid, 'specific_heat', c_p)
                 call read_netcdf_attribute_default(grp_ncid, 'temperature_at_sea_level', theta_0)
                 call read_netcdf_attribute_default(grp_ncid, 'planetary_angular_velocity', ang_vel)
@@ -260,6 +274,9 @@ module physics
 
             call write_netcdf_attribute(grp_ncid, 'standard_gravity', gravity)
             call write_netcdf_attribute(grp_ncid, 'latent_heat_of_vaporization', L_v)
+            call write_netcdf_attribute(grp_ncid, 'surface_pressure', p_surf)
+            call write_netcdf_attribute(grp_ncid, 'reference_pressure', p_ref)
+            call write_netcdf_attribute(grp_ncid, 'pressure_scale_height', pressure_scale_height)
             call write_netcdf_attribute(grp_ncid, 'specific_heat', c_p)
             call write_netcdf_attribute(grp_ncid, 'temperature_at_sea_level', theta_0)
             call write_netcdf_attribute(grp_ncid, 'planetary_angular_velocity', ang_vel)
@@ -288,6 +305,9 @@ module physics
             write(*, "(a)") repeat("-", 78)
             call print_physical_quantity('standard gravity', gravity, 'm/s^2')
             call print_physical_quantity('latent heat of vaporization', L_v, 'J/kg')
+            call print_physical_quantity('surface pressure', p_surf, 'Pa')
+            call print_physical_quantity('reference pressure', p_ref, 'Pa')
+            call print_physical_quantity('pressure_scale_height', pressure_scale_height, 'm')
             call print_physical_quantity('specific heat', c_p, 'J/(kg*K)')
             call print_physical_quantity('temperature at sea level', theta_0, 'K')
             call print_physical_quantity('planetary angular velocity', ang_vel, 'rad/s')
