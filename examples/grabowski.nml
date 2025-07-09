@@ -1,0 +1,15 @@
+&MODELS
+
+ model      = 'Grabowski'
+ ncfname    = 'grabowski.nc'
+
+ box%ncells = 360, 360
+ box%extent = 3600., 3600.
+ box%origin = -1800.0, 0.0
+/
+
+&PHYSICS
+ gravity = 9.81d0
+ theta_0 = 300.0d0
+ p_surf = 85000.0d0
+/
