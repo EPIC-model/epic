@@ -20,7 +20,7 @@ module utils
     use dynamic_parcels, only : parcels, n_parcels
     use parcel_types, only : idealised_parcel_alloc, realistic_parcel_alloc
     use tri_inversion, only : vor2vel, vorticity_tendency
-    use parcel_interpl, only : par2grid_idealised, par2grid_realistic, grid2par
+    use parcel_interpl, only : par2grid, grid2par
     use netcdf_reader, only : get_file_type, get_num_steps, get_time, get_netcdf_box
     use parameters, only : lower, extent, update_parameters, max_num_parcels
     use physics, only : read_physical_quantities, print_physical_quantities, l_peref
@@ -81,12 +81,7 @@ module utils
             double precision              :: strain(4, n_parcels)
             double precision              :: vorticity(n_parcels)
 
-            select type (parcels)
-            type is (idealised_parcel_type)
-                call par2grid_idealised(parcels)
-            type is (realistic_parcel_type)
-                call par2grid_realistic(parcels)
-            end select
+            call par2grid
 
             ! need to be called in order to set initial time step;
             ! this is also needed for the first ls-rk4 substep
@@ -135,12 +130,7 @@ module utils
 
             if (output%write_parcels .and. &
                 (t + epsilon(zero) >= neg * dble(npw) * output%parcel_freq)) then
-                select type (parcels)
-                type is (idealised_parcel_type)
-                    call write_netcdf_parcels_idealised(parcels, t)
-                type is (realistic_parcel_type)
-                    call write_netcdf_parcels_realistic(parcels, t)
-                end select
+                call write_netcdf_parcels(t)
 
                 npw = npw + 1
 
@@ -230,12 +220,7 @@ module utils
                 if (file_type == 'fields') then
                     call init_parcels(restart_file, field_tol)
                 else if (file_type == 'parcels') then
-                    select type (parcels)
-                    type is (idealised_parcel_type)
-                        call read_netcdf_parcels_idealised(parcels, restart_file)
-                    type is (realistic_parcel_type)
-                        call read_netcdf_parcels_realistic(parcels, restart_file)
-                    end select
+                    call read_netcdf_parcels(restart_file)
                 else
                     print *, 'Restart file must be of type "fields" or "parcels".'
                     stop

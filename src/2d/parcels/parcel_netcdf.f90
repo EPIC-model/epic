@@ -36,16 +36,6 @@ module parcel_netcdf
 
     private :: ncbasename
 
-    interface write_netcdf_parcels
-        module procedure write_netcdf_parcels_idealised
-        module procedure write_netcdf_parcels_realistic
-    end interface write_netcdf_parcels
-
-    interface read_netcdf_parcels
-        module procedure read_netcdf_parcels_idealised
-        module procedure read_netcdf_parcels_realistic
-    end interface read_netcdf_parcels
-
     contains
 
         ! Create the parcel file.
@@ -459,5 +449,25 @@ module parcel_netcdf
             call read_netcdf_parcels_generic_part_2(fname, l_valid)
 
         end subroutine read_netcdf_parcels_realistic
+
+        subroutine read_netcdf_parcels(fname)
+            character(*),     intent(in) :: fname
+            select type (parcels)
+            type is (idealised_parcel_type)
+                call read_netcdf_parcels_idealised(parcels, fname)
+            type is (realistic_parcel_type)
+                call read_netcdf_parcels_realistic(parcels, fname)
+            end select
+        end subroutine read_netcdf_parcels
+
+        subroutine write_netcdf_parcels(t)
+            double precision, intent(in) :: t
+            select type (parcels)
+            type is (idealised_parcel_type)
+                call write_netcdf_parcels_idealised(parcels, t)
+            type is (realistic_parcel_type)
+                call write_netcdf_parcels_realistic(parcels, t)
+            end select
+        end subroutine write_netcdf_parcels
 
 end module parcel_netcdf

@@ -34,11 +34,6 @@ module parcel_interpl
 
     private :: is, js, weights
 
-    interface par2grid
-        module procedure par2grid_idealised
-        module procedure par2grid_realistic
-    end interface par2grid
-
     contains
 
         ! Interpolate the parcel volume to the grid
@@ -587,5 +582,14 @@ module parcel_interpl
             call periodic_index_shift(ii)
 
         end subroutine bilinear
+
+        subroutine par2grid
+            select type (parcels)
+            type is (idealised_parcel_type)
+                call par2grid_idealised(parcels)
+            type is (realistic_parcel_type)
+                call par2grid_realistic(parcels)
+            end select
+        end subroutine par2grid
 
 end module parcel_interpl
