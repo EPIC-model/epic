@@ -17,6 +17,7 @@ epic2d_models_SOURCES =		\
 	taylor_green_2d.f90	\
 	straka_2d.f90		\
 	robert_2d.f90		\
+	robert_2d_theta.f90     \
 	epic2d-models.f90
 
 epic2d_models_LDADD = 					\

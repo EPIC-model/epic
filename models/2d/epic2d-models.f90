@@ -5,6 +5,7 @@ program epic2d_models
     use taylor_green_2d
     use straka_2d
     use robert_2d
+    use robert_2d_theta
     use constants, only : pi, zero
     use parameters, only : nx, nz, dx, lower, extent, set_mesh_spacing
     use netcdf_utils
@@ -82,6 +83,8 @@ program epic2d_models
                     call straka_init(ncid, dimids, nx, nz, box%origin, dx)
                 case ('Robert')
                     call robert_init(ncid, dimids, nx, nz, box%origin, dx)
+                case ('Robert_theta')
+                    call robert_init_theta(ncid, dimids, nx, nz, box%origin, dx)
                 case default
                     print *, "Unknown model: '", trim(model), "'."
                     stop
@@ -104,7 +107,7 @@ program epic2d_models
             logical :: exists = .false.
 
             ! namelist definitions
-            namelist /MODELS/ model, ncfname, box, tg_flow, straka_flow, robert_flow
+            namelist /MODELS/ model, ncfname, box, tg_flow, straka_flow, robert_flow, robert_flow_theta
 
             ! check whether file exists
             inquire(file=filename, exist=exists)
