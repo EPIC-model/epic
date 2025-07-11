@@ -489,26 +489,35 @@
             class(realistic_parcel_type), intent(inout) :: this
             double precision :: press, exn, temp, temp_low, qsat_low, qt_start, ql_start, ql_iter, temp_start, qsat
             double precision :: err_at_temp, err_at_temp_inv_deriv,efact,divfact
+            double precision :: inv_p_ref, r_d_over_c_p, inv_scale_height, qsat_helper, L_v_over_c_p
             integer :: n, iter
 
             if(.not. this%is_moist) then
                 return
             endif
 
-            ! TO DO: ADD OPENMP
+            inv_scale_height = 1.0/pressure_scale_height
+            inv_p_ref = 1.0/p_ref
+            r_d_over_c_p = r_d/c_p
+            L_v_over_c_p = L_v/c_p
+
+            !$omp parallel default(shared)
+            !$omp do private(n, press, exn, temp, temp_start, ql_start, qt_start, &
+            !$omp            temp_low, qsat_helper, efact, qsat, ql_iter, err_at_temp, &
+            !$omp            divfact, err_at_temp_inv_deriv)
             do n = 1, this%local_num
-                press=p_surf*exp(-this%position(this%n_pos, n)/pressure_scale_height)
-                exn=(press/p_ref)**(r_d/c_p)
+                press=p_surf*exp(-this%position(this%n_pos, n)*inv_scale_height)
+                exn=(press*inv_p_ref)**(r_d_over_c_p)
                 temp=this%theta(n)*exn
                 temp_start=temp
                 ql_start=this%ql(n)
                 qt_start=ql_start+this%qv(n)
                 ! Test unsaturated case first
-                temp_low=temp-(L_v/c_p)*ql_start
-                qsat_low = qsa1/(0.01*press*exp(qsa2*(temp_low - tk0c)/(temp_low - qsa3)) - qsa4)
-                if(qt_start < qsat_low) then ! Evaporate everything, if needed at all
+                temp_low=temp-L_v_over_c_p*ql_start
+                qsat_helper = 0.01*press*exp(qsa2*(temp_low - tk0c)/(temp_low - qsa3)) - qsa4
+                if(qt_start*qsat_helper < qsa1) then ! Evaporate everything, if needed at all
                    if(ql_start>0.) then
-                      this%theta(n)=this%theta(n)-(L_v/(c_p*exn))*ql_start
+                      this%theta(n)=this%theta(n)-(L_v_over_c_p/exn)*ql_start
                       this%qv(n)=this%qv(n)+ql_start
                       this%ql(n)=0.
                    end if
@@ -519,11 +528,11 @@
                       efact=0.01*press*exp(qsa2*(temp - tk0c)/(temp - qsa3))
                       qsat=qsa1/(efact - qsa4)
                       ql_iter=max(qt_start-qsat,0.0)
-                      err_at_temp=temp-(temp_start-(L_v/c_p)*(ql_start-ql_iter))
+                      err_at_temp=temp-(temp_start-L_v_over_c_p*(ql_start-ql_iter))
                       if(ql_iter>0.0) then
                          !calculate 1/(d err/ dt) to save a division latet on
                          divfact=((efact - qsa4)*(efact - qsa4)*(temp - qsa3)*(temp - qsa3))
-                         err_at_temp_inv_deriv=divfact/(divfact+(L_v/c_p)*(qsa1*qsa2*efact*(qsa3-tk0c)))
+                         err_at_temp_inv_deriv=divfact/(divfact+L_v_over_c_p*(qsa1*qsa2*efact*(qsa3-tk0c)))
                       else
                          err_at_temp_inv_deriv=1.0
                       endif
@@ -531,11 +540,13 @@
                    enddo
                    qsat=qsa1/(0.01*press*exp(qsa2*(temp - tk0c)/(temp - qsa3)) - qsa4)
                    ql_iter=max(qt_start-qsat,0.0)
-                   this%theta(n)=this%theta(n)-(L_v/(c_p*exn))*(ql_start-ql_iter)
+                   this%theta(n)=this%theta(n)-(L_v_over_c_p/exn)*(ql_start-ql_iter)
                    this%qv(n)=qt_start-ql_iter
                    this%ql(n)=ql_iter
                 end if
             end do
+            !$omp end do
+            !$omp end parallel
 
        end subroutine realistic_saturation_adjustment
 
