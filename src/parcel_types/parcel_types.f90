@@ -487,7 +487,8 @@
 
        subroutine realistic_saturation_adjustment(this)
             class(realistic_parcel_type), intent(inout) :: this
-            double precision :: press, exn, temp, temp_low, qsat_low, qt_start, ql_start, ql_iter, temp_start, qsat
+            double precision :: press, exn, temp, temp_low, qsat_low, qt_start, ql_start, ql_iter
+            double precision :: theta_start, temp_start, qsat
             double precision :: err_at_temp, err_at_temp_inv_deriv,efact,divfact
             double precision :: inv_p_ref, r_d_over_c_p, inv_scale_height, qsat_helper, L_v_over_c_p
             integer :: n, iter
@@ -502,13 +503,14 @@
             L_v_over_c_p = L_v/c_p
 
             !$omp parallel default(shared)
-            !$omp do private(n, press, exn, temp, temp_start, ql_start, qt_start, &
+            !$omp do private(n, press, exn, temp, theta_start, temp_start, ql_start, qt_start, &
             !$omp            temp_low, qsat_helper, efact, qsat, ql_iter, err_at_temp, &
             !$omp            divfact, err_at_temp_inv_deriv)
             do n = 1, this%local_num
                 press=p_surf*exp(-this%position(this%n_pos, n)*inv_scale_height)
                 exn=(press*inv_p_ref)**(r_d_over_c_p)
-                temp=this%theta(n)*exn
+                theta_start=this%theta(n)
+                temp=theta_start*exn
                 temp_start=temp
                 ql_start=this%ql(n)
                 qt_start=ql_start+this%qv(n)
@@ -516,10 +518,10 @@
                 temp_low=temp-L_v_over_c_p*ql_start
                 qsat_helper = 0.01*press*exp(qsa2*(temp_low - tk0c)/(temp_low - qsa3)) - qsa4
                 if(qt_start*qsat_helper < qsa1) then ! Evaporate everything, if needed at all
-                   if(ql_start>0.) then
-                      this%theta(n)=this%theta(n)-(L_v_over_c_p/exn)*ql_start
-                      this%qv(n)=this%qv(n)+ql_start
-                      this%ql(n)=0.
+                   if(ql_start>0.0) then
+                      this%theta(n)=theta_start-(L_v_over_c_p/exn)*ql_start
+                      this%qv(n)=qt_start
+                      this%ql(n)=0.0
                    end if
                 ! Moist case: iterate a few times, start from temp instead of temp_low
                 ! Use Newton-Raphson to converge
@@ -540,7 +542,7 @@
                    enddo
                    qsat=qsa1/(0.01*press*exp(qsa2*(temp - tk0c)/(temp - qsa3)) - qsa4)
                    ql_iter=max(qt_start-qsat,0.0)
-                   this%theta(n)=this%theta(n)-(L_v_over_c_p/exn)*(ql_start-ql_iter)
+                   this%theta(n)=theta_start-(L_v_over_c_p/exn)*(ql_start-ql_iter)
                    this%qv(n)=qt_start-ql_iter
                    this%ql(n)=ql_iter
                 end if
@@ -550,6 +552,7 @@
 
        end subroutine realistic_saturation_adjustment
 
+       ! can be optimised still
        subroutine set_rh(this, n, rh)
             class(realistic_parcel_type), intent(inout) :: this
             integer, intent(in) :: n
