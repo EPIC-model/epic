@@ -365,7 +365,7 @@ module field_netcdf
 #ifdef ENABLE_DIAGNOSE
             call write_netcdf_dataset(ncid, vol_id, volg(0:nz, 0:nx-1))
 
-            call write_netcdf_dataset(ncid, npar_id, nparg(0:nz-1, :))
+            call write_netcdf_dataset(ncid, npar_id, nparg(0:nz-1, 0:nx-1))
 #endif
 
 #ifndef NDEBUG

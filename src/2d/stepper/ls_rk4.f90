@@ -152,9 +152,9 @@ module ls_rk4
 
                 call stop_timer(rk4_timer)
             else
-                call vor2vel(vortg, velog, velgradg)
+                call vor2vel(vortg(:, 0:nx-1), velog(:, 0:nx-1, :), velgradg(:, 0:nx-1,:))
 
-                call vorticity_tendency(tbuoyg, vtend)
+                call vorticity_tendency(tbuoyg(:, 0:nx-1), vtend(:, 0:nx-1))
 
                 call grid2par_add(delta_pos, delta_vor, strain)
 

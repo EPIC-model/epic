@@ -71,6 +71,11 @@ module parcel_interpl
             enddo
             !$omp end do
             !$omp end parallel
+            ! apply periodicity
+            volg(:, 0)    = volg(:, 0) + volg(:, nx)
+            volg(:, nx-1) = volg(:, nx-1) + volg(:, -1)
+            volg(:, -1)   = volg(:, nx-1)
+            volg(:, nx)   = volg(:, 0)
 
             ! apply free slip boundary condition
             volg(0,  :) = two * volg(0,  :)
@@ -128,6 +133,13 @@ module parcel_interpl
                 !$omp end do
                 !$omp end parallel
             enddo
+
+            ! apply periodicity
+            sym_volg(:, 0)    = sym_volg(:, 0) + sym_volg(:, nx)
+            sym_volg(:, nx-1) = sym_volg(:, nx-1) + sym_volg(:, -1)
+            sym_volg(:, -1)   = sym_volg(:, nx-1)
+            sym_volg(:, nx)   = sym_volg(:, 0)
+
             call stop_timer(sym_vol2grid_timer)
         end subroutine vol2grid_symmetry_error
 #endif
@@ -363,6 +375,41 @@ module parcel_interpl
             enddo
             !$omp end do
             !$omp end parallel
+
+            ! apply periodicity
+            volg(:, 0)    = volg(:, 0) + volg(:, nx)
+            volg(:, nx-1) = volg(:, nx-1) + volg(:, -1)
+            volg(:, -1)   = volg(:, nx-1)
+            volg(:, nx)   = volg(:, 0)
+
+            tbuoyg(:, 0)    = tbuoyg(:, 0) + tbuoyg(:, nx)
+            tbuoyg(:, nx-1) = tbuoyg(:, nx-1) + tbuoyg(:, -1)
+            tbuoyg(:, -1)   = tbuoyg(:, nx-1)
+            tbuoyg(:, nx)   = tbuoyg(:, 0)
+
+            thetag(:, 0)    = thetag(:, 0) + thetag(:, nx)
+            thetag(:, nx-1) = thetag(:, nx-1) + thetag(:, -1)
+            thetag(:, -1)   = thetag(:, nx-1)
+            thetag(:, nx)   = thetag(:, 0)
+
+            if(parcels%is_moist) then
+                qvg(:, 0)    = qvg(:, 0) + qvg(:, nx)
+                qvg(:, nx-1) = qvg(:, nx-1) + qvg(:, -1)
+                qvg(:, -1)   = qvg(:, nx-1)
+                qvg(:, nx)   = qvg(:, 0)
+
+                qlg(:, 0)    = qlg(:, 0) + qlg(:, nx)
+                qlg(:, nx-1) = qlg(:, nx-1) + qlg(:, -1)
+                qlg(:, -1)   = qlg(:, nx-1)
+                qlg(:, nx)   = qlg(:, 0)
+            endif
+
+            if(parcels%has_droplets) then
+                Nlg(:, 0)    = Nlg(:, 0) + Nlg(:, nx)
+                Nlg(:, nx-1) = Nlg(:, nx-1) + Nlg(:, -1)
+                Nlg(:, -1)   = Nlg(:, nx-1)
+                Nlg(:, nx)   = Nlg(:, 0)
+            endif
 
             ! apply free slip boundary condition
             volg(0,  :) = two * volg(0,  :)

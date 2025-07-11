@@ -139,7 +139,7 @@ module parcel_correction
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     subroutine apply_laplace
-        double precision :: phi(0:nz,0:nx-1), ud(-1:nz+1,0:nx-1), wd(-1:nz+1,0:nx-1)
+        double precision :: phi(0:nz,0:nx-1), ud(-1:nz+1,-1:nx), wd(-1:nz+1,-1:nx)
         double precision :: wbar(0:nz)
         double precision :: weights(ngp)
         integer          :: n, l, is(ngp), js(ngp)
@@ -149,7 +149,7 @@ module parcel_correction
         call vol2grid
 
         ! form divergence field * dt and store in phi temporarily:
-        phi = volg(0:nz, :) * vcelli - one
+        phi = volg(0:nz, 0:nx-1) * vcelli - one
 
         !-----------------------------------------
         ! Forward x FFT:
@@ -162,25 +162,31 @@ module parcel_correction
         call lapinv1(phi)
 
         ! Compute x derivative spectrally:
-        call deriv(nz+1,nx,hrkx,phi,ud(0:nz, :))
+        call deriv(nz+1,nx,hrkx,phi,ud(0:nz, 0:nx-1))
 
         ! Reverse x FFT to define x velocity component ud:
-        call revfft(nz+1,nx,ud(0:nz, :),xtrig,xfactors)
+        call revfft(nz+1,nx,ud(0:nz, 0:nx-1),xtrig,xfactors)
 
         ! Compute z derivative by compact differences:
-        call diffz1(phi,wd(0:nz, :))
+        call diffz1(phi,wd(0:nz, 0:nx-1))
 
         ! Add on the x-independent part of wd:
         wd(0:nz,0) = wd(0:nz,0) + wbar
 
         ! Reverse x FFT:
-        call revfft(nz+1,nx,wd(0:nz,:),xtrig,xfactors)
+        call revfft(nz+1,nx,wd(0:nz,0:nx-1),xtrig,xfactors)
+
+        ! Apply periodic BCs
+        ud(:,-1)   = ud(:, nx-1)
+        wd(:,-1)   = wd(:, nx-1)
+        ud(:,nx) =  ud(:, 0)
+        wd(:,nx) =  wd(:, 0)
 
         ! Use symmetry to fill z grid lines outside domain:
-        ud(-1,:)   =  ud(1,:)
-        wd(-1,:)   = -wd(1,:)
-        ud(nz+1,:) =  ud(nz-1,:)
-        wd(nz+1,:) = -wd(nz-1,:)
+        ud(-1, :)   =  ud(1, :)
+        wd(-1, :)   = -wd(1, :)
+        ud(nz+1, :) =  ud(nz-1, :)
+        wd(nz+1, :) = -wd(nz-1, :)
 
         !------------------------------------------------------------------
         ! Increment parcel positions usind (ud,wd) field:
@@ -210,7 +216,7 @@ module parcel_correction
     subroutine apply_gradient(prefactor, max_compression)
         double precision, intent(in) :: prefactor
         double precision, intent(in) :: max_compression
-        double precision             :: phi(0:nz,0:nx-1)
+        double precision             :: phi(0:nz,-1:nx)
         double precision             :: weights(ngp)
         double precision             :: shift_x1, shift_x2, x1_fpos, x2_fpos, lim_x1, lim_x2
         integer                      :: n, is(ngp), js(ngp)

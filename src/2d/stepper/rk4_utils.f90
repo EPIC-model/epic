@@ -46,16 +46,16 @@ module rk4_utils
 #endif
 
             ! velocity strain
-            gmax = f12 * sqrt(maxval((velgradg(0:nz, :, 1) - velgradg(0:nz, :, 4)) ** 2 + &
-                                        (velgradg(0:nz, :, 2) + velgradg(0:nz, :, 3)) ** 2))
+            gmax = f12 * sqrt(maxval((velgradg(0:nz, 0:nx-1, 1) - velgradg(0:nz, 0:nx-1, 4)) ** 2 + &
+                                        (velgradg(0:nz, 0:nx-1, 2) + velgradg(0:nz, 0:nx-1, 3)) ** 2))
             gmax = max(epsilon(gmax), gmax)
 
             ! buoyancy gradient
 
             ! db/dz (central difference)
-            dbdz(0:nz, :) = f12 * dxi(2) * (tbuoyg(1:nz+1, :) - tbuoyg(-1:nz-1, :))
+            dbdz(0:nz, :) = f12 * dxi(2) * (tbuoyg(1:nz+1, 0:nx-1) - tbuoyg(-1:nz-1, 0:nx-1))
 
-            bmax = sqrt(sqrt(maxval(vtend(0:nz, :) ** 2 + dbdz ** 2)))
+            bmax = sqrt(sqrt(maxval(vtend(0:nz, 0:nx-1) ** 2 + dbdz ** 2)))
             bmax = max(epsilon(bmax), bmax)
 
             dt = min(time%alpha / gmax, time%alpha / bmax)

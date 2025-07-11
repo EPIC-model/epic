@@ -33,27 +33,27 @@ module field_diagnostics
             call start_timer(field_stats_timer)
 
             ! do not take halo cells into account
-            sqerrsum = sum((volg(0:nz, :) - vcell) ** 2)
+            sqerrsum = sum((volg(0:nz, 0:nx-1) - vcell) ** 2)
 
             rms_v = sqrt(sqerrsum * ngridi) * vcelli
 
-            abserr_v = maxval(abs(volg(0:nz, :)  - vcell)) * vcelli
+            abserr_v = maxval(abs(volg(0:nz, 0:nx-1)  - vcell)) * vcelli
 
-            max_npar = maxval(nparg(0:nz-1, :))
+            max_npar = maxval(nparg(0:nz-1, 0:nx-1))
 
-            min_npar = minval(nparg(0:nz-1, :))
+            min_npar = minval(nparg(0:nz-1, 0:nx-1))
 
-            avg_npar = sum(nparg(0:nz-1, :)) * ncelli
+            avg_npar = sum(nparg(0:nz-1, 0:nx-1)) * ncelli
 
-            avg_nspar = sum(nsparg(0:nz-1, :)) * ncelli
+            avg_nspar = sum(nsparg(0:nz-1, 0:nx-1)) * ncelli
 
             ! use half weights for boundary grid points
-            keg = f12 * sum(volg(1:nz-1, :) * ( velog(1:nz-1, :, 1) ** 2    &
-                                              + velog(1:nz-1, :, 2) ** 2))  &
-                + f14 * sum(volg(0,  :) * ( velog(0 , :, 1) ** 2    &
-                                          + velog(0 , :, 2) ** 2))  &
-                + f14 * sum(volg(nz, :) * ( velog(nz, :, 1) ** 2    &
-                                          + velog(nz, :, 2) ** 2))
+            keg = f12 * sum(volg(1:nz-1, 0:nx-1) * ( velog(1:nz-1, 0:nx-1, 1) ** 2    &
+                                              + velog(1:nz-1, 0:nx-1, 2) ** 2))  &
+                + f14 * sum(volg(0,  0:nx-1) * ( velog(0 , 0:nx-1, 1) ** 2    &
+                                          + velog(0 , 0:nx-1, 2) ** 2))  &
+                + f14 * sum(volg(nz, 0:nx-1) * ( velog(nz, 0:nx-1, 1) ** 2    &
+                                          + velog(nz, 0:nx-1, 2) ** 2))
 
             ! divide by domain volume to get domain-averaged keg
             keg = keg * vdomaini
@@ -74,7 +74,7 @@ module field_diagnostics
             endif
 
 #ifndef NDEBUG
-            max_vol_sym_err = maxval(abs(sym_volg(0:nz, :)))
+            max_vol_sym_err = maxval(abs(sym_volg(0:nz, 0:nx-1)))
 #endif
 
             call stop_timer(field_stats_timer)

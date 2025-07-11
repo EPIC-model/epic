@@ -42,26 +42,26 @@ module fields
                 return
             endif
 
-            allocate(velog(-1:nz+1, 0:nx-1, 2))
-            allocate(velgradg(-1:nz+1, 0:nx-1, 4))
+            allocate(velog(-1:nz+1, -1:nx, 2))
+            allocate(velgradg(-1:nz+1, -1:nx, 4))
 
-            allocate(volg(-1:nz+1, 0:nx-1))
+            allocate(volg(-1:nz+1, -1:nx))
 
 #ifndef NDEBUG
-            allocate(sym_volg(-1:nz+1, 0:nx-1))
+            allocate(sym_volg(-1:nz+1, -1:nx))
 #endif
 
-            allocate(vortg(-1:nz+1, 0:nx-1))
+            allocate(vortg(-1:nz+1, -1:nx))
 
-            allocate(vtend(-1:nz+1, 0:nx-1))
+            allocate(vtend(-1:nz+1, -1:nx))
 
-            allocate(tbuoyg(-1:nz+1, 0:nx-1))
+            allocate(tbuoyg(-1:nz+1, -1:nx))
 
             ! For now, only use a select type here
             if(parcels%is_idealised) then
                 if(parcels%is_moist) then
-                    allocate(dbuoyg(-1:nz+1, 0:nx-1))
-                    allocate(humg(-1:nz+1, 0:nx-1))
+                    allocate(dbuoyg(-1:nz+1, -1:nx))
+                    allocate(humg(-1:nz+1, -1:nx))
                 else
                     allocate(dbuoyg(1, 1))
                     allocate(humg(1, 1))
@@ -69,11 +69,11 @@ module fields
                 dbuoyg = zero
                 humg = zero
             else
-                allocate(thetag(-1:nz+1, 0:nx-1))
+                allocate(thetag(-1:nz+1, -1:nx))
                 thetag = zero
                 if(parcels%is_moist) then
-                    allocate(qvg(-1:nz+1, 0:nx-1))
-                    allocate(qlg(-1:nz+1, 0:nx-1))
+                    allocate(qvg(-1:nz+1, -1:nx))
+                    allocate(qlg(-1:nz+1, -1:nx))
                 else ! use dummies for openmp reduction
                     allocate(qvg(1, 1))
                     allocate(qlg(1, 1))
@@ -81,15 +81,15 @@ module fields
                 qvg = zero
                 qlg = zero
                 if(parcels%has_droplets) then
-                    allocate(Nlg(-1:nz+1, 0:nx-1))
+                    allocate(Nlg(-1:nz+1, -1:nx))
                 else
                     allocate(Nlg(1, 1))
                 endif
                 Nlg = zero
             endif
 
-            allocate(nparg(-1:nz, 0:nx-1))
-            allocate(nsparg(-1:nz, 0:nx-1))
+            allocate(nparg(-1:nz, -1:nx))
+            allocate(nsparg(-1:nz, -1:nx))
 
         end subroutine field_alloc
 

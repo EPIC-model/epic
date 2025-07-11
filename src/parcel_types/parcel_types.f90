@@ -487,7 +487,7 @@
 
        subroutine realistic_saturation_adjustment(this)
             class(realistic_parcel_type), intent(inout) :: this
-            double precision :: press, exn, temp, temp_low, qsat_low, qt_start, ql_start, ql_iter
+            double precision :: press, exn, temp, temp_low, qt_start, ql_start, ql_iter
             double precision :: theta_start, temp_start, qsat
             double precision :: err_at_temp, err_at_temp_inv_deriv,efact,divfact
             double precision :: inv_p_ref, r_d_over_c_p, inv_scale_height, qsat_helper, L_v_over_c_p
