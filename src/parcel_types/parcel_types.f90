@@ -1,7 +1,10 @@
  module parcel_types
     use physics, only : glat, lambda_c, q_0, qv_dens_coeff, theta_0, gravity, r_d, c_p, L_v, p_surf, p_ref, pressure_scale_height
     use constants, only : zero, one
+    use timer, only : start_timer, stop_timer
     use parcel_ellipsoid
+    use spline_module
+
     implicit none
 
     ! For now, put some of the constants for setting up simulations here
@@ -10,6 +13,9 @@
     double precision, parameter :: qsa2 = -17.2693882  ! Constant in qsat equation
     double precision, parameter :: qsa3 = 35.86        ! Constant in qsat equation
     double precision, parameter :: qsa4 = 6.109        ! Constant in qsat equation
+    integer :: saturation_adjustment_timer
+    logical :: splines_are_initiated = .false.
+    type(spline) :: esat_spline, press_spline, exn_spline
 
     type, extends(ellipsoid_parcel_type) :: idealised_parcel_type ! add procedures
         double precision, allocatable, dimension(:) :: humidity
@@ -489,26 +495,32 @@
             class(realistic_parcel_type), intent(inout) :: this
             double precision :: press, exn, temp, temp_low, qt_start, ql_start, ql_iter
             double precision :: theta_start, temp_start, qsat
-            double precision :: err_at_temp, err_at_temp_inv_deriv,efact,divfact
+            double precision :: err_at_temp, err_at_temp_inv_deriv,efact,divfact, this_height
             double precision :: inv_p_ref, r_d_over_c_p, inv_scale_height, qsat_helper, L_v_over_c_p
             integer :: n, iter
 
+            call start_timer(saturation_adjustment_timer)
             if(.not. this%is_moist) then
                 return
             endif
 
-            inv_scale_height = 1.0/pressure_scale_height
-            inv_p_ref = 1.0/p_ref
+            if(.not. splines_are_initiated) then
+                call initiate_thermo_splines
+            endif
+
+            inv_scale_height = 1.0d0/pressure_scale_height
+            inv_p_ref = 1.0d0/p_ref
             r_d_over_c_p = r_d/c_p
             L_v_over_c_p = L_v/c_p
 
             !$omp parallel default(shared)
             !$omp do private(n, press, exn, temp, theta_start, temp_start, ql_start, qt_start, &
             !$omp            temp_low, qsat_helper, efact, qsat, ql_iter, err_at_temp, &
-            !$omp            divfact, err_at_temp_inv_deriv)
+            !$omp            divfact, err_at_temp_inv_deriv, this_height)
             do n = 1, this%local_num
-                press=p_surf*exp(-this%position(this%n_pos, n)*inv_scale_height)
-                exn=(press*inv_p_ref)**(r_d_over_c_p)
+                this_height=this%position(this%n_pos, n)
+                press=eval_spline(press_spline, this_height)
+                exn=eval_spline(exn_spline, this_height)
                 theta_start=this%theta(n)
                 temp=theta_start*exn
                 temp_start=temp
@@ -516,32 +528,32 @@
                 qt_start=ql_start+this%qv(n)
                 ! Test unsaturated case first
                 temp_low=temp-L_v_over_c_p*ql_start
-                qsat_helper = 0.01*press*exp(qsa2*(temp_low - tk0c)/(temp_low - qsa3)) - qsa4
+                qsat_helper = 0.01d0*press*eval_spline(esat_spline, temp_low) - qsa4
                 if(qt_start*qsat_helper < qsa1) then ! Evaporate everything, if needed at all
-                   if(ql_start>0.0) then
+                   if(ql_start>0.0d0) then
                       this%theta(n)=theta_start-(L_v_over_c_p/exn)*ql_start
                       this%qv(n)=qt_start
-                      this%ql(n)=0.0
+                      this%ql(n)=0.0d0
                    end if
                 ! Moist case: iterate a few times, start from temp instead of temp_low
                 ! Use Newton-Raphson to converge
                 else
-                   do iter=1,3
-                      efact=0.01*press*exp(qsa2*(temp - tk0c)/(temp - qsa3))
+                   do iter=1,2
+                      efact=0.01d0*press*eval_spline(esat_spline, temp)
                       qsat=qsa1/(efact - qsa4)
-                      ql_iter=max(qt_start-qsat,0.0)
+                      ql_iter=max(qt_start-qsat,0.0d0)
                       err_at_temp=temp-(temp_start-L_v_over_c_p*(ql_start-ql_iter))
-                      if(ql_iter>0.0) then
+                      if(ql_iter>0.0d0) then
                          !calculate 1/(d err/ dt) to save a division latet on
                          divfact=((efact - qsa4)*(efact - qsa4)*(temp - qsa3)*(temp - qsa3))
                          err_at_temp_inv_deriv=divfact/(divfact+L_v_over_c_p*(qsa1*qsa2*efact*(qsa3-tk0c)))
                       else
-                         err_at_temp_inv_deriv=1.0
+                         err_at_temp_inv_deriv=1.0d0
                       endif
                       temp=temp-err_at_temp*err_at_temp_inv_deriv
                    enddo
-                   qsat=qsa1/(0.01*press*exp(qsa2*(temp - tk0c)/(temp - qsa3)) - qsa4)
-                   ql_iter=max(qt_start-qsat,0.0)
+                   qsat=qsa1/(0.01d0*press*eval_spline(esat_spline, temp)  - qsa4)
+                   ql_iter=max(qt_start-qsat,0.0d0)
                    this%theta(n)=theta_start-(L_v_over_c_p/exn)*(ql_start-ql_iter)
                    this%qv(n)=qt_start-ql_iter
                    this%ql(n)=ql_iter
@@ -549,6 +561,7 @@
             end do
             !$omp end do
             !$omp end parallel
+            call stop_timer(saturation_adjustment_timer)
 
        end subroutine realistic_saturation_adjustment
 
@@ -567,9 +580,41 @@
             press=p_surf*exp(-this%position(this%n_pos, n)/pressure_scale_height)
             exn=(press/p_ref)**(r_d/c_p)
             temp=this%theta(n)*exn
-            qsat = qsa1/(0.01*press*exp(qsa2*(temp - tk0c)/(temp - qsa3)) - qsa4)
+            qsat = qsa1/(0.01d0*press*exp(qsa2*(temp - tk0c)/(temp - qsa3)) - qsa4)
             this%qv(n)= rh*qsat
 
        end subroutine set_rh
+
+  subroutine initiate_thermo_splines
+    integer, parameter :: temp_len = 240
+    integer, parameter :: height_len = 1000
+    double precision :: temperatures(temp_len)
+    double precision :: esat_temps(temp_len)
+    double precision :: heights(height_len)
+    double precision :: press_heights(height_len)
+    double precision :: exn_heights(height_len)
+    integer :: ii
+    double precision :: inv_p_ref, r_d_over_c_p, inv_scale_height, L_v_over_c_p
+
+    inv_scale_height = 1.0d0/pressure_scale_height
+    inv_p_ref = 1.0d0/p_ref
+    r_d_over_c_p = r_d/c_p
+    L_v_over_c_p = L_v/c_p
+
+    do ii=1,temp_len
+       temperatures(ii)=160.0d0+ii
+       esat_temps(ii)=exp(qsa2*(temperatures(ii) - tk0c)/(temperatures(ii) - qsa3))
+    end do
+    do ii=1,height_len
+       heights(ii)=-40.0d0+ii*40.0d0
+       press_heights(ii)=p_surf*exp(-heights(ii)*inv_scale_height)
+       exn_heights(ii)=(press_heights(ii)*inv_p_ref)**(r_d_over_c_p)
+    end do
+
+    call init_spline(esat_spline, temperatures, esat_temps)
+    call init_spline(press_spline, heights, press_heights)
+    call init_spline(exn_spline, heights, exn_heights)
+
+  end subroutine initiate_thermo_splines
 
 end module

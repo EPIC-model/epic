@@ -336,8 +336,8 @@ module parcel_interpl
             integer          :: n, p, l, i, j
             double precision :: pvol, weight, btot
 
-            call start_timer(par2grid_timer)
             call parcels%saturation_adjustment
+            call start_timer(par2grid_timer)
 
             vortg = zero
             volg = zero

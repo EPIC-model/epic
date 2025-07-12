@@ -32,6 +32,8 @@ program epic2d
                     , setup_restart, setup_domain_and_parameters &
                     , setup_parcels
     use parameters, only : max_num_parcels
+    use parcel_types, only : saturation_adjustment_timer
+
     implicit none
 
     integer          :: epic_timer
@@ -72,6 +74,7 @@ program epic2d
             call register_timer('parcel push', rk4_timer)
             call register_timer('merge nearest', merge_nearest_timer)
             call register_timer('merge tree resolve', merge_tree_resolve_timer)
+            call register_timer('saturation adjustment', saturation_adjustment_timer)
 #ifndef NDEBUG
             call register_timer('symmetric vol2grid', sym_vol2grid_timer)
 #endif
