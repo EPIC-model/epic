@@ -4,8 +4,8 @@ module spline_module
   public :: spline, init_spline, eval_spline
 
   type :: spline
-     integer :: n
-     double precision :: h, inv_h
+     integer :: n, nmin1
+     double precision :: h, inv_h, x1
      double precision, allocatable :: x(:)
      double precision, allocatable :: A(:), B(:), C(:), D(:)
   end type spline
@@ -68,6 +68,9 @@ contains
       this%D(i) = d
     end do
 
+    this%x1=this%x(1)
+    this%nmin1=this%n-1
+
     deallocate(y2, u)
   end subroutine init_spline
 
@@ -78,14 +81,12 @@ contains
     integer :: i
     double precision :: dx, dx2, dx3
 
-    ! Clamp xval to domain
-    if (xval <= this%x(1)) then
-      i = 1
-    else if (xval >= this%x(this%n)) then
-      i = this%n - 1
-    else
-      i = int((xval - this%x(1)) * this%inv_h) + 1
-      i = max(1, min(this%n - 1, i))
+    i = int((xval - this%x1) * this%inv_h) + 1
+
+    if(i<1) then
+       i=1
+    elseif(i>this%nmin1) then
+       i=this%nmin1
     end if
 
     dx = xval - this%x(i)

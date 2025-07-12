@@ -7,7 +7,7 @@ module parcel_init
     use dynamic_parcels, only : parcels, n_parcels
     use parcel_ellipse, only : get_ab, get_B22, get_eigenvalue
     use parcel_split, only : split_ellipses
-    use parcel_interpl, only : bilinear, ngp
+    use parcel_interpl, only : bilinear_old, ngp
     use parcel_types, only : idealised_parcel_type, realistic_parcel_type
     use parameters, only : dx, vcell, ncell,        &
                            extent, lower, nx, nz,   &
@@ -170,7 +170,7 @@ module parcel_init
             !$omp parallel do default(shared) private(n, l) reduction(+:resi)
             do n = 1, n_parcels
                 ! get interpolation weights and mesh indices
-                call bilinear(parcels%position(:, n), is(:, n), js(:, n), weights(:, n))
+                call bilinear_old(parcels%position(:, n), is(:, n), js(:, n), weights(:, n))
 
                 do l = 1, ngp
                     ! catch if in halo

@@ -20,11 +20,11 @@ module parcel_interpl
     integer, parameter :: ngp = 4
 
     ! interpolation indices
-    ! (first dimension x, y; second dimension k-th index)
-    integer :: is(ngp), js(ngp)
+    ! (first dimension x, y, z; second dimension l-th index)
+    integer :: is, js
 
     ! interpolation weights
-    double precision :: weights(ngp)
+    double precision :: weights(0:1,0:1)
 
     integer :: par2grid_timer, &
 #ifndef NDBEBUG
@@ -63,10 +63,8 @@ module parcel_interpl
                     ! get interpolation weights and mesh indices
                     call bilinear(points(:, p), is, js, weights)
 
-                    do l = 1, ngp
-                        volg(js(l), is(l)) = volg(js(l), is(l)) &
-                                           + f12 * weights(l) * pvol
-                    enddo
+                    volg(js:js+1, is:is+1) = volg(js:js+1, is:is+1) &
+                                           + f12 * weights * pvol
                 enddo
             enddo
             !$omp end do
@@ -124,10 +122,8 @@ module parcel_interpl
                         ! get interpolation weights and mesh indices
                         call bilinear(points(:, p), is, js, weights)
 
-                        do l = 1, ngp
-                            sym_volg(js(l), is(l)) = sym_volg(js(l), is(l)) &
-                                                   + dble(m) * f12 * weights(l) * pvol
-                        enddo
+                        sym_volg(js:js+1, is:is+1) = sym_volg(js:js+1, is:is+1) &
+                                               + f12 * weights * pvol
                     enddo
                 enddo
                 !$omp end do
@@ -154,8 +150,8 @@ module parcel_interpl
         subroutine par2grid_idealised(parcels)
             class(idealised_parcel_type), intent(in) :: parcels
             double precision :: points(2, 2)
-            integer          :: n, p, l, i, j
-            double precision :: pvol, weight, btot
+            integer          :: n, p, i, j
+            double precision :: pvol, weight(0:1, 0:1), btot
 
             call start_timer(par2grid_timer)
 
@@ -169,7 +165,7 @@ module parcel_interpl
             endif
             tbuoyg = zero
             !$omp parallel default(shared)
-            !$omp do private(n, p, l, i, j, points, pvol, weight, btot, is, js, weights) &
+            !$omp do private(n, p, i, j, points, pvol, weight, btot, is, js, weights) &
             !$omp& reduction(+:nparg, nsparg, vortg, dbuoyg, humg, tbuoyg, volg)
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
@@ -197,25 +193,22 @@ module parcel_interpl
 
                     ! loop over grid points which are part of the interpolation
                     ! the weight is halved due to 2 points per ellipse
-                    do l = 1, ngp
+                    weight = f12 * weights * pvol
 
-                        weight = f12 * weights(l) * pvol
+                    vortg(js:js+1, is:is+1) = vortg(js:js+1, is:is+1) &
+                                        + weight * parcels%vorticity(1, n)
 
-                        vortg(js(l), is(l)) = vortg(js(l), is(l)) &
-                                            + weight * parcels%vorticity(1, n)
+                    if(parcels%is_moist) then
+                        dbuoyg(js:js+1, is:is+1) = dbuoyg(js:js+1, is:is+1) &
+                                             + weight * parcels%buoyancy(n)
+                        humg(js:js+1, is:is+1) = humg(js:js+1, is:is+1) &
+                                           + weight * parcels%humidity(n)
+                    endif
 
-                        if(parcels%is_moist) then
-                            dbuoyg(js(l), is(l)) = dbuoyg(js(l), is(l)) &
-                                                 + weight * parcels%buoyancy(n)
-                            humg(js(l), is(l)) = humg(js(l), is(l)) &
-                                               + weight * parcels%humidity(n)
-                        endif
-
-                        tbuoyg(js(l), is(l)) = tbuoyg(js(l), is(l)) &
-                                             + weight * btot
-                        volg(js(l), is(l)) = volg(js(l), is(l)) &
-                                           + weight
-                    enddo
+                    tbuoyg(js:js+1, is:is+1) = tbuoyg(js:js+1, is:is+1) &
+                                         + weight * btot
+                    volg(js:js+1, is:is+1) = volg(js:js+1, is:is+1) &
+                                       + weight
                 enddo
             enddo
             !$omp end do
@@ -333,12 +326,12 @@ module parcel_interpl
         subroutine par2grid_realistic(parcels)
             class(realistic_parcel_type), intent(inout) :: parcels
             double precision :: points(2, 2)
-            integer          :: n, p, l, i, j
-            double precision :: pvol, weight, btot
+            integer          :: n, p, i, j
+            double precision :: pvol, weight(0:1, 0:1), btot
 
             call parcels%saturation_adjustment
-            call start_timer(par2grid_timer)
 
+            call start_timer(par2grid_timer)
             vortg = zero
             volg = zero
             nparg = zero
@@ -353,7 +346,7 @@ module parcel_interpl
             thetag = zero
             tbuoyg = zero
             !$omp parallel default(shared)
-            !$omp do private(n, p, l, i, j, points, pvol, weight, btot, is, js, weights) &
+            !$omp do private(n, p, i, j, points, pvol, weight, btot, is, js, weights) &
             !$omp& reduction(+:nparg, nsparg, vortg, qvg, qlg, tbuoyg, thetag, Nlg, volg)
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
@@ -379,32 +372,27 @@ module parcel_interpl
                     ! get interpolation weights and mesh indices
                     call bilinear(points(:, p), is, js, weights)
 
-                    ! loop over grid points which are part of the interpolation
-                    ! the weight is halved due to 2 points per ellipse
-                    do l = 1, ngp
+                    weight = f12 * weights * pvol
 
-                        weight = f12 * weights(l) * pvol
+                    vortg(js:js+1, is:is+1) = vortg(js:js+1, is:is+1) &
+                                        + weight * parcels%vorticity(1, n)
 
-                        vortg(js(l), is(l)) = vortg(js(l), is(l)) &
-                                            + weight * parcels%vorticity(1, n)
-
-                        if(parcels%is_moist) then
-                            qvg(js(l), is(l)) = qvg(js(l), is(l)) &
-                                                 + weight * parcels%qv(n)
-                            qlg(js(l), is(l)) = qlg(js(l), is(l)) &
-                                               + weight * parcels%ql(n)
-                        endif
-                        if(parcels%has_droplets) then
-                            Nlg(js(l), is(l)) = Nlg(js(l), is(l)) &
-                                                 + weight * parcels%Nl(n)
-                        endif
-                        tbuoyg(js(l), is(l)) = tbuoyg(js(l), is(l)) &
-                                             + weight * btot
-                        thetag(js(l), is(l)) = thetag(js(l), is(l)) &
-                                             + weight * parcels%theta(n)
-                        volg(js(l), is(l)) = volg(js(l), is(l)) &
-                                           + weight
-                    enddo
+                    if(parcels%is_moist) then
+                        qvg(js:js+1, is:is+1) = qvg(js:js+1, is:is+1) &
+                                             + weight * parcels%qv(n)
+                        qlg(js:js+1, is:is+1) = qlg(js:js+1, is:is+1) &
+                                           + weight * parcels%ql(n)
+                    endif
+                    if(parcels%has_droplets) then
+                        Nlg(js:js+1, is:is+1) = Nlg(js:js+1, is:is+1) &
+                                             + weight * parcels%Nl(n)
+                    endif
+                    tbuoyg(js:js+1, is:is+1) = tbuoyg(js:js+1, is:is+1) &
+                                         + weight * btot
+                    thetag(js:js+1, is:is+1) = thetag(js:js+1, is:is+1) &
+                                         + weight * parcels%theta(n)
+                    volg(js:js+1, is:is+1) = volg(js:js+1, is:is+1) &
+                                       + weight
                 enddo
             enddo
             !$omp end do
@@ -553,7 +541,7 @@ module parcel_interpl
         subroutine grid2par(vel, vor, vgrad, add)
             double precision,     intent(inout) :: vel(:, :), vor(:), vgrad(:, :)
             logical, optional, intent(in)       :: add
-            double precision                    :: points(2, 2), weight
+            double precision                    :: points(2, 2), weight(0:1, 0:1)
             integer                             :: n, p, l
 
             call start_timer(grid2par_timer)
@@ -601,18 +589,18 @@ module parcel_interpl
                     call bilinear(points(:, p), is, js, weights)
 
                     ! loop over grid points which are part of the interpolation
-                    do l = 1, ngp
-                        weight = f12 * weights(l)
+                    weight = f12 * weights
 
-                        ! the weight is halved due to 2 points per ellipse
-                        vel(:, n) = vel(:, n) &
-                                  + weight * velog(js(l), is(l), :)
-
-                        vgrad(:, n) = vgrad(:, n) &
-                                    + weight * velgradg(js(l), is(l), :)
-
-                        vor(n) = vor(n) + weight * vtend(js(l), is(l))
-                    enddo
+                    ! the weight is halved due to 2 points per ellipse
+                    do l = 1,2
+                        vel(l, n) = vel(l, n) &
+                                  + sum(weight * velog(js:js+1, is:is+1, l))
+                    end do
+                    do l=1,4
+                        vgrad(l, n) = vgrad(l, n) &
+                                    + sum(weight * velgradg(js:js+1, is:is+1, l))
+                    end do
+                    vor(n) = vor(n) + sum(weight * vtend(js:js+1, is:is+1))
                 enddo
             enddo
             !$omp end do
@@ -635,13 +623,46 @@ module parcel_interpl
 
         end subroutine grid2par_add
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        ! Tri-linear interpolation
+        ! Bi-linear interpolation
+        ! @param[in] pos position vector
+        ! @param[out] ii horizontal grid points for interoplation
+        ! @param[out] jj vertical grid points for interpolation
+        ! @param[out] ww interpolation weights
+        pure subroutine bilinear(pos, ii, jj, ww)
+            double precision, intent(in)  :: pos(2)
+            integer,          intent(out) :: ii, jj
+            double precision, intent(out) :: ww(0:1, 0:1)
+            double precision              :: xz(2)
+            double precision              :: px, pz, pxc, pzc
+
+
+            ! (i, j)
+            xz = (pos - lower(1:2)) * dxi(1:2)
+            ii = floor(xz(1))
+            jj = floor(xz(2))
+
+            px = xz(1) - dble(ii)
+            pxc = one - px
+
+            pz = xz(2) - dble(jj)
+            pzc = one - pz
+
+            ! Note order of indices is j,i
+            ww(0, 0) = pzc * pxc
+            ww(0, 1) = pzc * px
+            ww(1, 0) = pz  * pxc
+            ww(1, 1) = pz  * px
+
+        end subroutine bilinear
+
+        ! Bi-linear interpolation
         ! @param[in] pos position of the parcel
         ! @param[out] ii horizontal grid points for interoplation
         ! @param[out] jj vertical grid points for interpolation
         ! @param[out] ww interpolation weights
-        subroutine bilinear(pos, ii, jj, ww)
+        subroutine bilinear_old(pos, ii, jj, ww)
             double precision, intent(in)  :: pos(2)
             integer,          intent(out) :: ii(4), jj(4)
             double precision, intent(out) :: ww(4)
@@ -673,41 +694,7 @@ module parcel_interpl
             ! account for x periodicity
             call periodic_index_shift(ii)
 
-        end subroutine bilinear
-
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        ! Bi-linear interpolation
-        ! @param[in] pos position vector
-        ! @param[out] ii horizontal grid points for interoplation
-        ! @param[out] jj meridional grid points for interpolation
-        ! @param[out] ww interpolation weights
-        pure subroutine bilinear_new(pos, ii, jj, ww)
-            double precision, intent(in)  :: pos(2)
-            integer,          intent(out) :: ii, jj
-            double precision, intent(out) :: ww(0:1, 0:1)
-            double precision              :: xy(2)
-            double precision              :: px, py, pxc, pyc
-
-
-            ! (i, j)
-            xy = (pos - lower(1:2)) * dxi(1:2)
-            ii = floor(xy(1))
-            jj = floor(xy(2))
-
-            px = xy(1) - dble(ii)
-            pxc = one - px
-
-            py = xy(2) - dble(jj)
-            pyc = one - py
-
-            ! Note order of indices is j,i
-            ww(0, 0) = pyc * pxc
-            ww(0, 1) = pyc * px
-            ww(1, 0) = py  * pxc
-            ww(1, 1) = py  * px
-
-        end subroutine bilinear_new
+        end subroutine bilinear_old
 
         subroutine par2grid
             select type (parcels)

@@ -497,7 +497,7 @@
             double precision :: theta_start, temp_start, qsat
             double precision :: err_at_temp, err_at_temp_inv_deriv,efact,divfact, this_height
             double precision :: inv_p_ref, r_d_over_c_p, inv_scale_height, qsat_helper, L_v_over_c_p
-            integer :: n, iter
+            integer :: n, iter, n_parcel_saved
 
             call start_timer(saturation_adjustment_timer)
             if(.not. this%is_moist) then
@@ -512,12 +512,13 @@
             inv_p_ref = 1.0d0/p_ref
             r_d_over_c_p = r_d/c_p
             L_v_over_c_p = L_v/c_p
+            n_parcel_saved=this%local_num
 
             !$omp parallel default(shared)
             !$omp do private(n, press, exn, temp, theta_start, temp_start, ql_start, qt_start, &
             !$omp            temp_low, qsat_helper, efact, qsat, ql_iter, err_at_temp, &
             !$omp            divfact, err_at_temp_inv_deriv, this_height)
-            do n = 1, this%local_num
+            do n = 1, n_parcel_saved
                 this_height=this%position(this%n_pos, n)
                 press=eval_spline(press_spline, this_height)
                 exn=eval_spline(exn_spline, this_height)
