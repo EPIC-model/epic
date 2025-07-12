@@ -108,9 +108,9 @@ module tri_inversion
         ! u = velog(:, :, 1) = -dpsig/dz and w = velog(:, :, 2) = dpsig/dx
         ! and computes the velocity gradient "velgradg".
         subroutine vor2vel(vortg, velog, velgradg)
-            double precision, intent(in)  :: vortg(-1:nz+1, 0:nx-1)
-            double precision, intent(out) :: velog(-1:nz+1, 0:nx-1, 2)
-            double precision, intent(out) :: velgradg(-1:nz+1, 0:nx-1, 4)
+            double precision, intent(in)  :: vortg(-1:nz+1, -1:nx)
+            double precision, intent(out) :: velog(-1:nz+1, -1:nx, 2)
+            double precision, intent(out) :: velgradg(-1:nz+1, -1:nx, 4)
             double precision              :: ubar(0:nz), obot(0:nx-1), otop(0:nx-1)
             integer                       :: iz
             double precision              :: dz2, ubaravg
@@ -149,36 +149,42 @@ module tri_inversion
             call lapinv0(psig)
 
             ! Compute x derivative spectrally of psig:
-            call deriv(nz+1, nx, hrkx, psig, velog(0:nz, :, 2))
+            call deriv(nz+1, nx, hrkx, psig, velog(0:nz, 0:nx-1, 2))
 
             ! Compute x derivative spectrally of w to obtain dw/dx
-            call deriv(nz+1, nx, hrkx, velog(0:nz, :, 2), velgradg(0:nz, :, 3))
+            call deriv(nz+1, nx, hrkx, velog(0:nz, 0:nx-1, 2), velgradg(0:nz, 0:nx-1, 3))
 
             ! Reverse x FFT to define z velocity component velog(:, :, 2):
-            call revfft(nz+1, nx, velog(0:nz, :, 2), xtrig, xfactors)
+            call revfft(nz+1, nx, velog(0:nz, 0:nx-1, 2), xtrig, xfactors)
 
             ! Compute z derivative of psig by compact differences:
-            call diffz0(psig, velog(0:nz, :, 1), obot, otop)
+            call diffz0(psig, velog(0:nz, 0:nx-1, 1), obot, otop)
 
             ! Add on the x-independent part of velog and switch sign:
             velog(0:nz, 0, 1) = velog(0:nz, 0, 1) + ubar
-            velog(0:nz, :, 1) = -velog(0:nz, :, 1)
+            velog(0:nz, 0:nx-1, 1) = -velog(0:nz, 0:nx-1, 1)
 
             ! Compute x derivative spectrally of u to obtain du/dx
-            call deriv(nz+1, nx, hrkx, velog(0:nz, :, 1), velgradg(0:nz, :, 1))
+            call deriv(nz+1, nx, hrkx, velog(0:nz, 0:nx-1, 1), velgradg(0:nz, 0:nx-1, 1))
 
             ! Reverse x FFT:
-            call revfft(nz+1, nx, velog(0:nz, :, 1), xtrig, xfactors)
+            call revfft(nz+1, nx, velog(0:nz, 0:nx-1, 1), xtrig, xfactors)
 
             ! Use symmetry to fill z grid lines outside domain:
+            velog(:, -1, :) = velog(:, nx-1, :)
+            velog(:, nx, :) = velog(:, 0, :)
+
             velog(-1, :, 1) = velog(1, :, 1)
             velog(-1, :, 2) = -velog(1, :, 2)
             velog(nz+1, :, 1) = velog(nz-1, :, 1)
             velog(nz+1, :, 2) = -velog(nz-1, :, 2)
 
             ! Reverse x FFT of velocity gradient
-            call revfft(nz+1, nx, velgradg(0:nz, :, 1), xtrig, xfactors)
-            call revfft(nz+1, nx, velgradg(0:nz, :, 3), xtrig, xfactors)
+            call revfft(nz+1, nx, velgradg(0:nz, 0:nx-1, 1), xtrig, xfactors)
+            call revfft(nz+1, nx, velgradg(0:nz, 0:nx-1, 3), xtrig, xfactors)
+
+            velgradg(:, -1, :) = velgradg(:, nx-1, :)
+            velgradg(:, nx, :) = velgradg(:, 0, :)
 
             ! Use symmetry to fill z grid lines outside domain:
             ! u_x(nz+1) = u_x(nz-1)  (also for w_z)
@@ -200,8 +206,8 @@ module tri_inversion
 
 
         subroutine vorticity_tendency(tbuoyg, vtend)
-            double precision, intent(in)  :: tbuoyg(-1:nz+1, 0:nx-1)
-            double precision, intent(out) :: vtend(-1:nz+1, 0:nx-1)
+            double precision, intent(in)  :: tbuoyg(-1:nz+1, -1:nx)
+            double precision, intent(out) :: vtend(-1:nz+1, -1:nx)
             double precision              :: psig(0:nz, 0:nx-1)
 
             call start_timer(vtend_timer)
@@ -212,10 +218,13 @@ module tri_inversion
             call forfft(nz+1, nx, psig, xtrig, xfactors)
 
             ! Compute x derivative spectrally of psig:
-            call deriv(nz+1, nx, hrkx, psig, vtend(0:nz, :))
+            call deriv(nz+1, nx, hrkx, psig, vtend(0:nz, 0:nx-1))
 
             ! Reverse x FFT
-            call revfft(nz+1, nx, vtend(0:nz, :), xtrig, xfactors)
+            call revfft(nz+1, nx, vtend(0:nz, 0:nx-1), xtrig, xfactors)
+
+            vtend(:, -1) = vtend(:, nx-1)
+            vtend(:, nx) = vtend(:, 0)
 
             ! Fill z grid lines outside domain:
             vtend(-1,   :) = two * vtend(0,  :) - vtend(1,    :)

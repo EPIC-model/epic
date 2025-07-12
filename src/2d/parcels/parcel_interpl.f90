@@ -221,6 +221,40 @@ module parcel_interpl
             !$omp end do
             !$omp end parallel
 
+            ! apply periodicity
+            volg(:, 0)    = volg(:, 0) + volg(:, nx)
+            volg(:, nx-1) = volg(:, nx-1) + volg(:, -1)
+            volg(:, -1)   = volg(:, nx-1)
+            volg(:, nx)   = volg(:, 0)
+
+            nparg(:, 0)    = nparg(:, 0) + nparg(:, nx)
+            nparg(:, nx-1) = nparg(:, nx-1) + nparg(:, -1)
+
+            nsparg(:, 0)    = nsparg(:, 0) + nsparg(:, nx)
+            nsparg(:, nx-1) = nsparg(:, nx-1) + nsparg(:, -1)
+
+            vortg(:, 0)    = vortg(:, 0) + vortg(:, nx)
+            vortg(:, nx-1) = vortg(:, nx-1) + vortg(:, -1)
+            vortg(:, -1)   = vortg(:, nx-1)
+            vortg(:, nx)   = vortg(:, 0)
+
+            tbuoyg(:, 0)    = tbuoyg(:, 0) + tbuoyg(:, nx)
+            tbuoyg(:, nx-1) = tbuoyg(:, nx-1) + tbuoyg(:, -1)
+            tbuoyg(:, -1)   = tbuoyg(:, nx-1)
+            tbuoyg(:, nx)   = tbuoyg(:, 0)
+
+            if(parcels%is_moist) then
+                dbuoyg(:, 0)    = dbuoyg(:, 0) + dbuoyg(:, nx)
+                dbuoyg(:, nx-1) = dbuoyg(:, nx-1) + dbuoyg(:, -1)
+                dbuoyg(:, -1)   = dbuoyg(:, nx-1)
+                dbuoyg(:, nx)   = dbuoyg(:, 0)
+
+                humg(:, 0)    = humg(:, 0) + humg(:, nx)
+                humg(:, nx-1) = humg(:, nx-1) + humg(:, -1)
+                humg(:, -1)   = humg(:, nx-1)
+                humg(:, nx)   = humg(:, 0)
+            endif
+
             ! apply free slip boundary condition
             volg(0,  :) = two * volg(0,  :)
             volg(nz, :) = two * volg(nz, :)
@@ -381,6 +415,17 @@ module parcel_interpl
             volg(:, nx-1) = volg(:, nx-1) + volg(:, -1)
             volg(:, -1)   = volg(:, nx-1)
             volg(:, nx)   = volg(:, 0)
+
+            nparg(:, 0)    = nparg(:, 0) + nparg(:, nx)
+            nparg(:, nx-1) = nparg(:, nx-1) + nparg(:, -1)
+
+            nsparg(:, 0)    = nsparg(:, 0) + nsparg(:, nx)
+            nsparg(:, nx-1) = nsparg(:, nx-1) + nsparg(:, -1)
+
+            vortg(:, 0)    = vortg(:, 0) + vortg(:, nx)
+            vortg(:, nx-1) = vortg(:, nx-1) + vortg(:, -1)
+            vortg(:, -1)   = vortg(:, nx-1)
+            vortg(:, nx)   = vortg(:, 0)
 
             tbuoyg(:, 0)    = tbuoyg(:, 0) + tbuoyg(:, nx)
             tbuoyg(:, nx-1) = tbuoyg(:, nx-1) + tbuoyg(:, -1)
@@ -629,6 +674,40 @@ module parcel_interpl
             call periodic_index_shift(ii)
 
         end subroutine bilinear
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! Bi-linear interpolation
+        ! @param[in] pos position vector
+        ! @param[out] ii horizontal grid points for interoplation
+        ! @param[out] jj meridional grid points for interpolation
+        ! @param[out] ww interpolation weights
+        pure subroutine bilinear_new(pos, ii, jj, ww)
+            double precision, intent(in)  :: pos(2)
+            integer,          intent(out) :: ii, jj
+            double precision, intent(out) :: ww(0:1, 0:1)
+            double precision              :: xy(2)
+            double precision              :: px, py, pxc, pyc
+
+
+            ! (i, j)
+            xy = (pos - lower(1:2)) * dxi(1:2)
+            ii = floor(xy(1))
+            jj = floor(xy(2))
+
+            px = xy(1) - dble(ii)
+            pxc = one - px
+
+            py = xy(2) - dble(jj)
+            pyc = one - py
+
+            ! Note order of indices is j,i
+            ww(0, 0) = pyc * pxc
+            ww(0, 1) = pyc * px
+            ww(1, 0) = py  * pxc
+            ww(1, 1) = py  * px
+
+        end subroutine bilinear_new
 
         subroutine par2grid
             select type (parcels)
