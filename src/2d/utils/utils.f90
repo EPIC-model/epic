@@ -10,6 +10,7 @@ module utils
     use netcdf_utils, only : set_netcdf_dimensions, set_netcdf_axes
     use field_netcdf
     use parcel_netcdf
+    use prec_parcel_netcdf
     use field_diagnostics_netcdf, only : create_netcdf_field_stats_file, &
                                          write_netcdf_field_stats
     use parcel_diagnostics_netcdf, only : create_netcdf_parcel_stats_file, &
@@ -17,6 +18,7 @@ module utils
     use parcel_diagnostics, only : calculate_parcel_diagnostics, calculate_peref
     use field_diagnostics, only : calculate_field_diagnostics
     use parcel_init, only : init_parcels, initiate_parcel_type
+    use parcel_init, only : initiate_prec_parcel_type
     use dynamic_parcels, only : parcels, n_parcels
     use parcel_types, only : idealised_parcel_alloc, realistic_parcel_alloc
     use tri_inversion, only : vor2vel, vorticity_tendency
@@ -231,5 +233,19 @@ module utils
                 call init_parcels(field_file, field_tol)
             endif
         end subroutine setup_parcels
+
+        subroutine setup_prec_parcels
+
+            if (l_restart) then
+                call setup_prec_restart(trim(restart_file), time%initial, file_type)
+                call initiate_prec_parcel_type(restart_file_prec)
+                call read_prec_netcdf_parcels(restart_file_prec)
+            else
+                time%initial = zero ! make sure user cannot start at arbitrary time
+                call initiate_prec_parcel_type(restart_file)
+                ! No need to
+            endif
+
+        end subroutine setup_prec_parcels
 
 end module utils

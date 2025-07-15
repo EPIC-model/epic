@@ -69,6 +69,9 @@ module parameters
     ! maximum number of allowed parcels
     integer, protected :: max_num_parcels
 
+    ! maximum number of allowed parcels
+    integer, protected :: max_num_prec_parcels
+
     contains
 
     ! Update all parameters according to the
@@ -116,6 +119,7 @@ module parameters
         vmax = vcell / parcel%max_vratio
 
         max_num_parcels = int(nx * nz * parcel%min_vratio * parcel%size_factor)
+        max_num_prec_parcels = int(nx * nz *  microphysics%microphysics_size_factor)
 
     end subroutine update_parameters
 

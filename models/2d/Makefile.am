@@ -18,7 +18,8 @@ epic2d_models_SOURCES =		\
 	straka_2d.f90		\
 	robert_2d.f90		\
 	robert_2d_theta.f90     \
-	grabowski_2d.f90     \
+	grabowski_2d.f90        \
+	stratified.f90          \
 	epic2d-models.f90
 
 epic2d_models_LDADD = 					\
