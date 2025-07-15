@@ -27,11 +27,10 @@ program epic2d
     use parcel_interpl, only : sym_vol2grid_timer
 #endif
     use parcel_init, only : init_timer
-    use ls_rk4, only : ls_rk4_alloc, ls_rk4_dealloc, ls_rk4_step, rk4_timer
+    use ls_rk4, only : ls_rk4_step, rk4_timer
     use utils, only : write_last_step, setup_output_files        &
                     , setup_restart, setup_domain_and_parameters &
                     , setup_parcels, setup_prec_parcels
-    use parameters, only : max_num_parcels
     use parcel_types, only : saturation_adjustment_timer
 
     implicit none
@@ -91,8 +90,6 @@ program epic2d
 
             call setup_prec_parcels
 
-            call ls_rk4_alloc(max_num_parcels)
-
             call init_inversion
 
             call init_parcel_correction
@@ -147,8 +144,6 @@ program epic2d
             use options, only : output
             call parcels%dealloc
             call prec_parcels%dealloc
-            call ls_rk4_dealloc
-
             call stop_timer(epic_timer)
 
             call write_time_to_csv(output%basename)

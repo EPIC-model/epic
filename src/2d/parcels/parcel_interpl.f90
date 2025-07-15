@@ -539,7 +539,7 @@ module parcel_interpl
         ! @param[in] add contributions, i.e. do not reset parcel quantities to zero before doing grid2par.
         !            (optional)
         subroutine grid2par(vel, vor, vgrad, add)
-            double precision,     intent(inout) :: vel(:, :), vor(:), vgrad(:, :)
+            double precision,     intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
             logical, optional, intent(in)       :: add
             double precision                    :: points(2, 2), weight(0:1, 0:1)
             integer                             :: n, p, l
@@ -553,7 +553,7 @@ module parcel_interpl
                     !$omp do private(n)
                     do n = 1, n_parcels
                         vel(:, n) = zero
-                        vor(n)    = zero
+                        vor(1, n)    = zero
                     enddo
                     !$omp end do
                     !$omp end parallel
@@ -563,7 +563,7 @@ module parcel_interpl
                 !$omp do private(n)
                 do n = 1, n_parcels
                     vel(:, n) = zero
-                    vor(n)    = zero
+                    vor(1, n)    = zero
                 enddo
                 !$omp end do
                 !$omp end parallel
@@ -600,7 +600,7 @@ module parcel_interpl
                         vgrad(l, n) = vgrad(l, n) &
                                     + sum(weight * velgradg(js:js+1, is:is+1, l))
                     end do
-                    vor(n) = vor(n) + sum(weight * vtend(js:js+1, is:is+1))
+                    vor(1, n) = vor(1, n) + sum(weight * vtend(js:js+1, is:is+1))
                 enddo
             enddo
             !$omp end do
@@ -617,7 +617,7 @@ module parcel_interpl
         ! @param[inout] vor is the parcel vorticity
         ! @param[inout] vgrad is the parcel strain
         subroutine grid2par_add(vel, vor, vgrad)
-            double precision,       intent(inout) :: vel(:, :), vor(:), vgrad(:, :)
+            double precision,       intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
 
             call grid2par(vel, vor, vgrad, add=.true.)
 
