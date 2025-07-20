@@ -6,6 +6,9 @@ module fields
     use parameters, only : dx, dxi, extent, lower, nx, nz
     use constants, only : zero
     use dynamic_parcels, only  : parcels
+    use precipitation_parcels, only  : prec_parcels
+    use options, only : microphysics
+
     implicit none
 
     ! Halo grid points in vertical direction z are -1 and nz+1,
@@ -25,13 +28,18 @@ module fields
         qvg,    &      ! mixing ratio (vapour)
         qlg,    &      ! mixing ratio (liquid)
         Nlg,    &      ! droplet number
+        prec_tbuoyg, & ! buoyancy from precip
+        prec_volg,   & ! volume from precip
+        qrg,         & ! mixing ratio (rain)
+        Nrg,         & ! rain droplet number
 #ifndef NDEBUG
         sym_volg,  &   ! symmetry volume (debug mode only)
 #endif
         volg           ! volume scalar field
 
     integer, allocatable, dimension(:, :) :: &
-        nparg,     &   ! number of parcels per grid box
+        prec_nparg,  &   ! number of precipitation parcels
+        nparg,       &   ! number of parcels per grid box
         nsparg         ! number of small parcels per grid box
 
     contains
@@ -44,7 +52,6 @@ module fields
 
             allocate(velog(-1:nz+1, -1:nx, 2))
             allocate(velgradg(-1:nz+1, -1:nx, 4))
-
             allocate(volg(-1:nz+1, -1:nx))
 
 #ifndef NDEBUG
@@ -52,9 +59,7 @@ module fields
 #endif
 
             allocate(vortg(-1:nz+1, -1:nx))
-
             allocate(vtend(-1:nz+1, -1:nx))
-
             allocate(tbuoyg(-1:nz+1, -1:nx))
 
             ! For now, only use a select type here
@@ -91,7 +96,26 @@ module fields
             allocate(nparg(-1:nz, -1:nx))
             allocate(nsparg(-1:nz, -1:nx))
 
+            if(microphysics%l_precipitation) then
+                call prec_field_alloc
+            endif
+
         end subroutine field_alloc
+
+        ! Allocate all fields
+        subroutine prec_field_alloc
+
+            if (allocated(qrg)) then
+                return
+            endif
+
+            allocate(qrg(-1:nz+1, -1:nx))
+            allocate(Nrg(-1:nz+1, -1:nx))
+            allocate(prec_volg(-1:nz+1, -1:nx))
+            allocate(prec_tbuoyg(-1:nz+1, -1:nx))
+            allocate(prec_nparg(-1:nz+1, -1:nx))
+
+        end subroutine prec_field_alloc
 
         ! Reset fields to zero
         subroutine field_default
@@ -108,6 +132,15 @@ module fields
 #ifndef NDEBUG
             sym_volg = zero
 #endif
+            if(microphysics%l_precipitation) then
+                call prec_field_alloc
+                qrg = zero
+                Nrg = zero
+                prec_volg = zero
+                prec_tbuoyg = zero
+                prec_nparg = zero
+            endif
+
         end subroutine
 
         ! Get the lower index of the cell the parcel is in.

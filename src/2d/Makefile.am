@@ -12,6 +12,7 @@ epic2d_SOURCES = 				\
 	utils/options.f90			\
 	utils/parameters.f90			\
 	parcels/dynamic_parcels.f90		\
+	parcels/precipitation_parcels.f90	\
 	fields/fields.f90			\
 	fields/field_diagnostics.f90		\
 	fields/field_netcdf.f90			\
@@ -24,9 +25,12 @@ epic2d_SOURCES = 				\
 	parcels/parcel_split.f90		\
 	parcels/parcel_diagnostics.f90		\
 	parcels/parcel_interpl.f90 		\
+	parcels/prec_parcel_interpl.f90         \
 	parcels/parcel_init.f90			\
+	parcels/prec_parcel_init.f90		\
 	parcels/parcel_correction.f90		\
 	parcels/parcel_netcdf.f90		\
+	parcels/prec_parcel_netcdf.f90		\
 	parcels/parcel_diagnostics_netcdf.f90	\
 	tri_inversion.f90			\
 	utils/utils.f90				\

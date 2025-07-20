@@ -72,6 +72,7 @@
             procedure :: alloc => prec_parcel_alloc
             procedure :: dealloc=> prec_parcel_dealloc
             procedure :: resize => prec_parcel_resize
+            procedure :: get_buoyancy => prec_parcel_get_buoyancy
 
             ! get_buoyancy added here
     end type
@@ -617,5 +618,15 @@
     call init_spline(exn_spline, heights, exn_heights)
 
   end subroutine initiate_thermo_splines
+
+  pure subroutine prec_parcel_get_buoyancy(this, num, buoyancy)
+      class(prec_parcel_type), intent(in) :: this
+      integer, intent(in) :: num
+      double precision, intent(out) :: buoyancy
+
+      ! precipitation buoyancy term
+      buoyancy = -gravity*this%qr(num)
+
+  end subroutine prec_parcel_get_buoyancy
 
 end module

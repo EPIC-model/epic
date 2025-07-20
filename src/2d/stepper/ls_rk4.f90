@@ -5,16 +5,19 @@
 module ls_rk4
     use options, only : parcel
     use dynamic_parcels, only : parcels, n_parcels
+    use precipitation_parcels, only : prec_parcels, n_prec_parcels
     use parcel_types, only : idealised_parcel_type, realistic_parcel_type
     use parcel_bc
     use rk4_utils, only: get_B, get_time_step
     use utils, only : write_step
     use parcel_interpl, only : par2grid_idealised, par2grid_realistic, grid2par, grid2par_add
+    use prec_parcel_interpl, only : prec_par2grid, prec_grid2par, prec_grid2par_add
     use fields, only : velgradg, velog, vortg, vtend, tbuoyg
     use tri_inversion, only : vor2vel, vorticity_tendency
     use parcel_diagnostics, only : calculate_parcel_diagnostics
     use field_diagnostics, only : calculate_field_diagnostics
     use parameters, only : nx, nz
+    use options, only : microphysics
     use timer, only : start_timer, stop_timer, timings
     implicit none
 
@@ -55,6 +58,10 @@ module ls_rk4
             type is (realistic_parcel_type)
                 call par2grid_realistic(parcels)
             end select
+
+            if(microphysics%l_precipitation) then
+                call prec_par2grid(prec_parcels)
+            end if
 
             ! need to be called in order to set initial time step;
             ! this is also needed for the first ls-rk4 substep

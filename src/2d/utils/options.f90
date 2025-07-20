@@ -78,8 +78,8 @@ module options
 
     ! microphysics model
     type microphysics_info_type
-        logical          :: l_precip = .false.
-        logical          :: l_precip_file = .false.
+        logical          :: l_precipitation = .false.
+        logical          :: l_precipitation_file = .false.
         logical          :: l_sedimentation = .true.
         logical          :: l_evaporation = .true.
         logical          :: l_loading = .true.
@@ -167,8 +167,8 @@ module options
             call write_netcdf_attribute(ncid, "precise_stop", time%precise_stop)
             call write_netcdf_attribute(ncid, "alpha", time%alpha)
 
-            call write_netcdf_attribute(ncid, "microphysics_l_precip", microphysics%l_precip)
-            call write_netcdf_attribute(ncid, "microphysics_l_precip_file", microphysics%l_precip_file)
+            call write_netcdf_attribute(ncid, "microphysics_l_precipitation", microphysics%l_precipitation)
+            call write_netcdf_attribute(ncid, "microphysics_l_precipitation_file", microphysics%l_precipitation_file)
             call write_netcdf_attribute(ncid, "microphysics_l_sedimentation", microphysics%l_sedimentation)
             call write_netcdf_attribute(ncid, "microphysics_l_evaporation", microphysics%l_evaporation)
             call write_netcdf_attribute(ncid, "microphysics_l_loading", microphysics%l_loading)
