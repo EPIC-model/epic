@@ -6,7 +6,7 @@ module field_netcdf
     use fields
     use config, only : package_version, cf_version
     use timer, only : start_timer, stop_timer
-    use options, only : write_netcdf_options
+    use options, only : write_netcdf_options, microphysics
     use physics, only : write_physical_quantities
     use dynamic_parcels, only : parcels
     implicit none
@@ -24,6 +24,8 @@ module field_netcdf
                            tbuo_id, n_writes
     integer             :: dbuo_id, hum_id
     integer             :: theta_id, qv_id, ql_id, Nl_id
+    integer             :: prec_vol_id, prec_tbuo_id, qr_id, Nr_id, prec_npar_id
+
 #ifdef ENABLE_DIAGNOSE
     integer             :: vol_id, npar_id
 #endif
@@ -39,6 +41,7 @@ module field_netcdf
 
     private :: dbuo_id, hum_id
     private :: theta_id, qv_id, ql_id, Nl_id
+    private :: prec_vol_id, prec_tbuo_id, qr_id, Nr_id, prec_npar_id
 
 #ifdef ENABLE_DIAGNOSE
     private :: vol_id, npar_id
@@ -242,6 +245,53 @@ module field_netcdf
                                        varid=sym_vol_id)
 #endif
 
+            if(microphysics%l_precipitation) then
+                call define_netcdf_dataset(ncid=ncid,                        &
+                           name='qr',                                        &
+                           long_name='rain water mixing ratio',              &
+                           std_name='',                                      &
+                           unit='kg/kg',                                     &
+                           dtype=NF90_DOUBLE,                                &
+                           dimids=dimids,                                    &
+                           varid=qr_id)
+
+               call define_netcdf_dataset(ncid=ncid,                         &
+                           name='Nr',                                        &
+                           long_name='rain droplet number',                  &
+                           std_name='',                                      &
+                           unit='/kg',                                       &
+                           dtype=NF90_DOUBLE,                                &
+                           dimids=dimids,                                    &
+                           varid=Nr_id)
+
+                call define_netcdf_dataset(ncid=ncid,                        &
+                           name='prec_buoy',                                 &
+                           long_name='rain buoyancy contribution',           &
+                           std_name='',                                      &
+                           unit='kg/kg',                                     &
+                           dtype=NF90_DOUBLE,                                &
+                           dimids=dimids,                                    &
+                           varid=prec_tbuo_id)
+
+                call define_netcdf_dataset(ncid=ncid,                        &
+                           name='prec_volume',                               &
+                           long_name='prec volume',                          &
+                           std_name='',                                      &
+                           unit='m^2',                                       &
+                           dtype=NF90_DOUBLE,                                &
+                           dimids=dimids,                                    &
+                           varid=prec_vol_id)
+
+                call define_netcdf_dataset(ncid=ncid,                        &
+                           name='prec_npar',                                 &
+                           long_name='number of prec parcels per cell',      &
+                           std_name='',                                      &
+                           unit='m^2',                                       &
+                           dtype=NF90_DOUBLE,                                &
+                           dimids=dimids,                                    &
+                           varid=prec_npar_id)
+            end if
+
             call close_definition(ncid)
 
         end subroutine create_netcdf_field_file
@@ -296,6 +346,7 @@ module field_netcdf
 #ifndef NDEBUG
             call get_var_id(ncid, 'sym_vol', sym_vol_id)
 #endif
+            ! precipitation is assumed to only ever be written, not read in, at this point
 
         end subroutine read_netcdf_field_content
 
@@ -372,6 +423,13 @@ module field_netcdf
             call write_netcdf_dataset(ncid, sym_vol_id, sym_volg(0:nz, 0:nx-1))
 #endif
 
+            if(microphysics%l_precipitation) then
+                call write_netcdf_dataset(ncid, prec_vol_id, prec_volg(0:nz, 0:nx-1))
+                call write_netcdf_dataset(ncid, prec_tbuo_id, prec_tbuoyg(0:nz, 0:nx-1))
+                call write_netcdf_dataset(ncid, qr_id, qrg(0:nz, 0:nx-1))
+                call write_netcdf_dataset(ncid, Nr_id, Nrg(0:nz, 0:nx-1))
+                call write_netcdf_dataset(ncid, prec_npar_id, prec_nparg(0:nz, 0:nx-1))
+            endif
 
             ! increment counter
             n_writes = n_writes + 1

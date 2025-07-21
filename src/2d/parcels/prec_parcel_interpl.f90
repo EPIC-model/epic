@@ -32,12 +32,11 @@ module prec_parcel_interpl
     contains
 
         ! Interpolate parcel quantities to the grid, these consist of the parcel
-        !   - vorticity
-        !   - buoyancy
-        !   - volume
+        !   - qr
+        !   - Nr
+        !   - precipitation volume (just a diagnostic really)
         ! It also updates the scalar fields:
         !   - prec_nparg, that is the number of parcels per grid cell
-        !   - nsparg, that is the number of small parcels per grid cell
         subroutine prec_par2grid(prec_parcels)
             class(prec_parcel_type), intent(in) :: prec_parcels
             double precision :: points(2)
@@ -120,7 +119,7 @@ module prec_parcel_interpl
             prec_tbuoyg(nz, :) = two * prec_tbuoyg(nz, :)
             prec_tbuoyg(1,    :) = prec_tbuoyg(1,    :) + prec_tbuoyg(-1,   :)
             prec_tbuoyg(nz-1, :) = prec_tbuoyg(nz-1, :) + prec_tbuoyg(nz+1, :)
-            prec_tbuoyg(0:nz, :) = prec_tbuoyg(0:nz, :) / prec_volg(0:nz, :)
+            prec_tbuoyg(0:nz, :) = prec_tbuoyg(0:nz, :) / volg(0:nz, :) ! Note to divide by volg, not prec_volg!
             ! extrapolate to halo grid points (needed to compute
             ! z derivative used for the time step)
             prec_tbuoyg(-1,   :) = two * prec_tbuoyg(0,  :) - prec_tbuoyg(1, :)
@@ -130,7 +129,7 @@ module prec_parcel_interpl
             qrg(nz, :) = two * qrg(nz, :)
             qrg(1,    :) = qrg(1,    :) + qrg(-1,   :)
             qrg(nz-1, :) = qrg(nz-1, :) + qrg(nz+1, :)
-            qrg(0:nz, :) = qrg(0:nz, :) / prec_volg(0:nz, :)
+            qrg(0:nz, :) = qrg(0:nz, :) / volg(0:nz, :) ! Note to divide by volg, not prec_volg!
             ! extrapolate to halo grid points (needed to compute
             ! z derivative used for the time step)
             qrg(-1,   :) = two * qrg(0,  :) - qrg(1, :)
@@ -140,7 +139,7 @@ module prec_parcel_interpl
             Nrg(nz, :) = two * Nrg(nz, :)
             Nrg(1,    :) = Nrg(1,    :) + Nrg(-1,   :)
             Nrg(nz-1, :) = Nrg(nz-1, :) + Nrg(nz+1, :)
-            Nrg(0:nz, :) = Nrg(0:nz, :) / prec_volg(0:nz, :)
+            Nrg(0:nz, :) = Nrg(0:nz, :) / volg(0:nz, :) ! Note to divide by volg, not prec_volg!
             ! extrapolate to halo grid points (needed to compute
             ! z derivative used for the time step)
             Nrg(-1,   :) = two * Nrg(0,  :) - Nrg(1, :)
@@ -165,8 +164,6 @@ module prec_parcel_interpl
 
         ! Interpolate the gridded quantities to the parcels
         ! @param[inout] vel is the parcel velocity
-        ! @param[inout] vor is the parcel vorticity
-        ! @param[inout] vgrad is the parcel strain
         ! @param[in] add contributions, i.e. do not reset parcel quantities to zero before doing grid2par.
         !            (optional)
         subroutine prec_grid2par(vel, add)
@@ -224,8 +221,6 @@ module prec_parcel_interpl
         ! Interpolate the gridded quantities to the parcels without resetting
         ! their values to zero before doing grid2par.
         ! @param[inout] vel is the parcel velocity
-        ! @param[inout] vor is the parcel vorticity
-        ! @param[inout] vgrad is the parcel strain
         subroutine prec_grid2par_add(vel)
             double precision,       intent(inout) :: vel(:, :)
 

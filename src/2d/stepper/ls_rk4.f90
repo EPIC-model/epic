@@ -12,7 +12,7 @@ module ls_rk4
     use utils, only : write_step
     use parcel_interpl, only : par2grid_idealised, par2grid_realistic, grid2par, grid2par_add
     use prec_parcel_interpl, only : prec_par2grid, prec_grid2par, prec_grid2par_add
-    use fields, only : velgradg, velog, vortg, vtend, tbuoyg
+    use fields, only : velgradg, velog, vortg, vtend, tbuoyg, prec_tbuoyg
     use tri_inversion, only : vor2vel, vorticity_tendency
     use parcel_diagnostics, only : calculate_parcel_diagnostics
     use field_diagnostics, only : calculate_field_diagnostics
@@ -67,12 +67,20 @@ module ls_rk4
             ! this is also needed for the first ls-rk4 substep
             call vor2vel(vortg, velog, velgradg)
 
-            call vorticity_tendency(tbuoyg, vtend)
+            if(microphysics%l_precipitation) then
+                call vorticity_tendency(tbuoyg, vtend)
+            else
+                call vorticity_tendency(tbuoyg+prec_tbuoyg, vtend)
+            endif
 
             ! update the time step
             dt = get_time_step(t)
 
             call grid2par(parcels%delta_pos, parcels%delta_vor, parcels%strain)
+
+            if(microphysics%l_precipitation) then
+                call prec_grid2par(prec_parcels%delta_pos)
+            endif
 
             call calculate_parcel_diagnostics(parcels%delta_pos)
 
@@ -90,6 +98,9 @@ module ls_rk4
                     call par2grid_realistic(parcels)
                 end select
 
+                if(microphysics%l_precipitation) then
+                    call prec_par2grid(prec_parcels)
+                end if
             enddo
             call ls_rk4_substep(dt, 5)
 
@@ -130,9 +141,17 @@ module ls_rk4
             else
                 call vor2vel(vortg, velog, velgradg)
 
-                call vorticity_tendency(tbuoyg, vtend)
+                if(microphysics%l_precipitation) then
+                    call vorticity_tendency(tbuoyg, vtend)
+                else
+                    call vorticity_tendency(tbuoyg+prec_tbuoyg, vtend)
+                endif
 
                 call grid2par_add(parcels%delta_pos, parcels%delta_vor, parcels%strain)
+
+                if(microphysics%l_precipitation) then
+                    call prec_grid2par_add(parcels%delta_pos)
+                endif
 
                 call start_timer(rk4_timer)
 
@@ -158,6 +177,15 @@ module ls_rk4
             enddo
             !$omp end parallel do
 
+            if(microphysics%l_precipitation) then
+                !$omp parallel do default(shared) private(n)
+                do n = 1, n_prec_parcels
+                    prec_parcels%position(:, n) = prec_parcels%position(:, n) &
+                                          + cb * dt * prec_parcels%delta_pos(:, n)
+                enddo
+                !$omp end parallel do
+            endif
+
             call stop_timer(rk4_timer)
             call parcels%saturation_adjustment
 
@@ -174,6 +202,14 @@ module ls_rk4
                 parcels%delta_b(:, n) = ca * parcels%delta_b(:, n)
             enddo
             !$omp end parallel do
+
+            if(microphysics%l_precipitation) then
+                !$omp parallel do default(shared) private(n)
+                do n = 1, n_prec_parcels
+                    prec_parcels%delta_pos(:, n) = ca * prec_parcels%delta_pos(:, n)
+                enddo
+                !$omp end parallel do
+            end if
 
             call stop_timer(rk4_timer)
 

@@ -21,9 +21,11 @@ module utils
     use parcel_init, only : init_parcels, initiate_parcel_type
     use prec_parcel_init, only : initiate_prec_parcel_type
     use dynamic_parcels, only : parcels, n_parcels
+    use precipitation_parcels, only : prec_parcels, n_prec_parcels
     use parcel_types, only : idealised_parcel_alloc, realistic_parcel_alloc
     use tri_inversion, only : vor2vel, vorticity_tendency
-    use parcel_interpl, only : par2grid, grid2par
+    use parcel_interpl, only : par2grid_idealised, par2grid_realistic, grid2par
+    use prec_parcel_interpl, only : prec_par2grid, prec_grid2par
     use netcdf_reader, only : get_file_type, get_num_steps, get_time, get_netcdf_box
     use parameters, only : lower, extent, update_parameters, max_num_parcels
     use physics, only : read_physical_quantities, print_physical_quantities, l_peref
@@ -73,6 +75,11 @@ module utils
                                                l_restart)
             endif
 
+            if (output%write_parcels .and. microphysics%l_precipitation) then
+                call create_netcdf_prec_parcel_file(trim(output%basename),    &
+                                               output%overwrite,         &
+                                               l_restart)
+            endif
         end subroutine setup_output_files
 
         ! Write last step to the NetCDF files. For the time step dt, it
@@ -80,11 +87,17 @@ module utils
         ! @param[in] t is the time
         subroutine write_last_step(t)
             double precision,  intent(in) :: t
-            double precision              :: velocity(2, n_parcels)
-            double precision              :: strain(4, n_parcels)
-            double precision              :: vorticity(1, n_parcels)
 
-            call par2grid
+            select type (parcels)
+            type is (idealised_parcel_type)
+                call par2grid_idealised(parcels)
+            type is (realistic_parcel_type)
+                call par2grid_realistic(parcels)
+            end select
+
+            if(microphysics%l_precipitation) then
+                call prec_par2grid(prec_parcels)
+            end if
 
             ! need to be called in order to set initial time step;
             ! this is also needed for the first ls-rk4 substep
@@ -92,9 +105,13 @@ module utils
 
             call vorticity_tendency(tbuoyg, vtend)
 
-            call grid2par(velocity, vorticity, strain)
+            call grid2par(parcels%delta_pos, parcels%delta_vor, parcels%strain)
 
-            call calculate_parcel_diagnostics(velocity)
+            if(microphysics%l_precipitation) then
+                call prec_grid2par(parcels%delta_pos)
+            endif
+
+            call calculate_parcel_diagnostics(parcels%delta_pos)
 
             call calculate_field_diagnostics
 
@@ -133,7 +150,9 @@ module utils
             if (output%write_parcels .and. &
                 (t + epsilon(zero) >= neg * dble(npw) * output%parcel_freq)) then
                 call write_netcdf_parcels(t)
-
+                if(microphysics%l_precipitation) then
+                    call write_netcdf_prec_parcels(t)
+                endif
                 npw = npw + 1
 
             endif

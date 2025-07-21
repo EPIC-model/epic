@@ -23,6 +23,7 @@ program epic2d
     use field_diagnostics_netcdf, only : field_stats_io_timer
     use tri_inversion, only : init_inversion, vor2vel_timer, vtend_timer
     use parcel_interpl, only : grid2par_timer, par2grid_timer
+    use prec_parcel_interpl, only : prec_grid2par_timer, prec_par2grid_timer
 #ifndef NDEBUG
     use parcel_interpl, only : sym_vol2grid_timer
 #endif
@@ -52,11 +53,13 @@ program epic2d
     contains
 
         subroutine pre_run
-            use options, only : read_config_file
+            use options, only : read_config_file, microphysics
 
             call register_timer('epic', epic_timer)
             call register_timer('par2grid', par2grid_timer)
             call register_timer('grid2par', grid2par_timer)
+            call register_timer('prec_par2grid', prec_par2grid_timer)
+            call register_timer('prec_grid2par', prec_grid2par_timer)
             call register_timer('parcel split', split_timer)
             call register_timer('parcel merge', merge_timer)
             call register_timer('laplace correction', lapl_corr_timer)
@@ -88,7 +91,9 @@ program epic2d
 
             call setup_parcels
 
-            call setup_prec_parcels
+            if(microphysics%l_precipitation) then
+                call setup_prec_parcels
+            endif
 
             call init_inversion
 

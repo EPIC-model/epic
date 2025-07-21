@@ -15,8 +15,8 @@ i_parcel=0
 x_array=np.zeros((1,n_shifts*n_shifts))
 z_array=np.zeros((1,n_shifts*n_shifts))
 
-q_r_parcels=0.0005
-N_r_parcels=10000
+qr_parcels=0.0005
+Nr_parcels=10000
 parcel_volume=dx_parcel*dx_parcel
 
 for ii in range(n_shifts):
@@ -34,8 +34,8 @@ z_array=z_array[:,:i_parcel]
 len_parcels=np.shape(x_array)[1]
 
 volume_array=np.ones((1,len_parcels))*parcel_volume
-q_r_array=np.ones((1,len_parcels))*q_r_parcels
-N_r_array=np.ones((1,len_parcels))*N_r_parcels
+qr_array=np.ones((1,len_parcels))*qr_parcels
+Nr_array=np.ones((1,len_parcels))*Nr_parcels
 
 n_parcels = np.arange(1, len_parcels+1,dtype=np.int32)
 
@@ -59,13 +59,12 @@ ds = xr.Dataset(
                               attrs={"units": "m", "long_name": "z position component"}),
         "volume": xr.DataArray(volume_array, dims=["time", "n_parcels"], coords=coords,
                               attrs={"units": "m^2", "long_name": "parcel volume"}),
-        "q_r": xr.DataArray(q_r_array, dims=["time", "n_parcels"], coords=coords,
+        "qr": xr.DataArray(qr_array, dims=["time", "n_parcels"], coords=coords,
                               attrs={"units": "kg/kg", "long_name": "rain mixing ratio"}),
-        "N_r": xr.DataArray(N_r_array, dims=["time", "n_parcels"], coords=coords,
+        "Nr": xr.DataArray(Nr_array, dims=["time", "n_parcels"], coords=coords,
                               attrs={"units": "1/kg", "long_name": "rain number concentration"})
     }
 )
 
 # Save with unlimited time dimension
 ds.to_netcdf("rain_initiation_dataset.nc", unlimited_dims=["time"])
-

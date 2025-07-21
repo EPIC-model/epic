@@ -70,7 +70,7 @@ module prec_parcel_netcdf
             ! define global attributes
             call write_netcdf_info(ncid=ncid,                    &
                                    version_tag=package_version,  &
-                                   file_type='parcels',          &
+                                   file_type='prec_parcels',          &
                                    cf_version=cf_version)
 
             call write_netcdf_box(ncid, lower, extent, (/nx, nz/))
