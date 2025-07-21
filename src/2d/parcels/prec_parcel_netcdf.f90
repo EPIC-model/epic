@@ -15,7 +15,7 @@ module prec_parcel_netcdf
     integer :: n_writes = 1
     character(len=512) :: ncbasename
 
-    integer :: parcel_io_timer
+    integer :: prec_parcel_io_timer
 
     character(len=512) :: ncfname
     integer            :: ncid
@@ -145,10 +145,10 @@ module prec_parcel_netcdf
             double precision, intent(in) :: t
             integer                      :: cnt(2), start(2)
 
-            call start_timer(parcel_io_timer)
+            call start_timer(prec_parcel_io_timer)
 
             if (t <= restart_time) then
-                call stop_timer(parcel_io_timer)
+                call stop_timer(prec_parcel_io_timer)
                 return
             endif
 
@@ -178,7 +178,7 @@ module prec_parcel_netcdf
 
             call close_netcdf_file(ncid)
 
-            call stop_timer(parcel_io_timer)
+            call stop_timer(prec_parcel_io_timer)
 
         end subroutine write_netcdf_prec_parcels
 
@@ -186,7 +186,7 @@ module prec_parcel_netcdf
             character(*),     intent(in) :: fname
             integer                      :: cnt(2), start(2)
 
-            call start_timer(parcel_io_timer)
+            call start_timer(prec_parcel_io_timer)
 
             call open_netcdf_file(fname, NF90_NOWRITE, ncid)
 
@@ -248,7 +248,7 @@ module prec_parcel_netcdf
 
             call close_netcdf_file(ncid)
 
-            call stop_timer(parcel_io_timer)
+            call stop_timer(prec_parcel_io_timer)
 
         end subroutine read_netcdf_prec_parcels
 

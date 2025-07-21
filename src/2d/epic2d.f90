@@ -16,6 +16,7 @@ program epic2d
                                   grad_corr_timer
     use parcel_diagnostics, only : parcel_stats_timer
     use parcel_netcdf, only : parcel_io_timer
+    use prec_parcel_netcdf, only : prec_parcel_io_timer
     use parcel_diagnostics_netcdf, only : parcel_stats_io_timer
     use fields
     use field_netcdf, only : field_io_timer
@@ -67,6 +68,7 @@ program epic2d
             call register_timer('parcel initialisation', init_timer)
             call register_timer('parcel diagnostics', parcel_stats_timer)
             call register_timer('parcel I/O', parcel_io_timer)
+            call register_timer('prec parcel I/O', prec_parcel_io_timer)
             call register_timer('parcel diagnostics I/O', parcel_stats_io_timer)
             call register_timer('field I/O', field_io_timer)
             call register_timer('field diagnostics', field_stats_timer)

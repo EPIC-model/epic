@@ -7,6 +7,7 @@ program epic2d_models
     use robert_2d
     use grabowski_bubble
     use robert_2d_theta
+    use stratified
     use constants, only : pi, zero
     use parameters, only : nx, nz, dx, lower, extent, set_mesh_spacing
     use netcdf_utils
@@ -88,6 +89,8 @@ program epic2d_models
                     call robert_init_theta(ncid, dimids, nx, nz, box%origin, dx)
                 case ('Grabowski')
                     call grabowski_init_bubble(ncid, dimids, nx, nz, box%origin, dx)
+                case ('Stratified')
+                    call stratified_init(ncid, dimids, nx, nz, box%origin, dx)
                 case default
                     print *, "Unknown model: '", trim(model), "'."
                     stop
