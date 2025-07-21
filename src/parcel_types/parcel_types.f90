@@ -70,7 +70,7 @@
 
         contains
             procedure :: alloc => prec_parcel_alloc
-            procedure :: dealloc=> prec_parcel_dealloc
+            procedure :: dealloc => prec_parcel_dealloc
             procedure :: resize => prec_parcel_resize
             procedure :: get_buoyancy => prec_parcel_get_buoyancy
 

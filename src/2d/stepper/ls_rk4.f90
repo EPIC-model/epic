@@ -68,9 +68,9 @@ module ls_rk4
             call vor2vel(vortg, velog, velgradg)
 
             if(microphysics%l_precipitation) then
-                call vorticity_tendency(tbuoyg, vtend)
-            else
                 call vorticity_tendency(tbuoyg+prec_tbuoyg, vtend)
+            else
+                call vorticity_tendency(tbuoyg, vtend)
             endif
 
             ! update the time step
@@ -142,9 +142,9 @@ module ls_rk4
                 call vor2vel(vortg, velog, velgradg)
 
                 if(microphysics%l_precipitation) then
-                    call vorticity_tendency(tbuoyg, vtend)
-                else
                     call vorticity_tendency(tbuoyg+prec_tbuoyg, vtend)
+                else
+                    call vorticity_tendency(tbuoyg, vtend)
                 endif
 
                 call grid2par_add(parcels%delta_pos, parcels%delta_vor, parcels%strain)

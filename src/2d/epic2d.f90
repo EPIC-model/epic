@@ -148,7 +148,9 @@ program epic2d
         subroutine post_run
             use options, only : output
             call parcels%dealloc
-            call prec_parcels%dealloc
+            if(microphysics%l_precipitation) then
+                call prec_parcels%dealloc
+            endif
             call stop_timer(epic_timer)
 
             call write_time_to_csv(output%basename)

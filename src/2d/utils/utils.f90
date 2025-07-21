@@ -103,7 +103,11 @@ module utils
             ! this is also needed for the first ls-rk4 substep
             call vor2vel(vortg, velog, velgradg)
 
-            call vorticity_tendency(tbuoyg, vtend)
+            if(microphysics%l_precipitation) then
+                call vorticity_tendency(tbuoyg+prec_tbuoyg, vtend)
+            else
+                call vorticity_tendency(tbuoyg, vtend)
+            endif
 
             call grid2par(parcels%delta_pos, parcels%delta_vor, parcels%strain)
 
