@@ -260,7 +260,7 @@ module utils
 
         subroutine setup_prec_parcels
 
-            if (l_restart) then
+            if (microphysics%l_precipitation_file) then
                 call initiate_prec_parcel_type
                 call read_netcdf_prec_parcels(microphysics%prec_file)
             else
