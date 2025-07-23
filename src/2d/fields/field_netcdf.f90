@@ -414,21 +414,21 @@ module field_netcdf
             endif
 
 #ifdef ENABLE_DIAGNOSE
-            call write_netcdf_dataset(ncid, vol_id, volg(0:nz, 0:nx-1))
+            call write_netcdf_dataset(ncid, vol_id, volg(0:nz, 0:nx-1), start, cnt)
 
-            call write_netcdf_dataset(ncid, npar_id, nparg(0:nz-1, 0:nx-1))
+            call write_netcdf_dataset(ncid, npar_id, nparg(0:nz-1, 0:nx-1), start, cnt)
 #endif
 
 #ifndef NDEBUG
-            call write_netcdf_dataset(ncid, sym_vol_id, sym_volg(0:nz, 0:nx-1))
+            call write_netcdf_dataset(ncid, sym_vol_id, sym_volg(0:nz, 0:nx-1), start, cnt)
 #endif
 
             if(microphysics%l_precipitation) then
-                call write_netcdf_dataset(ncid, prec_vol_id, prec_volg(0:nz, 0:nx-1))
-                call write_netcdf_dataset(ncid, prec_tbuo_id, prec_tbuoyg(0:nz, 0:nx-1))
-                call write_netcdf_dataset(ncid, qr_id, qrg(0:nz, 0:nx-1))
-                call write_netcdf_dataset(ncid, Nr_id, Nrg(0:nz, 0:nx-1))
-                call write_netcdf_dataset(ncid, prec_npar_id, prec_nparg(0:nz, 0:nx-1))
+                call write_netcdf_dataset(ncid, prec_vol_id, prec_volg(0:nz, 0:nx-1), start, cnt)
+                call write_netcdf_dataset(ncid, prec_tbuo_id, prec_tbuoyg(0:nz, 0:nx-1), start, cnt)
+                call write_netcdf_dataset(ncid, qr_id, qrg(0:nz, 0:nx-1), start, cnt)
+                call write_netcdf_dataset(ncid, Nr_id, Nrg(0:nz, 0:nx-1), start, cnt)
+                call write_netcdf_dataset(ncid, prec_npar_id, prec_nparg(0:nz, 0:nx-1), start, cnt)
             endif
 
             ! increment counter
