@@ -70,6 +70,8 @@ module prec_parcel_interpl
                 ! get interpolation weights and mesh indices
                 call bilinear(points(:), is, js, weights)
 
+                weights = weights*pvol
+
                 prec_tbuoyg(js:js+1, is:is+1) = prec_tbuoyg(js:js+1, is:is+1) &
                                      + weights * btot
                 prec_volg(js:js+1, is:is+1) = prec_volg(js:js+1, is:is+1) &
