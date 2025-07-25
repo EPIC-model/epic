@@ -150,7 +150,7 @@ module ls_rk4
                 call grid2par_add(parcels%delta_pos, parcels%delta_vor, parcels%strain)
 
                 if(microphysics%l_precipitation) then
-                    call prec_grid2par_add(parcels%delta_pos)
+                    call prec_grid2par_add(prec_parcels%delta_pos)
                 endif
 
                 call start_timer(rk4_timer)
