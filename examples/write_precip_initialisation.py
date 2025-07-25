@@ -15,7 +15,7 @@ i_parcel=0
 x_array=np.zeros((1,n_shifts*n_shifts))
 z_array=np.zeros((1,n_shifts*n_shifts))
 
-qr_parcels=0.0005
+qr_parcels=0.002
 Nr_parcels=10000
 parcel_volume=dx_parcel*dx_parcel
 
