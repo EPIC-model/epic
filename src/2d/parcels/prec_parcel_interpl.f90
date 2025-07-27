@@ -72,8 +72,10 @@ module prec_parcel_interpl
 
                 weights = weights*pvol
 
-                prec_tbuoyg(js:js+1, is:is+1) = prec_tbuoyg(js:js+1, is:is+1) &
-                                     + weights * btot
+                if(microphysics%l_loading) then
+                    prec_tbuoyg(js:js+1, is:is+1) = prec_tbuoyg(js:js+1, is:is+1) &
+                                         + weights * btot
+                endif
                 prec_volg(js:js+1, is:is+1) = prec_volg(js:js+1, is:is+1) &
                                    + weights
                 qrg(js:js+1, is:is+1) = qrg(js:js+1, is:is+1) &
@@ -155,7 +157,7 @@ module prec_parcel_interpl
 
             ! sanity check
             if (sum(prec_nparg(0:nz-1, :)) /= n_prec_parcels) then
-                print *, "par2grid: Wrong total number of parcels!"
+                print *, "prec par2grid: Wrong total number of parcels!"
                 stop
             endif
 

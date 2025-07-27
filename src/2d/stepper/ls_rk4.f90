@@ -80,6 +80,10 @@ module ls_rk4
 
             if(microphysics%l_precipitation) then
                 call prec_grid2par(prec_parcels%delta_pos)
+                if(microphysics%l_sedimentation) then
+                    prec_parcels%local_num = n_prec_parcels
+                    call prec_parcels%sedimentation
+                endif
             endif
 
             call calculate_parcel_diagnostics(parcels%delta_pos)
@@ -100,6 +104,10 @@ module ls_rk4
 
                 if(microphysics%l_precipitation) then
                     call prec_par2grid(prec_parcels)
+                    if(microphysics%l_sedimentation) then
+                        prec_parcels%local_num = n_prec_parcels
+                        call prec_parcels%sedimentation
+                    endif
                 end if
             enddo
             call ls_rk4_substep(dt, 5)
@@ -184,6 +192,9 @@ module ls_rk4
                                           + cb * dt * prec_parcels%delta_pos(:, n)
                 enddo
                 !$omp end parallel do
+                prec_parcels%local_num = n_prec_parcels
+                call prec_parcels%goners
+                n_prec_parcels = prec_parcels%local_num
             endif
 
             call stop_timer(rk4_timer)

@@ -1,6 +1,6 @@
  module parcel_types
     use physics, only : glat, lambda_c, q_0, qv_dens_coeff, theta_0, gravity, r_d, c_p, L_v, p_surf, p_ref, pressure_scale_height
-    use constants, only : zero, one
+    use constants, only : zero, one, f13, f12
     use timer, only : start_timer, stop_timer
     use parcel_ellipsoid
     use spline_module
@@ -13,6 +13,20 @@
     double precision, parameter :: qsa2 = -17.2693882  ! Constant in qsat equation
     double precision, parameter :: qsa3 = 35.86        ! Constant in qsat equation
     double precision, parameter :: qsa4 = 6.109        ! Constant in qsat equation
+
+    ! Precipitation parameters
+    double precision :: rho_air = 1.2256 ! For first tests, just use a constant density
+    double precision :: rho_ref = 1.2256 ! For first tests, just use a constant density
+    double precision, parameter :: rho_w = 1000.0 ! Density of water
+
+    !Abel and shipway fall speed constants
+    double precision, parameter :: a1 = 4854.0
+    double precision, parameter :: a2 = 446.0
+    double precision, parameter :: b1 = 1.0
+    double precision, parameter :: b2 = 0.782
+    double precision, parameter :: f1 = 195
+    double precision, parameter :: f2 = 4085.35
+
     integer :: saturation_adjustment_timer
     logical :: splines_are_initiated = .false.
     type(spline) :: esat_spline, press_spline, exn_spline
@@ -73,6 +87,8 @@
             procedure :: dealloc => prec_parcel_dealloc
             procedure :: resize => prec_parcel_resize
             procedure :: get_buoyancy => prec_parcel_get_buoyancy
+            procedure :: sedimentation
+            procedure :: goners
 
             ! get_buoyancy added here
     end type
@@ -628,5 +644,53 @@
       buoyancy = -gravity*this%qr(num)
 
   end subroutine prec_parcel_get_buoyancy
+
+    subroutine sedimentation(this)
+
+        class(prec_parcel_type), intent(inout) :: this
+        double precision :: D
+
+
+        integer :: n
+
+        !$omp parallel do default(shared) private(n,D)
+        do n = 1, this%local_num
+                D = ((rho_air/rho_w)*(this%qr(n)/this%nr(n)))**(f13)
+                this%delta_pos(this%z_dim, n) = this%delta_pos(this%z_dim, n) - (a1*(D**(b1))*(exp(-f1*D)))+a2*(D**(b2)) &
+                &* (exp(-f2*D))*(rho_ref/rho_air)**(f12)
+        end do
+        !$omp end parallel do
+
+    end subroutine sedimentation
+
+  subroutine goners(this)
+        class(prec_parcel_type), intent(inout) :: this
+        integer, allocatable :: pid(:)  ! Declare pid as an allocatable array
+        integer :: n_del
+        integer :: n
+
+        n_del = 0
+        allocate(pid(0:this%local_num))  ! Allocate pid with the size of local_num
+        pid=0
+
+        ! Replace this by a reduction loop first
+        do n = 1, this%local_num
+            if (this%position(this%z_dim, n) <= 0) then
+                n_del = n_del + 1
+                pid(n_del) = n
+                cycle
+            else if (this%qr(n) <= 0) then
+                n_del = n_del + 1
+                pid(n_del) = n
+                cycle
+            end if
+        end do
+
+        if (n_del > 0) then
+            call this%delete(pid=pid(0:n_del), n_del=n_del)
+        end if
+
+        deallocate(pid)  ! Deallocate pid to free memory
+    end subroutine goners
 
 end module
