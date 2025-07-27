@@ -1,0 +1,15 @@
+&MODELS
+
+ model      = 'Stratified'
+ ncfname    = 'stratified.nc'
+
+ box%ncells = 160, 160
+ box%extent = 4000., 4000.
+ box%origin = -2000.0, 0.0
+/
+
+&PHYSICS
+ gravity = 9.81d0
+ theta_0 = 300.0d0
+ p_surf = 85000.0d0
+/
