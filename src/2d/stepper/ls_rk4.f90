@@ -82,7 +82,7 @@ module ls_rk4
                 call prec_grid2par(prec_parcels%delta_pos)
                 if(microphysics%l_sedimentation) then
                     prec_parcels%local_num = n_prec_parcels
-                    call prec_parcels%sedimentation
+                    call prec_parcels%sedimentation(microphysics%l_single_droplet_size)
                 endif
             endif
 
@@ -106,7 +106,7 @@ module ls_rk4
                     call prec_par2grid(prec_parcels)
                     if(microphysics%l_sedimentation) then
                         prec_parcels%local_num = n_prec_parcels
-                        call prec_parcels%sedimentation
+                        call prec_parcels%sedimentation(microphysics%l_single_droplet_size)
                     endif
                 end if
             enddo

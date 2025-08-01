@@ -1,6 +1,6 @@
  module parcel_types
     use physics, only : glat, lambda_c, q_0, qv_dens_coeff, theta_0, gravity, r_d, c_p, L_v, p_surf, p_ref, pressure_scale_height
-    use constants, only : zero, one, f13, f12
+    use constants, only : zero, one, f13, f12, six, fpi, three, fpi6
     use timer, only : start_timer, stop_timer
     use parcel_ellipsoid
     use spline_module
@@ -21,11 +21,12 @@
 
     !Abel and shipway fall speed constants
     double precision, parameter :: a1 = 4854.0
-    double precision, parameter :: a2 = 446.0
+    double precision, parameter :: a2 = -446.0 ! Note a2 is negative
     double precision, parameter :: b1 = 1.0
     double precision, parameter :: b2 = 0.782
     double precision, parameter :: f1 = 195
     double precision, parameter :: f2 = 4085.35
+    double precision, parameter :: mu = 2.5
 
     integer :: saturation_adjustment_timer
     logical :: splines_are_initiated = .false.
@@ -645,21 +646,35 @@
 
   end subroutine prec_parcel_get_buoyancy
 
-    subroutine sedimentation(this)
+    subroutine sedimentation(this, l_single_droplet_size)
 
         class(prec_parcel_type), intent(inout) :: this
-        double precision :: D
-
+        logical, intent(in) :: l_single_droplet_size
+        double precision :: D, slope, asr1, asr2
 
         integer :: n
 
-        !$omp parallel do default(shared) private(n,D)
-        do n = 1, this%local_num
-                D = ((rho_air/rho_w)*(this%qr(n)/this%nr(n)))**(f13)
-                this%delta_pos(this%z_dim, n) = this%delta_pos(this%z_dim, n) - (a1*(D**(b1))*(exp(-f1*D)))+a2*(D**(b2)) &
-                &* (exp(-f2*D))*(rho_ref/rho_air)**(f12)
-        end do
-        !$omp end parallel do
+        if(l_single_droplet_size) then
+            !$omp parallel do default(shared) private(n,D)
+            do n = 1, this%local_num
+                    D = ((rho_air/rho_w)*(six*fpi*this%qr(n)/this%nr(n)))**(f13)
+                    this%delta_pos(this%z_dim, n) = this%delta_pos(this%z_dim, n) - (a1*(D**(b1))*(exp(-f1*D)))+a2*(D**(b2)) &
+                    &* (exp(-f2*D))*(rho_ref/rho_air)**(f12)
+            end do
+            !$omp end parallel do
+        else
+            !$omp parallel do default(shared) private(n,slope,asr1,asr2)
+            do n = 1, this%local_num
+                slope = (fpi6*(rho_w/rho_air)*(this%nr(n)/this%qr(n))*(mu+1)*(mu+2)*(mu+3))**((f13))
+                !These are the mass weighted integrals for abel and shipway terminal velocity
+                asr1 = a1*((rho_ref/rho_air)**(f12))*(slope**(one+mu+three)*(slope+f1)**(-(one+mu+three+b1))) &
+                *(gamma(one+mu+three+b1)/gamma(one+mu+three))
+                asr2 = a2*((rho_ref/rho_air)**(f12))*(slope**(one+mu+three)*(slope+f2)**(-(one+mu+three+b2))) &
+                *(gamma(one+mu+three+b2)/gamma(one+mu+three))
+                this%delta_pos(this%z_dim, n) = this%delta_pos(this%z_dim, n) - (asr1 + asr2)
+            end do
+            !$omp end parallel do
+         endif
 
     end subroutine sedimentation
 

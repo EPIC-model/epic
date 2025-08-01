@@ -81,6 +81,7 @@ module options
         logical          :: l_precipitation = .false.
         logical          :: l_precipitation_file = .false.
         logical          :: l_sedimentation = .true.
+        logical          :: l_single_droplet_size = .false.
         logical          :: l_evaporation = .true.
         logical          :: l_loading = .true.
         double precision :: microphysics_size_factor = 10.0d0    ! Average number of prec_parcels per grid box allowed.
@@ -170,6 +171,7 @@ module options
             call write_netcdf_attribute(ncid, "microphysics_l_precipitation", microphysics%l_precipitation)
             call write_netcdf_attribute(ncid, "microphysics_l_precipitation_file", microphysics%l_precipitation_file)
             call write_netcdf_attribute(ncid, "microphysics_l_sedimentation", microphysics%l_sedimentation)
+            call write_netcdf_attribute(ncid, "microphysics_l_single_droplet_size", microphysics%l_single_droplet_size)
             call write_netcdf_attribute(ncid, "microphysics_l_evaporation", microphysics%l_evaporation)
             call write_netcdf_attribute(ncid, "microphysics_l_loading", microphysics%l_loading)
             call write_netcdf_attribute(ncid, "microphysics_size_factor", microphysics%microphysics_size_factor)
