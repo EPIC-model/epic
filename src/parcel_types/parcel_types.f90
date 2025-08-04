@@ -650,20 +650,21 @@
 
         class(prec_parcel_type), intent(inout) :: this
         logical, intent(in) :: l_single_droplet_size
-        double precision :: D, slope, asr1, asr2
+        double precision :: D, slope, asr1, asr2, vterm
 
         integer :: n
 
         if(l_single_droplet_size) then
-            !$omp parallel do default(shared) private(n,D)
+            !$omp parallel do default(shared) private(n, D, vterm)
             do n = 1, this%local_num
                     D = ((rho_air/rho_w)*(six*fpi*this%qr(n)/this%nr(n)))**(f13)
-                    this%delta_pos(this%z_dim, n) = this%delta_pos(this%z_dim, n) - (a1*(D**(b1))*(exp(-f1*D)))+a2*(D**(b2)) &
-                    &* (exp(-f2*D))*(rho_ref/rho_air)**(f12)
+                    vterm = (a1*(D**(b1))*(exp(-f1*D)))+a2*(D**(b2))* (exp(-f2*D))*(rho_ref/rho_air)**(f12)
+                    vterm = max(0.0, vterm)
+                    this%delta_pos(this%z_dim, n) = this%delta_pos(this%z_dim, n) - vterm
             end do
             !$omp end parallel do
         else
-            !$omp parallel do default(shared) private(n,slope,asr1,asr2)
+            !$omp parallel do default(shared) private(n,slope,asr1,asr2, vterm)
             do n = 1, this%local_num
                 slope = (fpi6*(rho_w/rho_air)*(this%nr(n)/this%qr(n))*(mu+1)*(mu+2)*(mu+3))**((f13))
                 !These are the mass weighted integrals for abel and shipway terminal velocity
@@ -671,7 +672,8 @@
                 *(gamma(one+mu+three+b1)/gamma(one+mu+three))
                 asr2 = a2*((rho_ref/rho_air)**(f12))*(slope**(one+mu+three)*(slope+f2)**(-(one+mu+three+b2))) &
                 *(gamma(one+mu+three+b2)/gamma(one+mu+three))
-                this%delta_pos(this%z_dim, n) = this%delta_pos(this%z_dim, n) - (asr1 + asr2)
+                vterm = max(0.0, asr1 + asr2)
+                this%delta_pos(this%z_dim, n) = this%delta_pos(this%z_dim, n) - vterm
             end do
             !$omp end parallel do
          endif
