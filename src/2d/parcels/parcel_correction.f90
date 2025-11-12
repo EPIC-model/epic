@@ -142,7 +142,7 @@ module parcel_correction
         double precision :: phi(0:nz,0:nx-1), ud(-1:nz+1,-1:nx), wd(-1:nz+1,-1:nx)
         double precision :: wbar(0:nz)
         double precision :: weights(0:1, 0:1)
-        integer          :: n, l, is, js
+        integer          :: n, is, js
 
         call start_timer(lapl_corr_timer)
 

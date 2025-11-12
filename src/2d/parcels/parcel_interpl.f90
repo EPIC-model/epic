@@ -39,7 +39,7 @@ module parcel_interpl
         ! Interpolate the parcel volume to the grid
         subroutine vol2grid
             double precision  :: points(2, 2)
-            integer           :: n, p, l
+            integer           :: n, p
             double precision  :: pvol
 
             volg = zero
@@ -90,7 +90,7 @@ module parcel_interpl
         ! Interpolate the parcel volume to the grid to check symmetry
         subroutine vol2grid_symmetry_error
             double precision :: points(2, 2), V, B(2), pos(2)
-            integer          :: n, p, l, m
+            integer          :: n, p, m
             double precision :: pvol
 
             call start_timer(sym_vol2grid_timer)

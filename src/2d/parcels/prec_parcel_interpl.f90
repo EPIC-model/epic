@@ -40,7 +40,7 @@ module prec_parcel_interpl
         subroutine prec_par2grid(prec_parcels)
             class(prec_parcel_type), intent(in) :: prec_parcels
             double precision :: points(2)
-            integer          :: n, p, i, j
+            integer          :: n, i, j
             double precision :: pvol, btot
 
             call start_timer(prec_par2grid_timer)
@@ -174,7 +174,7 @@ module prec_parcel_interpl
             double precision,     intent(inout) :: vel(:, :)
             logical, optional, intent(in)       :: add
             double precision                    :: points(2)
-            integer                             :: n, p, l
+            integer                             :: n, l
 
             call start_timer(prec_grid2par_timer)
 
